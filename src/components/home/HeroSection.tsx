@@ -89,7 +89,8 @@ export function HeroSection() {
           <h1 className="text-balance text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-[2.75rem]">
             {t.hero.title}
           </h1>
-          <SectionDivider />\n          <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
+          <SectionDivider />
+          <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
             {t.hero.description}
           </p>
         </motion.div>
