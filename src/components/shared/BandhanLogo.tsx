@@ -17,7 +17,7 @@ export function BandhanLogo({ className = '' }: { className?: string }) {
         )}
       >
         <Image
-          src='/logo-hi.jpg'
+          src='/hindi-official.jpg'
           alt='बंधन - साहू समाज कनेक्ट्स - रिश्तों को जोड़ें, समाज को सशक्त बनाएं'
           fill
           sizes='(max-width: 768px) 104px, (max-width: 1024px) 128px, 152px'
