@@ -11,18 +11,18 @@ export function BandhanLogo({ className = '' }: { className?: string }) {
     return (
       <div
         className={cn(
-          'relative shrink-0 overflow-hidden rounded-xl',
-          'h-12 w-[6.5rem] shadow-sm md:h-14 md:w-[8rem] lg:h-[3.6rem] lg:w-[9.5rem]',
+          'relative shrink-0',
+          'h-12 w-[6.5rem] md:h-14 md:w-[8rem] lg:h-[3.6rem] lg:w-[9.5rem]',
           className
         )}
       >
         <Image
-          src='/hindi-official.jpg'
+          src='/logo-hi.jpg'
           alt='बंधन - साहू समाज कनेक्ट्स - रिश्तों को जोड़ें, समाज को सशक्त बनाएं'
           fill
           sizes='(max-width: 768px) 104px, (max-width: 1024px) 128px, 152px'
           priority
-          className='object-cover'
+          className='object-contain'
         />
       </div>
     )
