@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,20 +7,401 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ═══════════════════════════════════════════════════════════
+// ROLES & PERMISSIONS
+// ═══════════════════════════════════════════════════════════
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique // SUPER_ADMIN, ADMIN, MODERATOR, FREE_USER, PREMIUM_USER, ELITE_USER
+  displayName String
+  level       Int      @default(0) // Higher = more privilege
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  permissions RolePermission[]
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g. users.read, users.approve, admin.dashboard
+  module      String   // e.g. users, admin, matrimony, business
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+// ═══════════════════════════════════════════════════════════
+// USER AUTHENTICATION
+// ═══════════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?
+  emailVerified Boolean   @default(false)
+  phone         String?
+  phoneVerified Boolean   @default(false)
+  passwordHash  String?
+  authProvider  String    @default("LOCAL") // LOCAL, GOOGLE, FACEBOOK
+
+  // Status & Role
+  status        String    @default("PENDING_APPROVAL") // PENDING_APPROVAL, ACTIVE, REJECTED, BLOCKED, DEACTIVATED
+  roleId        String?
+  membershipTier String   @default("FREE") // FREE, PREMIUM, ELITE
+  registrationCategory String @default("GENERAL") // MATRIMONY, BUSINESS, JOB, DIRECTORY, GENERAL
+
+  // Security
+  lastLoginAt   DateTime?
+  loginCount    Int       @default(0)
+  failedLoginAttempts Int @default(0)
+  lockedUntil   DateTime?
+  mustChangePassword Boolean @default(false)
+
+  // Metadata
+  deviceId      String?
+  ipAddress     String?
+  userAgent     String?
+  acceptedTerms Boolean   @default(false)
+  deletedAt     DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  role          Role?     @relation(fields: [roleId], references: [id])
+  profile       Profile?
+  otpVerifications OtpVerification[]
+  approvals     Approval[]
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  securityEvents SecurityEvent[]
+  sentNotifications Notification[]
+  contactRequestsSent    ContactRequest[]  @relation("SentRequests")
+  contactRequestsReceived ContactRequest[] @relation("ReceivedRequests")
+  media         Media[]
+  loginHistory  LoginHistory[]
+  sessions      UserSession[]
+  advertisements Advertisement[]
+  reviewedApprovals Approval[] @relation("Reviewer")
+}
+
+// ═══════════════════════════════════════════════════════════
+// USER PROFILE (Expandable per registration category)
+// ═══════════════════════════════════════════════════════════
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+
+  // Basic Info
+  firstName   String?
+  lastName    String?
+  displayName String?
+  gender      String?  // MALE, FEMALE, OTHER
+  dateOfBirth String?
+  // Marital status for matrimony
+  maritalStatus String? // NEVER_MARRIED, DIVORCED, WIDOWED
+  // Gotra for community matching
+  gotra       String?
+
+  // Location
+  address     String?
+  city        String?
+  state       String?
+  country     String   @default("India")
+  pincode     String?
+
+  // Professional
+  occupation   String?
+  education    String?
+  annualIncome String?
+  companyName  String?
+  designation  String?
+
+  // Matrimony Specific
+  height       String?
+  familyType   String?  // JOINT, NUCLEAR
+  fatherName   String?
+  motherName   String?
+  familyCity   String?
+  aboutFamily  String?
+  partnerPreferences String? // JSON string for future parsing
+
+  // Business Specific
+  businessName     String?
+  businessCategory String?
+  businessType     String?  // SOLE_PROPRIETORSHIP, PARTNERSHIP, PVT_LTD, LLP
+  businessAddress  String?
+  businessCity     String?
+  businessState    String?
+  businessPincode  String?
+  businessPhone    String?
+  businessEmail    String?
+  businessWebsite  String?
+  gstNumber        String?
+  businessDescription String?
+  businessFounded  String?
+  employeeCount    String?
+
+  // Community / Directory Specific
+  organizationName  String?
+  organizationType  String? // TRUST, SAMITI, SANGATHAN, ASSOCIATION
+  organizationRole  String? // PRESIDENT, SECRETARY, MEMBER, TREASURER
+  memberCount       String?
+  organizationDesc  String?
+
+  // Privacy Controls
+  phoneVisible       Boolean @default(false)
+  emailVisible       Boolean @default(false)
+  profileVisible     Boolean @default(true)
+  contactPermission  String  @default("MEMBERS_ONLY") // EVERYONE, MEMBERS_ONLY, PREMIUM_ONLY, NONE
+
+  // Social
+  bio         String?
+  profilePhotoUrl String?
+  coverPhotoUrl  String?
+  socialLinks    String? // JSON string
+
+  // AI Ready fields
+  aiTags          String? // JSON string for AI-generated tags
+  aiMatchScore    Float?
+  aiVerified      Boolean @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════
+// OTP VERIFICATION
+// ═══════════════════════════════════════════════════════════
+
+model OtpVerification {
+  id          String   @id @default(cuid())
+  userId      String?
+  type        String   // REGISTRATION, LOGIN, RESET_PASSWORD, CHANGE_PHONE, CHANGE_EMAIL
+  method      String   // SMS, EMAIL, BOTH
+  identifier  String   // phone number or email
+  otpCode     String
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  verified    Boolean  @default(false)
+  expiresAt   DateTime
+  verifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════
+// APPROVAL WORKFLOW
+// ═══════════════════════════════════════════════════════════
+
+model Approval {
+  id           String   @id @default(cuid())
+  userId       String
+  action       String   // APPROVE, REJECT, BLOCK, UNBLOCK
+  reason       String?
+  reviewedBy   String?  // Admin user ID
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  aiProcessed  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  reviewedAt   DateTime?
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer     User?    @relation("Reviewer", fields: [reviewedBy], references: [id])
+}
+
+// ═══════════════════════════════════════════════════════════
+// MEMBERSHIP & SUBSCRIPTION
+// ═══════════════════════════════════════════════════════════
+
+model Membership {
+  id             String   @id @default(cuid())
+  userId         String
+  tier           String   // FREE, PREMIUM, ELITE
+  status         String   @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
+  startedAt      DateTime @default(now())
+  expiresAt      DateTime?
+  paymentMethod  String?  // UPI, CARD, BANK_TRANSFER
+  paymentRef     String?
+  amount         Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════
+// MEDIA STORAGE
+// ═══════════════════════════════════════════════════════════
+
+model Media {
+  id          String   @id @default(cuid())
+  userId      String?
+  category    String   // PROFILE, BUSINESS, ADVERTISEMENT, DOCUMENT, GENERAL
+  type        String   // IMAGE, VIDEO, DOCUMENT
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  url         String
+  thumbnailUrl String?
+  width       Int?
+  height      Int?
+  alt         String?
+  sortOrder   Int      @default(0)
+ isPublic    Boolean  @default(true)
+  aiModerated Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // REGISTRATION, APPROVAL, REJECTION, CONTACT_REQUEST, APPOINTMENT, MEMBERSHIP, SYSTEM
+  title       String
+  message     String
+  data        String?  // JSON string for additional payload
+  channel     String   @default("IN_APP") // IN_APP, EMAIL, SMS, PUSH
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTACT & APPOINTMENT REQUESTS
+// ═══════════════════════════════════════════════════════════
+
+model ContactRequest {
+  id              String   @id @default(cuid())
+  senderId        String
+  receiverId      String
+  message         String?
+  status          String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, BLOCKED
+  createdAt        DateTime @default(now())
+  respondedAt      DateTime?
+
+  sender          User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver        User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════════════════════
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String   // e.g. user.login, admin.approve_user, profile.update
+  entity      String?  // e.g. User, Profile, Approval
+  entityId    String?
+  details     String?  // JSON string
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// ═══════════════════════════════════════════════════════════
+// SECURITY EVENTS
+// ═══════════════════════════════════════════════════════════
+
+model SecurityEvent {
+  id          String   @id @default(cuid())
+  userId      String?
+  eventType   String   // LOGIN_SUCCESS, LOGIN_FAILURE, ACCOUNT_LOCKED, PASSWORD_CHANGED, OTP_FAILED, SUSPICIOUS_ACTIVITY
+  description String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    String?  // JSON string
+  severity    String   @default("INFO") // INFO, WARNING, CRITICAL
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOGIN HISTORY (Device Tracking)
+// ═══════════════════════════════════════════════════════════
+
+model LoginHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  ipAddress   String?
+  userAgent   String?
+  device      String?
+  location    String?
+  success     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════
+// USER SESSIONS
+// ═══════════════════════════════════════════════════════════
+
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String
+  token       String   @unique
+  device      String?
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADVERTISEMENT
+// ═══════════════════════════════════════════════════════════
+
+model Advertisement {
+  id          String   @id @default(cuid())
+  userId      String?  // Admin who created it
+  title       String
+  description String?
+  imageUrl    String?
+  linkUrl     String?
+  position    String   // HERO, MIDDLE, BOTTOM, SIDEBAR
+  category    String   // MATRIMONY, BUSINESS, JOBS, DIRECTORY, GENERAL
+  status      String   @default("ACTIVE") // ACTIVE, PAUSED, EXPIRED
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
