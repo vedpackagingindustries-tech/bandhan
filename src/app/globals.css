@@ -42,6 +42,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
   --color-burgundy: var(--burgundy);
   --color-burgundy-light: var(--burgundy-light);
   --color-burgundy-dark: var(--burgundy-dark);
@@ -53,13 +54,14 @@
   --color-ivory: var(--ivory);
   --color-cream: var(--cream);
   --color-warm-gray: var(--warm-gray);
+  --color-rose-gold: var(--rose-gold);
+  --color-wine: var(--wine);
 }
 
 :root {
-  /* ─── Base Radius ─── */
   --radius: 0.75rem;
 
-  /* ─── Brand Colors (Burgundy / Gold / Teal) ─── */
+  /* Brand Colors */
   --burgundy: #7B2D3B;
   --burgundy-light: #9E4455;
   --burgundy-dark: #5C1E2C;
@@ -71,8 +73,10 @@
   --ivory: #FFFEF7;
   --cream: #FBF8F0;
   --warm-gray: #F5F0E8;
+  --rose-gold: #B76E79;
+  --wine: #6B1D2A;
 
-  /* ─── Semantic Colors ─── */
+  /* Semantic Colors */
   --background: #FFFEF7;
   --foreground: #1A1A1A;
   --card: #FFFFFF;
@@ -92,7 +96,7 @@
   --input: #E8E2D8;
   --ring: #7B2D3B;
 
-  /* ─── Sidebar ─── */
+  /* Sidebar */
   --sidebar: #FFFFFF;
   --sidebar-foreground: #1A1A1A;
   --sidebar-primary: #7B2D3B;
@@ -102,7 +106,7 @@
   --sidebar-border: #E8E2D8;
   --sidebar-ring: #7B2D3B;
 
-  /* ─── Chart ─── */
+  /* Chart */
   --chart-1: #7B2D3B;
   --chart-2: #C8A951;
   --chart-3: #2C4A52;
@@ -162,11 +166,17 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(200, 169, 81, 0.08) 50%,
+      rgba(200, 169, 81, 0.06) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
     animation: shimmer 3s ease-in-out infinite;
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-pulse-soft {
+    animation: pulseSoft 3s ease-in-out infinite;
   }
 }
 
@@ -176,7 +186,7 @@
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -191,12 +201,12 @@
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-20px); }
+  from { opacity: 0; transform: translateX(-24px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
+  from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
@@ -205,7 +215,17 @@
   100% { background-position: 200% 0; }
 }
 
-/* ─── Premium Typography Helpers ─── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ─── Premium Typography ─── */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -221,5 +241,30 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+}
+
+/* ─── Glass Effect ─── */
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .glass-subtle {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+/* ─── Premium Section Spacing ─── */
+@layer utilities {
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32;
+  }
+  .section-padding-sm {
+    @apply py-10 md:py-14 lg:py-16;
   }
 }

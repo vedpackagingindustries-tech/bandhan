@@ -1,27 +1,56 @@
 export const translations = {
   en: {
-    // Navigation
     nav: {
       home: 'Home',
       matrimony: 'Matrimony',
       business: 'Business',
       jobs: 'Jobs',
       directory: 'Directory',
-      aiServices: 'AI Services',
-      membership: 'Membership',
+      events: 'Events',
+      contact: 'Contact',
       login: 'Login',
       register: 'Register',
       more: 'More',
     },
-    // Hero Section
+    topBar: {
+      organization: 'Chhattisgarh Pradesh Sahu Sangh',
+      address: 'Bhamashah Chhatravas, Tikrapara, Raipur',
+    },
     hero: {
       title: 'Matrimony, Business, Jobs & Officer Directory',
       subtitle: 'All in One Place for Sahu Samaj',
       description:
         'Discover a premium digital ecosystem designed exclusively for the Sahu community. Connect, grow, and thrive together through our integrated platform offering matrimony services, business networking, career opportunities, and a comprehensive community directory.',
     },
-    // Service Cards
+    heroSlides: {
+      matrimony: {
+        tag: 'Premium Matrimony',
+        headline: 'Find Your Perfect Life Partner',
+        sub: 'AI-powered matchmaking within the Sahu Samaj — trusted by thousands of families.',
+        cta: 'Explore Profiles',
+      },
+      business: {
+        tag: 'Business Promotion',
+        headline: 'Grow Your Business with the Community',
+        sub: 'List your enterprise and reach lakhs of Sahu Samaj members across India.',
+        cta: 'List Your Business',
+      },
+      jobs: {
+        tag: 'Jobs Portal',
+        headline: 'Hire & Get Hired Within the Community',
+        sub: 'Exclusive career opportunities from Sahu-owned companies and organizations.',
+        cta: 'Explore Jobs',
+      },
+      directory: {
+        tag: 'Community Directory',
+        headline: 'Connect with Every Sahu Samaj Institution',
+        sub: 'A unified directory of trusts, committees, and community bodies nationwide.',
+        cta: 'Browse Directory',
+      },
+    },
     services: {
+      sectionTitle: 'Our Premium Services',
+      sectionSubtitle: 'Everything your community needs, in one elegant platform.',
       matrimony: {
         title: 'Matrimony',
         description:
@@ -43,11 +72,61 @@ export const translations = {
       directory: {
         title: 'Directory',
         description:
-        'Browse a comprehensive directory of Sahu Samaj organizations, institutions, and prominent members. Stay connected with the community leadership and services.',
+          'Browse a comprehensive directory of Sahu Samaj organizations, institutions, and prominent members. Stay connected with the community leadership and services.',
         cta: 'Explore',
       },
     },
-    // Ad Banners
+    featured: {
+      sectionTitle: 'Featured Profiles',
+      sectionSubtitle: 'Discover the most sought-after members of our community.',
+      brides: {
+        title: 'Featured Brides',
+        viewAll: 'View All Brides',
+      },
+      grooms: {
+        title: 'Featured Grooms',
+        viewAll: 'View All Grooms',
+      },
+      businesses: {
+        title: 'Featured Businesses',
+        viewAll: 'View All Businesses',
+      },
+      jobs: {
+        title: 'Featured Jobs',
+        viewAll: 'View All Jobs',
+      },
+      organizations: {
+        title: 'Featured Organizations',
+        viewAll: 'View All Organizations',
+      },
+      age: 'Age',
+      location: 'Location',
+      profession: 'Profession',
+      category: 'Category',
+      company: 'Company',
+      salary: 'Salary',
+      type: 'Type',
+      members: 'Members',
+      viewProfile: 'View Profile',
+      viewDetails: 'View Details',
+      applyNow: 'Apply Now',
+    },
+    successStories: {
+      sectionTitle: 'Success Stories',
+      sectionSubtitle: 'Real couples who found their perfect match through Bandhan.',
+      couple1: {
+        name: 'Rajesh & Priya',
+        location: 'Raipur, Chhattisgarh',
+        story: 'We found each other on Bandhan and our families connected instantly. The platform made our traditional matchmaking process so much easier and more meaningful.',
+        date: 'Married in March 2025',
+      },
+      couple2: {
+        name: 'Amit & Sneha',
+        location: 'Bhilai, Chhattisgarh',
+        story: 'Bandhan brought our families together. The AI matching helped us find the perfect match based on our values and traditions. We are forever grateful.',
+        date: 'Married in January 2025',
+      },
+    },
     ads: {
       matrimony: {
         tag: 'Matrimony',
@@ -74,14 +153,15 @@ export const translations = {
         cta: 'Browse Directory',
       },
     },
-    // Stats
     stats: {
+      sectionTitle: 'Community Impact',
+      sectionSubtitle: 'Numbers that reflect the trust and growth of our community.',
       members: 'Registered Members',
+      marriages: 'Successful Marriages',
       businesses: 'Businesses Listed',
-      matches: 'Successful Matches',
       organizations: 'Organizations',
+      jobs: 'Jobs Posted',
     },
-    // Footer
     footer: {
       about: 'About Bandhan',
       aboutText:
@@ -100,41 +180,69 @@ export const translations = {
       allRightsReserved: 'All Rights Reserved',
       madeWith: 'Made with pride for Sahu Samaj',
     },
-    // Language
     language: {
       english: 'English',
-      hindi: 'हिन्दी',
+      hindi: 'Hindi',
     },
-    // Common
     common: {
       learnMore: 'Learn More',
       getStarted: 'Get Started',
       searchPlaceholder: 'Search...',
+      viewAll: 'View All',
     },
   },
   hi: {
-    // Navigation
     nav: {
-      home: 'होम',
+      home: 'Home',
       matrimony: 'विवाह',
       business: 'व्यवसाय',
       jobs: 'रोज़गार',
       directory: 'निर्देशिका',
-      aiServices: 'AI सेवाएँ',
-      membership: 'सदस्यता',
+      events: 'आयोजन',
+      contact: 'संपर्क',
       login: 'लॉगिन',
       register: 'रजिस्टर',
       more: 'अधिक',
     },
-    // Hero Section
+    topBar: {
+      organization: 'छत्तीसगढ़ प्रदेश साहू संघ',
+      address: 'भामाशाह छात्रावास, टिकरापारा, रायपुर',
+    },
     hero: {
       title: 'विवाह, व्यवसाय, रोज़गार एवं अधिकारी निर्देशिका',
       subtitle: 'साहू समाज के लिए सब एक जगह',
       description:
         'साहू समाज के लिए विशेष रूप से डिज़ाइन किया गया एक प्रीमियम डिजिटल इकोसिस्टम खोजें। हमारे एकीकृत प्लेटफ़ॉर्म के माध्यम से विवाह सेवाएं, व्यावसायिक नेटवर्किंग, करियर के अवसरों और व्यापक सामुदायिक निर्देशिका के माध्यम से जुड़ें, बढ़ें और साथ मिलकर फलें।',
     },
-    // Service Cards
+    heroSlides: {
+      matrimony: {
+        tag: 'प्रीमियम विवाह',
+        headline: 'अपना उत्तम जीवन साथी खोजें',
+        sub: 'साहू समाज के भीतर AI-आधारित मिलान — हज़ारों परिवारों का भरोसा।',
+        cta: 'प्रोफ़ाइल देखें',
+      },
+      business: {
+        tag: 'व्यवसाय प्रमोशन',
+        headline: 'समुदाय के साथ अपना व्यवसाय बढ़ाएँ',
+        sub: 'अपना उद्यम सूचीबद्ध करें और पूरे भारत में लाखों साहू समाज सदस्यों तक पहुँचें।',
+        cta: 'व्यवसाय सूचीबद्ध करें',
+      },
+      jobs: {
+        tag: 'रोज़गार पोर्टल',
+        headline: 'समुदाय में नौकरी पाएँ और दें',
+        sub: 'साहू-स्वामित्व वाली कंपनियों और संगठनों से विशेष करियर के अवसर।',
+        cta: 'रोज़गार खोजें',
+      },
+      directory: {
+        tag: 'सामुदायिक निर्देशिका',
+        headline: 'हर साहू समाज संस्था से जुड़ें',
+        sub: 'ट्रस्टों, समितियों और राष्ट्रव्यापी सामुदायिक निकायों की एकीकृत निर्देशिका।',
+        cta: 'निर्देशिका देखें',
+      },
+    },
     services: {
+      sectionTitle: 'हमारी प्रीमियम सेवाएँ',
+      sectionSubtitle: 'जो कुछ भी आपके समुदाय को चाहिए, एक ही सुंदर प्लेटफ़ॉर्म पर।',
       matrimony: {
         title: 'विवाह',
         description:
@@ -160,7 +268,57 @@ export const translations = {
         cta: 'खोजें',
       },
     },
-    // Ad Banners
+    featured: {
+      sectionTitle: 'विशेष प्रोफ़ाइल',
+      sectionSubtitle: 'हमारे समुदाय के सबसे मांगे जाने वाले सदस्यों को खोजें।',
+      brides: {
+        title: 'विशेष दुल्हिन',
+        viewAll: 'सभी दुल्हिन देखें',
+      },
+      grooms: {
+        title: 'विशेष वर',
+        viewAll: 'सभी वर देखें',
+      },
+      businesses: {
+        title: 'विशेष व्यवसाय',
+        viewAll: 'सभी व्यवसाय देखें',
+      },
+      jobs: {
+        title: 'विशेष रोज़गार',
+        viewAll: 'सभी रोज़गार देखें',
+      },
+      organizations: {
+        title: 'विशेष संगठन',
+        viewAll: 'सभी संगठन देखें',
+      },
+      age: 'आयु',
+      location: 'स्थान',
+      profession: 'पेशा',
+      category: 'श्रेणी',
+      company: 'कंपनी',
+      salary: 'वेतन',
+      type: 'प्रकार',
+      members: 'सदस्य',
+      viewProfile: 'प्रोफ़ाइल देखें',
+      viewDetails: 'विवरण देखें',
+      applyNow: 'अभी आवेदन करें',
+    },
+    successStories: {
+      sectionTitle: 'सफलता की कहानियाँ',
+      sectionSubtitle: 'असली जोड़े जिन्होंने बंधन के माध्यम से अपना उत्तम साथी पाया।',
+      couple1: {
+        name: 'राजेश और प्रिया',
+        location: 'रायपुर, छत्तीसगढ़',
+        story: 'हम बंधन पर एक-दूसरे को खोज पाए और हमारे परिवार तुरंत जुड़ गए। प्लेटफ़ॉर्म ने हमारी पारंपरिक मिलान प्रक्रिया को बहुत आसान और अर्थपूर्ण बना दिया।',
+        date: 'मार्च 2025 में विवाहित',
+      },
+      couple2: {
+        name: 'अमित और स्नेहा',
+        location: 'भिलाई, छत्तीसगढ़',
+        story: 'बंधन ने हमारे परिवारों को एक साथ लाया। AI मिलान ने हमें हमारे मूल्यों और परंपराओं के आधार पर सही मिलान खोजने में मदद की। हम हमेशा आभारी हैं।',
+        date: 'जनवरी 2025 में विवाहित',
+      },
+    },
     ads: {
       matrimony: {
         tag: 'विवाह सेवा',
@@ -187,14 +345,15 @@ export const translations = {
         cta: 'निर्देशिका देखें',
       },
     },
-    // Stats
     stats: {
+      sectionTitle: 'सामुदायिक प्रभाव',
+      sectionSubtitle: 'संख्याएँ जो हमारे समुदाय के विश्वास और विकास को दर्शाती हैं।',
       members: 'पंजीकृत सदस्य',
+      marriages: 'सफल विवाह',
       businesses: 'सूचीबद्ध व्यवसाय',
-      matches: 'सफल मिलान',
       organizations: 'संगठन',
+      jobs: 'रोज़गार पोस्ट',
     },
-    // Footer
     footer: {
       about: 'बंधन के बारे में',
       aboutText:
@@ -213,16 +372,15 @@ export const translations = {
       allRightsReserved: 'सर्वाधिकार सुरक्षित',
       madeWith: 'साहू समाज के लिए गर्व से बनाया गया',
     },
-    // Language
     language: {
       english: 'English',
       hindi: 'हिन्दी',
     },
-    // Common
     common: {
       learnMore: 'और जानें',
       getStarted: 'शुरू करें',
       searchPlaceholder: 'खोजें...',
+      viewAll: 'सभी देखें',
     },
   },
 } as const

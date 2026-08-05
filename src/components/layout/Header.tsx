@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, User, LogIn } from 'lucide-react'
+import { Menu, X, User, LogIn, Heart, Briefcase, Search, Building2, CalendarDays, Phone } from 'lucide-react'
 import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 
-const navItems = ['matrimony', 'business', 'jobs', 'directory'] as const
+const navItems = [
+  { key: 'home' as const, icon: null },
+  { key: 'matrimony' as const, icon: Heart },
+  { key: 'business' as const, icon: Briefcase },
+  { key: 'jobs' as const, icon: Search },
+  { key: 'directory' as const, icon: Building2 },
+  { key: 'events' as const, icon: CalendarDays },
+  { key: 'contact' as const, icon: Phone },
+]
 
 export function Header() {
   const { t } = useTranslations()
@@ -33,10 +41,10 @@ export function Header() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full transition-all duration-300',
+        'sticky top-0 z-40 w-full transition-all duration-500',
         scrolled
-          ? 'bg-white/95 shadow-[0_1px_20px_rgba(0,0,0,0.04)] backdrop-blur-lg'
-          : 'bg-white/60 backdrop-blur-sm'
+          ? 'bg-white/90 shadow-[0_1px_24px_rgba(0,0,0,0.04)] backdrop-blur-xl'
+          : 'bg-white/70 backdrop-blur-md'
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -45,39 +53,42 @@ export function Header() {
           <BandhanLogo />
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 lg:flex">
-          {navItems.map((key) => (
+        {/* Desktop Nav */}
+        <nav className="hidden items-center gap-0.5 xl:flex">
+          {navItems.slice(1).map(({ key, icon: Icon }) => (
             <a
               key={key}
               href={`#${key}`}
-              className="relative px-3.5 py-2 text-[0.8125rem] font-medium tracking-wide text-foreground/80 transition-colors duration-200 hover:text-burgundy after:absolute after:bottom-0.5 after:left-1/2 after:h-px after:w-0 after:-translate-x-1/2 after:bg-burgundy after:transition-all after:duration-300 hover:after:w-5"
+              className="group relative flex items-center gap-1.5 px-3.5 py-2 text-[0.8125rem] font-medium tracking-wide text-foreground/70 transition-colors duration-300 hover:text-burgundy"
             >
+              {Icon && <Icon className="h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.5} />}
               {t.nav[key as keyof typeof t.nav]}
+              <span className="absolute bottom-1 left-1/2 h-px w-0 -translate-x-1/2 bg-gradient-to-r from-burgundy to-gold transition-all duration-300 group-hover:w-5" />
             </a>
           ))}
         </nav>
 
-        {/* Right Section */}
+        {/* Right Actions */}
         <div className="flex items-center gap-2.5">
-          <LanguageSwitcher />
-
-          {/* Desktop Auth Buttons */}
-          <div className="hidden items-center gap-2 lg:flex">
-            <button className="flex items-center gap-1.5 rounded-full border border-burgundy/20 px-4 py-1.5 text-xs font-medium text-burgundy transition-all duration-200 hover:bg-burgundy hover:text-white hover:shadow-[0_2px_12px_rgba(123,45,59,0.2)]">
+          <div className="hidden items-center gap-2 xl:flex">
+            <button className="flex items-center gap-1.5 rounded-full border border-burgundy/15 px-4 py-1.5 text-xs font-medium text-burgundy transition-all duration-300 hover:bg-burgundy hover:text-white hover:shadow-[0_2px_16px_rgba(123,45,59,0.2)]">
               <LogIn className="h-3.5 w-3.5" />
               {t.nav.login}
             </button>
-            <button className="flex items-center gap-1.5 rounded-full bg-burgundy px-4 py-1.5 text-xs font-medium text-white shadow-[0_2px_12px_rgba(123,45,59,0.15)] transition-all duration-200 hover:bg-burgundy-dark hover:shadow-[0_4px_16px_rgba(123,45,59,0.25)]">
+            <button className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-burgundy to-burgundy-light px-4 py-1.5 text-xs font-medium text-white shadow-[0_2px_16px_rgba(123,45,59,0.15)] transition-all duration-300 hover:shadow-[0_4px_24px_rgba(123,45,59,0.3)] hover:-translate-y-px">
               <User className="h-3.5 w-3.5" />
               {t.nav.register}
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
+          <div className="hidden xl:flex">
+            <LanguageSwitcher />
+          </div>
+
+          {/* Mobile Toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-cream lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 hover:bg-cream xl:hidden"
             aria-label="Toggle menu"
           >
             {mobileOpen ? (
@@ -89,48 +100,47 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 top-16 z-40 bg-black/10 backdrop-blur-sm lg:hidden"
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 top-[7.5rem] z-40 bg-black/5 backdrop-blur-sm xl:hidden"
               onClick={() => setMobileOpen(false)}
             />
-
-            {/* Mobile Menu Panel */}
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="absolute left-0 right-0 top-16 z-50 border-b border-border/50 bg-white/98 shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-xl lg:hidden"
+              initial={{ opacity: 0, y: -12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.98 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="absolute left-4 right-4 top-full z-50 overflow-hidden rounded-2xl border border-border/30 bg-white/95 shadow-2xl backdrop-blur-2xl xl:hidden"
             >
-              <nav className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
-                {navItems.map((key, idx) => (
+              <nav className="mx-auto max-w-lg px-2 py-2">
+                {navItems.map(({ key, icon: Icon }, idx) => (
                   <motion.a
                     key={key}
                     href={`#${key}`}
-                    initial={{ opacity: 0, x: -12 }}
+                    initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.05, duration: 0.25 }}
+                    transition={{ delay: idx * 0.04, duration: 0.25 }}
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center rounded-xl px-4 py-3 text-sm font-medium text-foreground/80 transition-all duration-200 hover:bg-cream hover:text-burgundy"
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-foreground/75 transition-all duration-200 hover:bg-cream hover:text-burgundy"
                   >
+                    {Icon && <Icon className="h-4 w-4" strokeWidth={1.5} />}
                     {t.nav[key as keyof typeof t.nav]}
                   </motion.a>
                 ))}
-                <div className="mt-3 flex flex-col gap-2 border-t border-border/40 pt-3">
-                  <button className="flex items-center justify-center gap-2 rounded-xl border border-burgundy/20 px-4 py-2.5 text-sm font-medium text-burgundy transition-all hover:bg-burgundy hover:text-white">
+                <div className="mt-2 flex flex-col gap-2 border-t border-border/30 px-4 pt-3">
+                  <LanguageSwitcher />
+                  <button className="flex items-center justify-center gap-2 rounded-xl border border-burgundy/15 px-4 py-2.5 text-sm font-medium text-burgundy transition-all duration-200 hover:bg-burgundy hover:text-white">
                     <LogIn className="h-4 w-4" />
                     {t.nav.login}
                   </button>
-                  <button className="flex items-center justify-center gap-2 rounded-xl bg-burgundy px-4 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-burgundy-dark">
+                  <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-burgundy to-burgundy-light px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl">
                     <User className="h-4 w-4" />
                     {t.nav.register}
                   </button>
