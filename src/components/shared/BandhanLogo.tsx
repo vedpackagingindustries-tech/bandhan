@@ -7,25 +7,42 @@ import { cn } from '@/lib/utils'
 export function BandhanLogo({ className = '' }: { className?: string }) {
   const locale = useLanguageStore((s) => s.locale)
 
+  if (locale === 'hi') {
+    return (
+      <div
+        className={cn(
+          'relative shrink-0 overflow-hidden rounded-xl',
+          'h-12 w-[6.5rem] shadow-sm md:h-14 md:w-[8rem] lg:h-[3.6rem] lg:w-[9.5rem]',
+          className
+        )}
+      >
+        <Image
+          src='/logo-hi.jpg'
+          alt='बंधन - साहू समाज कनेक्ट्स - रिश्तों को जोड़ें, समाज को सशक्त बनाएं'
+          fill
+          sizes='(max-width: 768px) 104px, (max-width: 1024px) 128px, 152px'
+          priority
+          className='object-cover'
+        />
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(
         'relative shrink-0',
-        locale === 'hi' ? 'h-14 w-36 md:h-[4.25rem] md:w-44 lg:h-16 lg:w-52' : 'h-12 w-32 md:h-14 md:w-40 lg:h-[3.5rem] lg:w-48',
+        'h-12 w-32 md:h-14 md:w-40 lg:h-[3.5rem] lg:w-48',
         className
       )}
     >
       <Image
-        src={locale === 'hi' ? '/logo-hi.jpg' : '/logo-en.jpg'}
-        alt={
-          locale === 'hi'
-            ? 'बंधन - साहू समाज कनेक्ट्स - रिश्तों को जोड़ें, समाज को सशक्त बनाएं'
-            : 'Bandhan - SAHU SAMAJ CONNECTS - Connecting Hearts, Strengthening Community'
-        }
+        src='/logo-en.jpg'
+        alt='Bandhan - SAHU SAMAJ CONNECTS - Connecting Hearts, Strengthening Community'
         fill
-        sizes="(max-width: 768px) 144px, (max-width: 1024px) 176px, 192px"
+        sizes='(max-width: 768px) 128px, (max-width: 1024px) 160px, 192px'
         priority
-        className="object-contain"
+        className='object-contain'
       />
     </div>
   )
