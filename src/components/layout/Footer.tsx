@@ -1,11 +1,16 @@
 'use client'
 
-import { Heart, Mail, Phone, MapPin, ShieldCheck } from 'lucide-react'
+import { Heart, Mail, Phone, MapPin, ShieldCheck, Building2 } from 'lucide-react'
 import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { useTranslations } from '@/i18n'
 
 export function Footer() {
   const { t } = useTranslations()
+
+  const phone = (t.footer as Record<string, unknown>).phone ?? ''
+  const email = (t.footer as Record<string, unknown>).email ?? ''
+  const showPhone = typeof phone === 'string' && phone.length > 0
+  const showEmail = typeof email === 'string' && email.length > 0
 
   return (
     <footer className="relative mt-8 border-t border-border/50 bg-white">
@@ -20,7 +25,6 @@ export function Footer() {
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
               {t.footer.aboutText}
             </p>
-            {/* Social Icons Placeholder */}
             <div className="mt-5 flex items-center gap-3">
               {['facebook', 'twitter', 'instagram', 'youtube'].map((social) => (
                 <a
@@ -84,24 +88,38 @@ export function Footer() {
               {t.footer.contactUs}
             </h4>
             <ul className="space-y-3">
+              {/* Organization */}
+              <li className="flex items-start gap-2.5">
+                <Building2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-gold" />
+                <span className="text-sm font-medium leading-relaxed text-foreground">
+                  {t.footer.organization}
+                </span>
+              </li>
+              {/* Address */}
               <li className="flex items-start gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-gold" />
                 <span className="text-sm leading-relaxed text-muted-foreground">
                   {t.footer.address}
                 </span>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 flex-shrink-0 text-gold" />
-                <a href={`mailto:${t.footer.email}`} className="text-sm text-muted-foreground transition-colors hover:text-burgundy">
-                  {t.footer.email}
-                </a>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 flex-shrink-0 text-gold" />
-                <a href={`tel:${t.footer.phone.replace(/\s/g, '')}`} className="text-sm text-muted-foreground transition-colors hover:text-burgundy">
-                  {t.footer.phone}
-                </a>
-              </li>
+              {/* Email — only shown when non-empty */}
+              {showEmail && (
+                <li className="flex items-center gap-2.5">
+                  <Mail className="h-4 w-4 flex-shrink-0 text-gold" />
+                  <a href={`mailto:${String(email)}`} className="text-sm text-muted-foreground transition-colors hover:text-burgundy">
+                    {String(email)}
+                  </a>
+                </li>
+              )}
+              {/* Phone — only shown when non-empty */}
+              {showPhone && (
+                <li className="flex items-center gap-2.5">
+                  <Phone className="h-4 w-4 flex-shrink-0 text-gold" />
+                  <a href={`tel:${String(phone).replace(/\s/g, '')}`} className="text-sm text-muted-foreground transition-colors hover:text-burgundy">
+                    {String(phone)}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -115,7 +133,6 @@ export function Footer() {
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} Bandhan. {t.footer.allRightsReserved}.
           </p>
-          {/* Super Admin Login */}
           <a
             href="#admin"
             className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground/60 transition-colors duration-200 hover:text-burgundy"
