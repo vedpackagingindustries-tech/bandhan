@@ -47,6 +47,33 @@ export const translations = {
         cta: 'Explore',
       },
     },
+    // Ad Banners
+    ads: {
+      matrimony: {
+        tag: 'Matrimony',
+        headline: 'Find Your Perfect Life Partner',
+        sub: 'AI-powered matchmaking within the Sahu Samaj — trusted by thousands of families.',
+        cta: 'Start Searching',
+      },
+      business: {
+        tag: 'Business Directory',
+        headline: 'Grow Your Business with the Community',
+        sub: 'List your enterprise and reach lakhs of Sahu Samaj members across India.',
+        cta: 'List Your Business',
+      },
+      jobs: {
+        tag: 'Jobs Portal',
+        headline: 'Hire & Get Hired Within the Community',
+        sub: 'Exclusive career opportunities from Sahu-owned companies and organizations.',
+        cta: 'Explore Jobs',
+      },
+      directory: {
+        tag: 'Organization Directory',
+        headline: 'Connect with Every Sahu Samaj Institution',
+        sub: 'A unified directory of trusts, committees, and community bodies nationwide.',
+        cta: 'Browse Directory',
+      },
+    },
     // Stats
     stats: {
       members: 'Registered Members',
@@ -61,9 +88,8 @@ export const translations = {
         'Bandhan is the premier digital platform for the Sahu Samaj community, connecting hearts, strengthening businesses, and empowering careers through technology.',
       quickLinks: 'Quick Links',
       contactUs: 'Contact Us',
-      address: 'Sahu Samaj Bhawan, Community Center, India',
-      email: 'contact@bandhansamaj.com',
-      phone: '+91 98765 43210',
+      organization: 'Chhattisgarh Pradesh Sahu Sangh',
+      address: 'Bhamashah Chhatravas, Tikrapara, Raipur',
       legal: 'Legal',
       privacyPolicy: 'Privacy Policy',
       termsOfService: 'Terms of Service',
@@ -132,6 +158,33 @@ export const translations = {
         cta: 'खोजें',
       },
     },
+    // Ad Banners
+    ads: {
+      matrimony: {
+        tag: 'विवाह सेवा',
+        headline: 'अपना उत्तम जीवन साथी खोजें',
+        sub: 'साहू समाज के भीतर AI-आधारित मिलान — हज़ारों परिवारों का भरोसा।',
+        cta: 'खोजना शुरू करें',
+      },
+      business: {
+        tag: 'व्यवसाय निर्देशिका',
+        headline: 'समुदाय के साथ अपना व्यवसाय बढ़ाएँ',
+        sub: 'अपना उद्यम सूचीबद्ध करें और पूरे भारत में लाखों साहू समाज सदस्यों तक पहुँचें।',
+        cta: 'व्यवसाय सूचीबद्ध करें',
+      },
+      jobs: {
+        tag: 'रोज़गार पोर्टल',
+        headline: 'समुदाय में नौकरी पाएँ और दें',
+        sub: 'साहू-स्वामित्व वाली कंपनियों और संगठनों से विशेष करियर के अवसर।',
+        cta: 'रोज़गार खोजें',
+      },
+      directory: {
+        tag: 'संगठन निर्देशिका',
+        headline: 'हर साहू समाज संस्था से जुड़ें',
+        sub: 'ट्रस्टों, समितियों और राष्ट्रव्यापी सामुदायिक निकायों की एकीकृत निर्देशिका।',
+        cta: 'निर्देशिका देखें',
+      },
+    },
     // Stats
     stats: {
       members: 'पंजीकृत सदस्य',
@@ -146,9 +199,8 @@ export const translations = {
         'बंधन साहू समाज समुदाय के लिए प्रमुख डिजिटल प्लेटफ़ॉर्म है, जो प्रौद्योगिकी के माध्यम से दिलों को जोड़ता है, व्यवसायों को मजबूत करता है और करियर को सशक्त बनाता है।',
       quickLinks: 'त्वरित लिंक',
       contactUs: 'संपर्क करें',
-      address: 'साहू समाज भवन, सामुदायिक केंद्र, भारत',
-      email: 'contact@bandhansamaj.com',
-      phone: '+91 98765 43210',
+      organization: 'छत्तीसगढ़ प्रदेश साहू संघ',
+      address: 'भामाशाह छात्रावास, टिकरापारा, रायपुर',
       legal: 'कानूनी',
       privacyPolicy: 'गोपनीयता नीति',
       termsOfService: 'सेवा की शर्तें',
