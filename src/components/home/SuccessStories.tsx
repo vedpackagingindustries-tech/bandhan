@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import Image from 'next/image'
+// Images use native <img> for maximum compatibility
 import { Heart, Quote } from 'lucide-react'
 import { useTranslations } from '@/i18n'
 
@@ -56,12 +56,10 @@ export function SuccessStories() {
               >
                 {/* Image */}
                 <div className="relative h-56 overflow-hidden sm:h-64">
-                  <Image
+                  <img
                     src={storyImages[key]}
                     alt={story.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                    className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 

@@ -67,3 +67,39 @@ Stage Summary:
 - Homepage 200 OK (Phase 1 UI completely untouched)
 - All APIs tested and verified: auth, admin, search, health, membership, analytics, settings, advertisements, AI endpoints
 - Super Admin credentials: admin@bandhan.com / Admin@123
+
+---
+Task ID: 2
+Agent: Super Z (Main)
+Task: Fix preview not rendering - complete root-cause investigation and fix
+
+Work Log:
+- Inspected all config: package.json, next.config.ts, layout.tsx, page.tsx, globals.css, .env, fonts, images, middleware
+- Found 4 broken re-export files in /api/v1/ routes (GET/PUT as GET,PUT without renaming) - fixed all
+- Build succeeded after re-export fixes (0 errors, 44 routes compiled)
+- Discovered production standalone server crashes under concurrent browser requests
+- Root cause: Next.js Image component (next/image) crashes server when browser makes concurrent /_next/image optimization requests
+- Fixed by replacing all next/image <Image> with native <img> tags in 5 files:
+  - PremiumHeroCarousel.tsx
+  - FeaturedProfiles.tsx
+  - SuccessStories.tsx
+  - PremiumAdBanner.tsx
+  - BandhanLogo.tsx
+- Added images: { unoptimized: true } to next.config.ts as safety net
+- Verified with browser automation:
+  - All 16 images loading (0 broken)
+  - 0 console errors
+  - 0 runtime errors
+  - Desktop (1440px): All sections visible, all images real photos
+  - Mobile (375px): Fully responsive, no overlapping
+  - English: All text correct
+  - Hindi: Language switch works, all Hindi text renders correctly
+  - Color scheme: Burgundy/Gold/Teal/Ivory confirmed throughout
+- Set up production watchdog for server stability
+
+Stage Summary:
+- Root cause: next/image optimization endpoint crashing server under concurrent load
+- Fix: Replaced all <Image> with <img> in 5 component files
+- All 7 homepage sections rendering correctly with real images
+- Production server stable with auto-restart watchdog
+- Verification screenshots saved to download/

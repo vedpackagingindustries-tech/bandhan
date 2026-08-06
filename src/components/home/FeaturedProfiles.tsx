@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
+// Images use native <img> for maximum compatibility
 import { ArrowRight, MapPin, Briefcase, Building2, Users, Clock, Star, ChevronLeft, ChevronRight, Heart } from 'lucide-react'
 import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -114,12 +114,10 @@ function ProfileCardComponent({ profile, t }: { profile: ProfileCard; t: typeof 
     >
       {/* Image */}
       <div className="relative h-64 overflow-hidden">
-        <Image
+        <img
           src={profile.image}
           alt={profile.name}
-          fill
-          sizes="220px"
-          className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+          className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
         <button className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-burgundy hover:text-white">

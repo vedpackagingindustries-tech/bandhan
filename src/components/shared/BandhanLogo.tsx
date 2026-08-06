@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { useLanguageStore } from '@/stores/language-store'
 import { cn } from '@/lib/utils'
 
@@ -16,13 +15,10 @@ export function BandhanLogo({ className = '' }: { className?: string }) {
           className
         )}
       >
-        <Image
+        <img
           src='/logo-hi.jpg'
-          alt='बंधन - साहू समाज कनेक्ट्स - रिश्तों को जोड़ें, समाज को सशक्त बनाएं'
-          fill
-          sizes='(max-width: 768px) 104px, (max-width: 1024px) 128px, 152px'
-          priority
-          className='object-contain'
+          alt='बंधन - साहू समाज कनेक्ट्स'
+          className='absolute inset-0 h-full w-full object-contain'
         />
       </div>
     )
@@ -36,13 +32,10 @@ export function BandhanLogo({ className = '' }: { className?: string }) {
         className
       )}
     >
-      <Image
+      <img
         src='/logo-en.jpg'
-        alt='Bandhan - SAHU SAMAJ CONNECTS - Connecting Hearts, Strengthening Community'
-        fill
-        sizes='(max-width: 768px) 128px, (max-width: 1024px) 160px, 192px'
-        priority
-        className='object-contain'
+        alt='Bandhan - SAHU SAMAJ CONNECTS'
+        className='absolute inset-0 h-full w-full object-contain'
       />
     </div>
   )

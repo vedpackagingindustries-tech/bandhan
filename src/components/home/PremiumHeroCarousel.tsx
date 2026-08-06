@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
-import Image from 'next/image'
+// Images use native <img> for maximum compatibility
 import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 
@@ -61,13 +61,10 @@ export function PremiumHeroCarousel() {
                 className="absolute inset-0"
               >
                 {/* Background Image */}
-                <Image
+                <img
                   src={slideImages[key]}
                   alt={slide.headline}
-                  fill
-                  sizes="100vw"
-                  priority={idx === 0}
-                  className="object-cover"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
 
                 {/* Gradient Overlay */}

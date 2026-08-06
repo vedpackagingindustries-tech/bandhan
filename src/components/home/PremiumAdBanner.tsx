@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import Image from 'next/image'
+// Images use native <img> for maximum compatibility
 import { ArrowRight } from 'lucide-react'
 import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -40,12 +40,10 @@ export function PremiumAdBanner({ slideIndex = 0 }: { slideIndex?: number }) {
       )}
     >
       {/* Background Image */}
-      <Image
+      <img
         src={slide.image}
         alt={ad.headline}
-        fill
-        sizes="(max-width: 1280px) 100vw, 1280px"
-        className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
       />
 
       {/* Overlay */}
