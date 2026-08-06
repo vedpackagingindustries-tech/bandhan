@@ -1,4 +1,3 @@
-'use server'
 
 import { db } from '@/lib/db'
 import { unauthorized, success, error, isAdmin } from '@/lib/api-response'

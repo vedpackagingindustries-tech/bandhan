@@ -1,4 +1,3 @@
-'use server'
 
 import { db } from '@/lib/db'
 import { success, error, getClientInfo } from '@/lib/api-response'

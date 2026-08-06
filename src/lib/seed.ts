@@ -166,6 +166,78 @@ export async function seedDatabase() {
   }
 
   console.log('Database seeded successfully!')
+
+  // 5. Seed membership plans
+  const plans = [
+    {
+      name: 'FREE',
+      displayName: 'Free Plan',
+      description: 'Basic access with limited features',
+      price: 0,
+      durationDays: 365,
+      features: JSON.stringify(['View profiles', 'Basic search', '5 profile photos', '10 contacts/month']),
+      maxContacts: 10,
+      maxPhotos: 5,
+      priorityListing: false,
+      sortOrder: 0,
+    },
+    {
+      name: 'PREMIUM',
+      displayName: 'Premium Plan',
+      description: 'Enhanced features for serious members',
+      price: 999,
+      durationDays: 30,
+      features: JSON.stringify(['All Free features', 'Contact details view', 'Advanced search', '25 profile photos', '100 contacts/month', 'Priority listing', 'AI recommendations']),
+      maxContacts: 100,
+      maxPhotos: 25,
+      priorityListing: true,
+      sortOrder: 1,
+    },
+    {
+      name: 'ELITE',
+      displayName: 'Elite Plan',
+      description: 'Unlimited access with all premium features',
+      price: 2499,
+      durationDays: 30,
+      features: JSON.stringify(['All Premium features', 'Unlimited contacts', '50 profile photos', 'AI match scoring', 'Astrology matching', 'Dedicated support', 'Featured profile']),
+      maxContacts: 999999,
+      maxPhotos: 50,
+      priorityListing: true,
+      sortOrder: 2,
+    },
+  ]
+
+  for (const plan of plans) {
+    await db.membershipPlan.upsert({
+      where: { name: plan.name },
+      update: { displayName: plan.displayName, description: plan.description, price: plan.price, durationDays: plan.durationDays, features: plan.features, maxContacts: plan.maxContacts, maxPhotos: plan.maxPhotos, priorityListing: plan.priorityListing, sortOrder: plan.sortOrder },
+      create: plan,
+    })
+  }
+  console.log('  Membership plans created:', plans.length)
+
+  // 6. Seed system configuration
+  const configs = [
+    { key: 'site_name', value: '"Bandhan"', description: 'Platform name', category: 'GENERAL', isPublic: true },
+    { key: 'site_description', value: '"Bandhan – Sahu Samaj Connects"', description: 'Platform description', category: 'GENERAL', isPublic: true },
+    { key: 'max_login_attempts', value: '5', description: 'Maximum failed login attempts before lockout', category: 'SECURITY', isPublic: false },
+    { key: 'lockout_duration_minutes', value: '30', description: 'Account lockout duration in minutes', category: 'SECURITY', isPublic: false },
+    { key: 'otp_expiry_minutes', value: '10', description: 'OTP validity duration', category: 'SECURITY', isPublic: false },
+    { key: 'otp_max_attempts', value: '5', description: 'Maximum OTP verification attempts', category: 'SECURITY', isPublic: false },
+    { key: 'session_duration_days', value: '30', description: 'Session token validity', category: 'SECURITY', isPublic: false },
+    { key: 'ai_approval_wait_hours', value: '2', description: 'Hours to wait before AI auto-approval check', category: 'AI', isPublic: false },
+    { key: 'ai_approval_enabled', value: 'false', description: 'Enable AI auto-approval pipeline', category: 'AI', isPublic: false },
+    { key: 'max_profile_photos', value: '5', description: 'Default max profile photos for free users', category: 'MEMBERSHIP', isPublic: true },
+  ]
+
+  for (const config of configs) {
+    await db.systemConfiguration.upsert({
+      where: { key: config.key },
+      update: { value: config.value, description: config.description, category: config.category, isPublic: config.isPublic },
+      create: config,
+    })
+  }
+  console.log('  System configurations created:', configs.length)
 }
 
 // Run directly

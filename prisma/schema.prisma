@@ -77,7 +77,10 @@ model User {
   ipAddress     String?
   userAgent     String?
   acceptedTerms Boolean   @default(false)
-  deletedAt     DateTime?
+  deletedAt     DateTime? // Soft delete
+
+  // Multi-tenant ready
+  organizationId String? // Future multi-org support
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -93,6 +96,8 @@ model User {
   sentNotifications Notification[]
   contactRequestsSent    ContactRequest[]  @relation("SentRequests")
   contactRequestsReceived ContactRequest[] @relation("ReceivedRequests")
+  sentAppointmentRequests AppointmentRequest[] @relation("SentAppointments")
+  receivedAppointmentRequests AppointmentRequest[] @relation("ReceivedAppointments")
   media         Media[]
   loginHistory  LoginHistory[]
   sessions      UserSession[]
@@ -404,4 +409,69 @@ model Advertisement {
   updatedAt   DateTime @updatedAt
 
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// ═══════════════════════════════════════════════════════════
+// APPOINTMENT REQUESTS
+// ═══════════════════════════════════════════════════════════
+
+model AppointmentRequest {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  title       String
+  message     String?
+  proposedDate String?
+  proposedTime String?
+  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, CANCELLED, COMPLETED
+  createdAt   DateTime @default(now())
+  respondedAt DateTime?
+
+  sender      User     @relation("SentAppointments", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedAppointments", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════
+// MEMBERSHIP PLANS
+// ═══════════════════════════════════════════════════════════
+
+model MembershipPlan {
+  id          String   @id @default(cuid())
+  name        String   // FREE, PREMIUM, ELITE
+  displayName String
+  description String?
+  price       Float    @default(0)
+  currency    String   @default("INR")
+  durationDays Int     @default(30)
+  features    String   // JSON string: list of features
+  maxContacts Int      @default(10)
+  maxPhotos   Int      @default(5)
+  priorityListing Boolean @default(false)
+  status      String   @default("ACTIVE") // ACTIVE, INACTIVE
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name])
+}
+
+// ═══════════════════════════════════════════════════════════
+// SYSTEM CONFIGURATION (Key-Value Store)
+// ═══════════════════════════════════════════════════════════
+
+model SystemConfiguration {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   // JSON string for complex values
+  description String?
+  category    String   // GENERAL, SECURITY, NOTIFICATION, MEMBERSHIP, AI, ADVERTISEMENT
+  isPublic    Boolean  @default(false) // Whether frontend can read this
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
 }
