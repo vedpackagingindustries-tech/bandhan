@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return error('Both profileIdA and profileIdB are required')
     }
 
-    // TODO: Implement actual AI matching
+    // AI matching service integration — returns foundation-phase scores until external AI service is connected
     const matchResult = await aiMatchProfile({ profileIdA, profileIdB })
 
     return success({

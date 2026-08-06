@@ -4,8 +4,8 @@
 // ═══════════════════════════════════════════════════════════
 
 import { db } from '@/lib/db'
-import { unauthorized, error } from '@/lib/api-response'
-import { isAdmin as checkAdmin, isSuperAdmin } from '@/lib/rbac'
+import { unauthorized, error, forbidden } from '@/lib/api-response'
+import { isAdmin as checkAdmin, isSuperAdmin, hasPermission as checkPermission } from '@/lib/rbac'
 import { NextRequest } from 'next/server'
 import type { User, Role, Profile } from '@prisma/client'
 
@@ -44,7 +44,8 @@ export async function authenticate(request: NextRequest): Promise<AuthSession | 
 export async function authenticateAdmin(request: NextRequest): Promise<AuthSession | null> {
   const session = await authenticate(request)
   if (!session) return null
-  if (!session.user.role || !checkAdmin(session.user.role.name)) return null
+  const adminCheck = await checkAdmin(session.user.role?.name)
+  if (!session.user.role || !adminCheck) return null
   return session
 }
 
@@ -54,8 +55,25 @@ export async function authenticateAdmin(request: NextRequest): Promise<AuthSessi
 export async function authenticateSuperAdmin(request: NextRequest): Promise<AuthSession | null> {
   const session = await authenticate(request)
   if (!session) return null
-  if (!session.user.role || !isSuperAdmin(session.user.role.name)) return null
+  const saCheck = await isSuperAdmin(session.user.role?.name)
+  if (!session.user.role || !saCheck) return null
   return session
+}
+
+/**
+ * Authenticate + check a specific permission.
+ */
+export async function authenticateWithPermission(
+  request: NextRequest,
+  permission: string
+): Promise<{ auth: AuthSession } | { error: ReturnType<typeof unauthorized> | ReturnType<typeof forbidden> }> {
+  const session = await authenticate(request)
+  if (!session) return { error: unauthorized() }
+
+  const permCheck = await checkPermission(session.user.role?.name, permission)
+  if (!permCheck) return { error: forbidden(`Permission '${permission}' required`) }
+
+  return { auth: session }
 }
 
 /**
@@ -78,6 +96,26 @@ export async function requireAdmin(request: NextRequest) {
     return { error: error('Admin access required', 403) }
   }
   return { auth: session }
+}
+
+/**
+ * Require super admin or return 403.
+ */
+export async function requireSuperAdmin(request: NextRequest) {
+  const session = await authenticateSuperAdmin(request)
+  if (!session) {
+    const base = await authenticate(request)
+    if (!base) return { error: unauthorized() }
+    return { error: error('Super Admin access required', 403) }
+  }
+  return { auth: session }
+}
+
+/**
+ * Require specific permission or return 403.
+ */
+export async function requirePermission(request: NextRequest, permission: string) {
+  return authenticateWithPermission(request, permission)
 }
 
 /**

@@ -6,6 +6,8 @@
 
 import { db } from '@/lib/db'
 import { logAudit } from '@/lib/audit'
+import { existsSync, unlinkSync, mkdirSync } from 'fs'
+import { join } from 'path'
 
 export const ALLOWED_IMAGE_TYPES = [
   'image/jpeg', 'image/png', 'image/webp', 'image/gif',
@@ -17,11 +19,11 @@ export const ALLOWED_DOCUMENT_TYPES = [
 ]
 
 export const MAX_FILE_SIZES: Record<string, number> = {
-  PROFILE: 5 * 1024 * 1024,      // 5 MB
-  BUSINESS: 10 * 1024 * 1024,     // 10 MB
-  ADVERTISEMENT: 10 * 1024 * 1024, // 10 MB
-  DOCUMENT: 20 * 1024 * 1024,     // 20 MB
-  GENERAL: 5 * 1024 * 1024,       // 5 MB
+  PROFILE: 5 * 1024 * 1024,
+  BUSINESS: 10 * 1024 * 1024,
+  ADVERTISEMENT: 10 * 1024 * 1024,
+  DOCUMENT: 20 * 1024 * 1024,
+  GENERAL: 5 * 1024 * 1024,
 }
 
 export const MEDIA_CATEGORIES = ['PROFILE', 'BUSINESS', 'ADVERTISEMENT', 'DOCUMENT', 'GENERAL'] as const
@@ -35,6 +37,15 @@ export interface UploadResult {
   fileSize: number
   width?: number
   height?: number
+}
+
+export interface ProcessedImageResult {
+  originalPath: string
+  largePath: string
+  mediumPath: string
+  thumbnailPath: string
+  width: number
+  height: number
 }
 
 /**
@@ -69,7 +80,6 @@ export function validateMediaFile(
 
 /**
  * Create a media record in the database.
- * In production, this would be called after actual file upload to S3/GCS.
  */
 export async function createMediaRecord(params: {
   userId: string
@@ -130,13 +140,30 @@ export async function getUserMedia(
 }
 
 /**
- * Delete a media record.
+ * Delete a media record and the actual file from storage.
  */
 export async function deleteMedia(mediaId: string, userId: string, ipAddress?: string, userAgent?: string) {
   const media = await db.media.findFirst({ where: { id: mediaId, userId } })
   if (!media) return false
 
-  // TODO: Delete actual file from storage (S3/GCS)
+  // Delete the actual file from disk
+  try {
+    const filePath = join(process.cwd(), media.url)
+    if (existsSync(filePath)) {
+      unlinkSync(filePath)
+    }
+
+    // Delete thumbnail variant if it exists
+    if (media.thumbnailUrl) {
+      const thumbPath = join(process.cwd(), media.thumbnailUrl.replace('?w=300&h=300&fit=crop', ''))
+      if (existsSync(thumbPath)) {
+        unlinkSync(thumbPath)
+      }
+    }
+  } catch (err) {
+    console.error('[MEDIA] Failed to delete file from disk:', err)
+  }
+
   await db.media.delete({ where: { id: mediaId } })
 
   await logAudit({
@@ -153,17 +180,63 @@ export async function deleteMedia(mediaId: string, userId: string, ipAddress?: s
 }
 
 /**
- * Process image: generate thumbnail URL stub.
- * Production: use Sharp/ImageMagick for actual processing.
+ * Process an uploaded image: generate multiple resolutions.
+ * Uses Sharp for actual image processing.
  */
-export function generateThumbnailUrl(originalUrl: string, size = '300x300'): string {
-  // TODO: In production, generate actual thumbnail via image processing pipeline
-  // and store on CDN. For now, return a CDN-ready URL pattern.
-  return `${originalUrl}?w=${size.split('x')[0]}&h=${size.split('x')[1]}&fit=crop`
+export async function processImage(inputPath: string): Promise<ProcessedImageResult | null> {
+  try {
+    const sharp = (await import('sharp')).default
+    const metadata = await sharp(inputPath).metadata()
+    const width = metadata.width || 0
+    const height = metadata.height || 0
+
+    const dir = inputPath.substring(0, inputPath.lastIndexOf('/'))
+    const ext = inputPath.split('.').pop() || 'jpg'
+    const baseName = inputPath.replace(`.${ext}`, '')
+
+    // Large: max 1200px wide
+    const largePath = `${baseName}_large.${ext}`
+    await sharp(inputPath)
+      .resize(1200, null, { withoutEnlargement: true })
+      .jpeg({ quality: 85, progressive: true })
+      .toFile(largePath)
+
+    // Medium: max 600px wide
+    const mediumPath = `${baseName}_medium.${ext}`
+    await sharp(inputPath)
+      .resize(600, null, { withoutEnlargement: true })
+      .jpeg({ quality: 80, progressive: true })
+      .toFile(mediumPath)
+
+    // Thumbnail: 300x300 crop
+    const thumbnailPath = `${baseName}_thumb.${ext}`
+    await sharp(inputPath)
+      .resize(300, 300, { fit: 'cover' })
+      .jpeg({ quality: 75 })
+      .toFile(thumbnailPath)
+
+    // Compress original
+    await sharp(inputPath)
+      .jpeg({ quality: 85, progressive: true })
+      .toFile(inputPath)
+
+    return {
+      originalPath: inputPath,
+      largePath,
+      mediumPath,
+      thumbnailPath,
+      width,
+      height,
+    }
+  } catch (err) {
+    console.error('[MEDIA] Image processing failed:', err)
+    return null
+  }
 }
 
 /**
  * Get multi-resolution image URLs for CDN delivery.
+ * Returns URLs following the convention: original, large, medium, thumbnail.
  */
 export function getMultiResolutionUrls(baseUrl: string): {
   original: string
@@ -171,10 +244,38 @@ export function getMultiResolutionUrls(baseUrl: string): {
   medium: string
   thumbnail: string
 } {
+  // CDN-ready URL pattern: append resolution suffix before file extension
+  const dotIdx = baseUrl.lastIndexOf('.')
+  const base = dotIdx > -1 ? baseUrl.substring(0, dotIdx) : baseUrl
+  const ext = dotIdx > -1 ? baseUrl.substring(dotIdx) : '.jpg'
+
   return {
     original: baseUrl,
-    large: `${baseUrl}?w=1200`,
-    medium: `${baseUrl}?w=600`,
-    thumbnail: `${baseUrl}?w=150&h=150&fit=crop`,
+    large: `${base}_large${ext}`,
+    medium: `${base}_medium${ext}`,
+    thumbnail: `${base}_thumb${ext}`,
   }
+}
+
+/**
+ * Generate a CDN-ready URL with transformation parameters.
+ * Production: use CDN image transformation API (Cloudinary, Imgix, etc.)
+ */
+export function getCdnUrl(originalUrl: string, options?: {
+  width?: number
+  height?: number
+  fit?: 'cover' | 'contain' | 'fill'
+  quality?: number
+  format?: 'webp' | 'jpeg' | 'png'
+}): string {
+  if (!options) return originalUrl
+
+  const params: string[] = []
+  if (options.width) params.push(`w=${options.width}`)
+  if (options.height) params.push(`h=${options.height}`)
+  if (options.fit) params.push(`fit=${options.fit}`)
+  if (options.quality) params.push(`q=${options.quality}`)
+  if (options.format) params.push(`f=${options.format}`)
+
+  return params.length > 0 ? `${originalUrl}?${params.join('&')}` : originalUrl
 }

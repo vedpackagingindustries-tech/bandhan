@@ -1,24 +1,15 @@
-
 import { db } from '@/lib/db'
-import { unauthorized, success, error, isAdmin } from '@/lib/api-response'
+import { success, error } from '@/lib/api-response'
+import { requireAdmin, parsePagination, paginate } from '@/lib/auth-middleware'
 import { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) return unauthorized()
-
-    const session = await db.userSession.findUnique({
-      where: { token },
-      include: { user: { include: { role: true } } },
-    })
-
-    if (!session || session.expiresAt < new Date()) return unauthorized()
-    if (!isAdmin(session.user.role?.name)) return error('Admin access required', 403)
+    const result = await requireAdmin(request)
+    if (result.error) return result.error
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const { page, limit, skip } = parsePagination(searchParams, { page: 1, limit: 50 })
     const severity = searchParams.get('severity')
     const eventType = searchParams.get('eventType')
 
@@ -33,20 +24,21 @@ export async function GET(request: NextRequest) {
           user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
         },
         orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       db.securityEvent.count({ where }),
     ])
 
-    // Severity counts
-    const criticalCount = await db.securityEvent.count({ where: { severity: 'CRITICAL' } })
-    const warningCount = await db.securityEvent.count({ where: { severity: 'WARNING' } })
+    const [criticalCount, warningCount] = await Promise.all([
+      db.securityEvent.count({ where: { severity: 'CRITICAL' } }),
+      db.securityEvent.count({ where: { severity: 'WARNING' } }),
+    ])
 
     return success({
       events,
       summary: { critical: criticalCount, warning: warningCount },
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      pagination: paginate(page, limit, total),
     })
   } catch (err) {
     console.error('[ADMIN SECURITY] Error:', err)

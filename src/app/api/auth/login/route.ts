@@ -74,8 +74,9 @@ export async function POST(request: NextRequest) {
         failedLoginAttempts: failedAttempts,
       }
 
-      // Lock after 5 failed attempts
-      if (failedAttempts >= 5) {
+      // Lock after configured max failed attempts (default 5)
+      const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5')
+      if (failedAttempts >= maxAttempts) {
         updateData.lockedUntil = new Date(Date.now() + 30 * 60 * 1000) // 30 min
       }
 
@@ -84,10 +85,10 @@ export async function POST(request: NextRequest) {
       await logSecurityEvent({
         userId: user.id,
         eventType: 'LOGIN_FAILURE',
-        description: `Failed login attempt ${failedAttempts}/5`,
+        description: `Failed login attempt ${failedAttempts}/${maxAttempts}`,
         ipAddress,
         userAgent,
-        severity: failedAttempts >= 4 ? 'CRITICAL' : 'WARNING',
+        severity: failedAttempts >= maxAttempts - 1 ? 'CRITICAL' : 'WARNING',
       })
 
       return unauthorized('Invalid credentials')
@@ -95,7 +96,8 @@ export async function POST(request: NextRequest) {
 
     // ─── Login Successful ───
     const sessionToken = generateSessionToken()
-    const sessionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    const sessionDurationDays = parseInt(process.env.SESSION_DURATION_DAYS || '30')
+    const sessionExpiry = new Date(Date.now() + sessionDurationDays * 24 * 60 * 60 * 1000)
 
     // Create session
     await db.userSession.create({
@@ -159,7 +161,7 @@ export async function POST(request: NextRequest) {
         } : null,
       },
       token: sessionToken,
-      expiresIn: '30d',
+      expiresIn: `${sessionDurationDays}d`,
     })
   } catch (err) {
     console.error('[LOGIN] Error:', err)

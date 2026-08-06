@@ -31,7 +31,7 @@ interface Job {
 const queue: Job[] = []
 let processing = false
 
-// Job handlers registry — register actual implementations here
+// Job handlers registry
 const handlers = new Map<JobType, (payload: Record<string, unknown>) => Promise<void>>()
 
 /**
@@ -66,9 +66,8 @@ export function enqueueJob(
     status: 'PENDING',
   }
   queue.push(job)
-  queue.sort((a, b) => a.runAt - b.runAt) // Sort by execution time
+  queue.sort((a, b) => a.runAt - b.runAt)
 
-  // Trigger processing
   if (!processing) processQueue()
 
   return id
@@ -84,7 +83,7 @@ async function processQueue() {
   try {
     while (queue.length > 0) {
       const job = queue[0]
-      if (job.runAt > Date.now()) break // Not ready yet
+      if (job.runAt > Date.now()) break
 
       queue.shift()
       job.status = 'PROCESSING'
@@ -103,7 +102,6 @@ async function processQueue() {
       } catch (err) {
         console.error(`[QUEUE] Job ${job.id} (${job.type}) failed:`, err)
         if (job.attempts < job.maxAttempts) {
-          // Retry with exponential backoff
           job.runAt = Date.now() + Math.pow(2, job.attempts) * 1000
           job.status = 'PENDING'
           queue.push(job)
@@ -137,5 +135,121 @@ export function getQueueStats() {
 // REGISTER BUILT-IN JOB HANDLERS
 // ═══════════════════════════════════════════════════════════
 
-// Job handlers are registered on-demand when needed.
-// No top-level setInterval — cleanup is triggered lazily via API calls.
+registerJobHandler('EMAIL_SEND', async (payload) => {
+  const { sendEmail, sendTemplatedEmail } = await import('@/services/notifications/email')
+  if (payload.templateId) {
+    await sendTemplatedEmail(payload.to as string, payload.templateId as string, payload.data as Record<string, string>)
+  } else {
+    await sendEmail({
+      to: payload.to as string,
+      subject: (payload.subject as string) || 'Bandhan Notification',
+      html: (payload.html as string) || '',
+    })
+  }
+})
+
+registerJobHandler('SMS_SEND', async (payload) => {
+  const { sendSms } = await import('@/services/notifications/sms')
+  await sendSms({
+    to: payload.to as string,
+    message: (payload.message as string) || '',
+  })
+})
+
+registerJobHandler('NOTIFICATION_PUSH', async (payload) => {
+  // Handle both single push and bulk notifications
+  if (payload.recipientIds) {
+    const { createNotification } = await import('@/lib/notification')
+    const recipientIds = payload.recipientIds as string[]
+    const batchSize = 100
+    for (let i = 0; i < recipientIds.length; i += batchSize) {
+      const batch = recipientIds.slice(i, i + batchSize)
+      await Promise.all(
+        batch.map((userId) =>
+          createNotification({
+            userId,
+            type: (payload.type as string) || 'SYSTEM',
+            title: (payload.title as string) || '',
+            message: (payload.message as string) || '',
+            channel: (payload.channel as string) || 'IN_APP',
+          })
+        )
+      )
+    }
+  } else if (payload.userId) {
+    const { sendPushNotification } = await import('@/services/notifications/push')
+    await sendPushNotification({
+      userId: payload.userId as string,
+      title: (payload.title as string) || '',
+      body: (payload.body as string) || '',
+      data: payload.data as Record<string, string>,
+    })
+  }
+})
+
+registerJobHandler('IMAGE_PROCESS', async (payload) => {
+  const { processImage } = await import('@/services/media')
+  const mediaPath = payload.mediaPath as string
+  const category = payload.category as string
+  console.log(`[IMAGE_PROCESS] Processing: ${mediaPath} (${category})`)
+  const result = await processImage(mediaPath)
+  if (result) {
+    console.log(`[IMAGE_PROCESS] Generated: ${result.width}x${result.height}, large/medium/thumbnail`)
+  }
+  // Update media record with dimensions
+  if (payload.mediaId && result) {
+    const { db } = await import('@/lib/db')
+    await db.media.update({
+      where: { id: payload.mediaId as string },
+      data: { width: result.width, height: result.height },
+    })
+  }
+})
+
+registerJobHandler('SESSION_CLEANUP', async () => {
+  const { cleanExpiredSessions } = await import('@/lib/auth-middleware')
+  await cleanExpiredSessions()
+})
+
+registerJobHandler('AUDIT_LOG', async (payload) => {
+  const { logAudit } = await import('@/lib/audit')
+  await logAudit({
+    action: (payload.action as string) || 'system.job',
+    entity: (payload.entity as string) || 'System',
+    details: payload.details as Record<string, unknown>,
+  })
+})
+
+registerJobHandler('AI_MODERATION', async (payload) => {
+  const { aiModerateImage } = await import('@/services/ai')
+  await aiModerateImage({
+    mediaId: payload.mediaId as string,
+    imageUrl: payload.imageUrl as string,
+  })
+})
+
+registerJobHandler('AI_APPROVAL_CHECK', async (payload) => {
+  const { aiAutoApproval } = await import('@/services/ai')
+  await aiAutoApproval({ userId: payload.userId as string })
+})
+
+registerJobHandler('ADVERTISEMENT_SCHEDULE', async (payload) => {
+  const { db } = await import('@/lib/db')
+  const now = new Date()
+  await db.advertisement.updateMany({
+    where: {
+      startDate: { lte: now },
+      endDate: { gte: now },
+      status: 'PAUSED',
+    },
+    data: { status: 'ACTIVE' },
+  })
+  await db.advertisement.updateMany({
+    where: {
+      endDate: { lt: now },
+      status: 'ACTIVE',
+    },
+    data: { status: 'EXPIRED' },
+    })
+  console.log('[ADVERTISEMENT_SCHEDULE] Ad scheduling check complete')
+})

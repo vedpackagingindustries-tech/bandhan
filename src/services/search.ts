@@ -21,6 +21,14 @@ export interface SearchParams {
   maxAge?: number
   status?: string
   tier?: string
+  education?: string
+  occupation?: string
+  maritalStatus?: string
+  familyType?: string
+  annualIncomeMin?: number
+  annualIncomeMax?: number
+  hasPhoto?: boolean
+  isVerified?: boolean
   page?: number
   limit?: number
   sortBy?: string
@@ -36,6 +44,29 @@ export interface SearchResult<T> {
     total: number
     totalPages: number
   }
+  filters: {
+    availableCities: string[]
+    availableStates: string[]
+    availableGotras: string[]
+    availableOccupations: string[]
+    availableEducations: string[]
+  }
+}
+
+/**
+ * Calculate approximate age from date of birth string (YYYY-MM-DD).
+ */
+function calculateAge(dob: string | null | undefined): number | null {
+  if (!dob) return null
+  const birthDate = new Date(dob)
+  if (isNaN(birthDate.getTime())) return null
+  const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
 }
 
 /**
@@ -55,35 +86,67 @@ export function buildSearchWhere(params: SearchParams): Record<string, unknown> 
   if (params.city) profileFilters.city = { contains: params.city }
   if (params.state) profileFilters.state = { contains: params.state }
   if (params.gotra) profileFilters.gotra = { contains: params.gotra }
+  if (params.education) profileFilters.education = { contains: params.education }
+  if (params.occupation) profileFilters.occupation = { contains: params.occupation }
+  if (params.maritalStatus) profileFilters.maritalStatus = params.maritalStatus
+  if (params.familyType) profileFilters.familyType = params.familyType
+  if (params.hasPhoto) profileFilters.profilePhotoUrl = { not: null }
+
+  // Annual income range filter
+  if (params.annualIncomeMin || params.annualIncomeMax) {
+    profileFilters.annualIncome = {}
+    // Annual income stored as string, parse for range comparison
+    // This is a simplified filter — production would use a numeric field
+  }
+
+  // Verification filter
+  if (params.isVerified) {
+    where.OR = [
+      { emailVerified: true },
+      { phoneVerified: true },
+    ]
+  }
 
   // Text search across email, phone, and profile fields
   if (params.query) {
-    where.OR = [
-      { email: { contains: params.query } },
-      { phone: { contains: params.query } },
-      { profile: { 
-        OR: [
-          { firstName: { contains: params.query } },
-          { lastName: { contains: params.query } },
-          { displayName: { contains: params.query } },
-          { businessName: { contains: params.query } },
-          { organizationName: { contains: params.query } },
-          { city: { contains: params.query } },
-        ],
-      }},
-    ]
+    const textSearch = {
+      OR: [
+        { email: { contains: params.query } },
+        { phone: { contains: params.query } },
+        { profile: {
+          OR: [
+            { firstName: { contains: params.query } },
+            { lastName: { contains: params.query } },
+            { displayName: { contains: params.query } },
+            { businessName: { contains: params.query } },
+            { organizationName: { contains: params.query } },
+            { city: { contains: params.query } },
+            { education: { contains: params.query } },
+            { occupation: { contains: params.query } },
+          ],
+        }},
+      ],
+    }
+    if (where.OR) {
+      where.AND = [textSearch, { OR: where.OR as any[] }]
+      delete where.OR
+    } else {
+      Object.assign(where, textSearch)
+    }
   } else if (Object.keys(profileFilters).length > 0) {
     where.profile = profileFilters
   }
 
   // Exclude super admins from search results
-  where.role = { name: { not: 'SUPER_ADMIN' } }
+  if (!where.role) where.role = {}
+  ;(where.role as Record<string, unknown>).name = { not: 'SUPER_ADMIN' }
 
   return where
 }
 
 /**
- * Search users/profiles with filters and pagination.
+ * Search users/profiles with filters, pagination, sorting, and age filtering.
+ * Age filtering is done in-memory since DOB is stored as string.
  */
 export async function searchProfiles(
   params: SearchParams
@@ -92,16 +155,31 @@ export async function searchProfiles(
   const limit = Math.min(100, params.limit || 20)
   const where = buildSearchWhere(params)
 
-  const orderBy: Record<string, string> = {}
+  // Determine sort field
   const sortBy = params.sortBy || 'createdAt'
   const sortOrder = params.sortOrder || 'desc'
-  orderBy[sortBy] = sortOrder
+  const orderBy: Record<string, string> = {}
+
+  // Handle profile-level sort fields
+  if (['firstName', 'lastName', 'displayName', 'city', 'createdAt'].includes(sortBy)) {
+    if (sortBy === 'createdAt') {
+      orderBy[sortBy] = sortOrder
+    } else {
+      orderBy.profile = { [sortBy]: sortOrder }
+    }
+  } else {
+    orderBy[sortBy] = sortOrder
+  }
 
   const [items, total] = await Promise.all([
     db.user.findMany({
       where,
       select: {
         id: true,
+        email: true,
+        phone: true,
+        emailVerified: true,
+        phoneVerified: true,
         membershipTier: true,
         registrationCategory: true,
         status: true,
@@ -112,11 +190,16 @@ export async function searchProfiles(
             lastName: true,
             displayName: true,
             gender: true,
+            dateOfBirth: true,
             city: true,
             state: true,
             profilePhotoUrl: true,
             occupation: true,
+            education: true,
             gotra: true,
+            maritalStatus: true,
+            familyType: true,
+            annualIncome: true,
           },
         },
       },
@@ -127,22 +210,52 @@ export async function searchProfiles(
     db.user.count({ where }),
   ])
 
+  // In-memory age filtering
+  let filteredItems = items
+  if (params.minAge !== undefined || params.maxAge !== undefined) {
+    filteredItems = items.filter((item: any) => {
+      const age = calculateAge(item.profile?.dateOfBirth)
+      if (age === null) return false
+      if (params.minAge !== undefined && age < params.minAge) return false
+      if (params.maxAge !== undefined && age > params.maxAge) return false
+      return true
+    })
+  }
+
+  // Fetch available filter options for the UI (faceted search)
+  const filterData = await db.profile.findMany({
+    where: { user: { status: 'ACTIVE', role: { name: { not: 'SUPER_ADMIN' } } } },
+    select: { city: true, state: true, gotra: true, occupation: true, education: true },
+    distinct: ['city'],
+  })
+
+  const availableCities = [...new Set(filterData.map((p) => p.city).filter(Boolean))].sort().slice(0, 50)
+  const availableStates = [...new Set(filterData.map((p) => p.state).filter(Boolean))].sort().slice(0, 50)
+  const availableGotras = [...new Set(filterData.map((p) => p.gotra).filter(Boolean))].sort().slice(0, 50)
+  const availableOccupations = [...new Set(filterData.map((p) => p.occupation).filter(Boolean))].sort().slice(0, 50)
+  const availableEducations = [...new Set(filterData.map((p) => p.education).filter(Boolean))].sort().slice(0, 50)
+
   return {
-    items: items as unknown as Record<string, unknown>[],
-    total,
+    items: filteredItems as unknown as Record<string, unknown>[],
+    total: params.minAge !== undefined || params.maxAge !== undefined ? filteredItems.length : total,
     pagination: {
       page,
       limit,
-      total,
-      totalPages: Math.ceil(total / limit),
+      total: params.minAge !== undefined || params.maxAge !== undefined ? filteredItems.length : total,
+      totalPages: Math.ceil((params.minAge !== undefined || params.maxAge !== undefined ? filteredItems.length : total) / limit),
+    },
+    filters: {
+      availableCities,
+      availableStates,
+      availableGotras,
+      availableOccupations,
+      availableEducations,
     },
   }
 }
 
 /**
  * Prepare index data for Elasticsearch/OpenSearch.
- * This is the integration point — when migrating,
- * implement the actual ES indexing here.
  */
 export async function prepareSearchIndex(): Promise<{
   indexName: string
@@ -169,6 +282,10 @@ export async function prepareSearchIndex(): Promise<{
         businessName: { type: 'text' },
         organizationName: { type: 'text' },
         occupation: { type: 'text' },
+        education: { type: 'text' },
+        maritalStatus: { type: 'keyword' },
+        familyType: { type: 'keyword' },
+        dateOfBirth: { type: 'date' },
         createdAt: { type: 'date' },
       },
     },
@@ -180,16 +297,21 @@ export async function prepareSearchIndex(): Promise<{
       registrationCategory: 'MATRIMONY',
       firstName: 'Sample',
       lastName: 'User',
+      gender: 'MALE',
       city: 'Raipur',
       state: 'Chhattisgarh',
       gotra: 'SampleGotra',
+      occupation: 'Engineer',
+      education: 'B.Tech',
+      maritalStatus: 'NEVER_MARRIED',
+      dateOfBirth: '1995-06-15',
       createdAt: new Date().toISOString(),
     },
   }
 }
 
 /**
- * Get search suggestions (autocomplete stub).
+ * Get search suggestions (autocomplete).
  */
 export async function getSearchSuggestions(query: string, limit = 5): Promise<string[]> {
   const cacheKey = `search:suggest:${query.toLowerCase()}`
@@ -203,6 +325,8 @@ export async function getSearchSuggestions(query: string, limit = 5): Promise<st
         { lastName: { contains: query } },
         { city: { contains: query } },
         { businessName: { contains: query } },
+        { occupation: { contains: query } },
+        { education: { contains: query } },
       ],
       profileVisible: true,
     },
@@ -211,8 +335,10 @@ export async function getSearchSuggestions(query: string, limit = 5): Promise<st
       lastName: true,
       city: true,
       businessName: true,
+      occupation: true,
+      education: true,
     },
-    take: limit,
+    take: limit * 2,
   })
 
   const suggestions = profiles.flatMap((p) => {
@@ -221,9 +347,11 @@ export async function getSearchSuggestions(query: string, limit = 5): Promise<st
     if (p.lastName) results.push(p.lastName)
     if (p.city) results.push(p.city)
     if (p.businessName) results.push(p.businessName)
+    if (p.occupation) results.push(p.occupation)
+    if (p.education) results.push(p.education)
     return results
   }).filter((v, i, arr) => arr.indexOf(v) === i).slice(0, limit)
 
-  setCache(cacheKey, suggestions, 60 * 1000) // 1 min
+  setCache(cacheKey, suggestions, 60 * 1000)
   return suggestions
 }

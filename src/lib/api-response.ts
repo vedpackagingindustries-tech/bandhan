@@ -1,9 +1,4 @@
 import { NextResponse } from 'next/server'
-import { isAdmin as checkIsAdmin } from '@/lib/rbac'
-
-export function isAdmin(roleName: string | null | undefined): boolean {
-  return checkIsAdmin(roleName)
-}
 
 export function success(data: unknown, status = 200) {
   return NextResponse.json({ success: true, data }, { status })

@@ -1,25 +1,16 @@
-
 import { db } from '@/lib/db'
-import { unauthorized, success, error, isAdmin } from '@/lib/api-response'
+import { success, error } from '@/lib/api-response'
+import { requireAdmin, parsePagination, paginate } from '@/lib/auth-middleware'
 import { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) return unauthorized()
-
-    const session = await db.userSession.findUnique({
-      where: { token },
-      include: { user: { include: { role: true } } },
-    })
-
-    if (!session || session.expiresAt < new Date()) return unauthorized()
-    if (!isAdmin(session.user.role?.name)) return error('Admin access required', 403)
+    const result = await requireAdmin(request)
+    if (result.error) return result.error
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'PENDING'
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const { page, limit, skip } = parsePagination(searchParams)
 
     const where: Record<string, unknown> = {}
     if (status !== 'ALL') where.status = status
@@ -37,13 +28,13 @@ export async function GET(request: NextRequest) {
           reviewer: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
         },
         orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       db.approval.count({ where }),
     ])
 
-    return success({ approvals, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } })
+    return success({ approvals, pagination: paginate(page, limit, total) })
   } catch (err) {
     console.error('[ADMIN APPROVALS] Error:', err)
     return error('Failed to fetch approvals')

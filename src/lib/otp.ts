@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { generateOTP } from '@/lib/auth'
 import { logSecurityEvent } from '@/lib/audit'
+import { enqueueJob } from '@/services/queue'
 
 const OTP_EXPIRY_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -33,10 +34,21 @@ export async function sendOTP(params: {
     },
   })
 
-  // TODO: Replace with actual SMS/Email service integration
-  // SMS integration point: Twilio / SMSGateway
-  // Email integration point: SendGrid / AWS SES
-  console.log(`[OTP] ${params.method} to ${params.identifier}: ${otpCode}`)
+  // Dispatch OTP via queue
+  if (params.method === 'EMAIL' || params.method === 'BOTH') {
+    enqueueJob('EMAIL_SEND', {
+      templateId: 'OTP',
+      to: params.identifier,
+      data: { otp: otpCode, name: 'User' },
+    })
+  }
+
+  if (params.method === 'SMS' || params.method === 'BOTH') {
+    enqueueJob('SMS_SEND', {
+      to: params.identifier,
+      message: `Your Bandhan verification code is: ${otpCode}. Valid for 10 minutes. - Bandhan`,
+    })
+  }
 
   return { otpId: otp.id, expiresAt, identifier: params.identifier }
 }

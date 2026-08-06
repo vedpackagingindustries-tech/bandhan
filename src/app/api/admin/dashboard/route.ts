@@ -1,21 +1,12 @@
-
 import { db } from '@/lib/db'
-import { unauthorized, success, error, isAdmin } from '@/lib/api-response'
+import { success, error } from '@/lib/api-response'
+import { requireAdmin } from '@/lib/auth-middleware'
 import { NextRequest } from 'next/server'
-import { isSuperAdmin } from '@/lib/rbac'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) return unauthorized()
-
-    const session = await db.userSession.findUnique({
-      where: { token },
-      include: { user: { include: { role: true } } },
-    })
-
-    if (!session || session.expiresAt < new Date()) return unauthorized()
-    if (!isAdmin(session.user.role?.name)) return error('Admin access required', 403)
+    const result = await requireAdmin(request)
+    if (result.error) return result.error
 
     // Run all count queries in parallel
     const [
@@ -42,7 +33,6 @@ export async function GET(request: NextRequest) {
       db.user.count({ where: { status: 'REJECTED' } }),
       db.contactRequest.count(),
       db.advertisement.count({ where: { status: 'ACTIVE' } }),
-      // Last 10 registered users
       db.user.findMany({
         where: { role: { name: { not: 'SUPER_ADMIN' } } },
         include: {
@@ -52,19 +42,16 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
-      // Group by category
       db.user.groupBy({
         by: ['registrationCategory'],
         where: { role: { name: { not: 'SUPER_ADMIN' } } },
         _count: true,
       }),
-      // Group by tier
       db.user.groupBy({
         by: ['membershipTier'],
         where: { role: { name: { not: 'SUPER_ADMIN' } } },
         _count: true,
       }),
-      // Group by status
       db.user.groupBy({
         by: ['status'],
         where: { role: { name: { not: 'SUPER_ADMIN' } } },

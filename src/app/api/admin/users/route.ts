@@ -1,25 +1,18 @@
-
 import { db } from '@/lib/db'
-import { unauthorized, success, error, isAdmin, getClientInfo } from '@/lib/api-response'
+import { success, error, getClientInfo } from '@/lib/api-response'
+import { requireAdmin, parsePagination, paginate } from '@/lib/auth-middleware'
 import { logAudit } from '@/lib/audit'
+import { invalidateRoleCache } from '@/lib/rbac'
+import { createNotification } from '@/lib/notification'
 import { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) return unauthorized()
-
-    const session = await db.userSession.findUnique({
-      where: { token },
-      include: { user: { include: { role: true } } },
-    })
-
-    if (!session || session.expiresAt < new Date()) return unauthorized()
-    if (!isAdmin(session.user.role?.name)) return error('Admin access required', 403)
+    const result = await requireAdmin(request)
+    if (result.error) return result.error
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const { page, limit, skip } = parsePagination(searchParams)
     const status = searchParams.get('status')
     const category = searchParams.get('category')
     const search = searchParams.get('search')
@@ -49,7 +42,7 @@ export async function GET(request: NextRequest) {
           memberships: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' }, take: 1 },
         },
         orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       db.user.count({ where }),
@@ -57,12 +50,7 @@ export async function GET(request: NextRequest) {
 
     return success({
       users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: paginate(page, limit, total),
     })
   } catch (err) {
     console.error('[ADMIN USERS] Error:', err)
@@ -72,16 +60,9 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) return unauthorized()
-
-    const session = await db.userSession.findUnique({
-      where: { token },
-      include: { user: { include: { role: true } } },
-    })
-
-    if (!session || session.expiresAt < new Date()) return unauthorized()
-    if (!isAdmin(session.user.role?.name)) return error('Admin access required', 403)
+    const result = await requireAdmin(request)
+    if (result.error) return result.error
+    const { auth } = result
 
     const body = await request.json()
     const { userId, action, reason, roleId, membershipTier } = body
@@ -102,15 +83,26 @@ export async function PATCH(request: NextRequest) {
     const user = await db.user.findUnique({ where: { id: userId } })
     if (!user) return error('User not found', 404)
 
+    const previousRoleName = user.roleId
+
     // Update user status
+    const updateData: Record<string, unknown> = {
+      status: statusMap[action],
+    }
+    if (membershipTier) updateData.membershipTier = membershipTier
+    if (roleId) updateData.roleId = roleId
+
     await db.user.update({
       where: { id: userId },
-      data: {
-        status: statusMap[action],
-        ...(membershipTier ? { membershipTier } : {}),
-        ...(roleId ? { roleId } : {}),
-      },
+      data: updateData,
     })
+
+    // If role changed, invalidate RBAC cache so new permissions take effect immediately
+    if (roleId && roleId !== previousRoleName) {
+      if (user.role?.name) await invalidateRoleCache(user.role.name)
+      const newRole = await db.role.findUnique({ where: { id: roleId } })
+      if (newRole) await invalidateRoleCache(newRole.name)
+    }
 
     // Create approval record
     await db.approval.create({
@@ -118,14 +110,13 @@ export async function PATCH(request: NextRequest) {
         userId,
         action,
         reason: reason || null,
-        reviewedBy: session.userId,
+        reviewedBy: auth.userId,
         status: action === 'APPROVE' || action === 'UNBLOCK' ? 'APPROVED' : 'REJECTED',
         reviewedAt: new Date(),
       },
     })
 
     // Notify user
-    const { createNotification } = await import('@/lib/notification')
     const messages: Record<string, { title: string; message: string }> = {
       APPROVE: { title: 'Account Approved', message: 'Your account has been approved. You can now access all features.' },
       REJECT: { title: 'Account Rejected', message: `Your registration was rejected. Reason: ${reason || 'Not specified'}` },
@@ -136,11 +127,11 @@ export async function PATCH(request: NextRequest) {
     await createNotification({ userId, type: action === 'APPROVE' ? 'APPROVAL' : 'REJECTION', title: msg.title, message: msg.message })
 
     await logAudit({
-      userId: session.userId,
+      userId: auth.userId,
       action: `admin.${action.toLowerCase()}_user`,
       entity: 'User',
       entityId: userId,
-      details: { action, reason, previousStatus: user.status },
+      details: { action, reason, previousStatus: user.status, roleChanged: !!roleId },
       ipAddress,
       userAgent,
     })
