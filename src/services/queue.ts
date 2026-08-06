@@ -137,12 +137,5 @@ export function getQueueStats() {
 // REGISTER BUILT-IN JOB HANDLERS
 // ═══════════════════════════════════════════════════════════
 
-registerJobHandler('SESSION_CLEANUP', async () => {
-  const { cleanExpiredSessions } = await import('@/lib/auth-middleware')
-  await cleanExpiredSessions()
-})
-
-// Register session cleanup to run every 30 minutes
-setInterval(() => {
-  enqueueJob('SESSION_CLEANUP', {}, { delayMs: 0, priority: 10 })
-}, 30 * 60 * 1000)
+// Job handlers are registered on-demand when needed.
+// No top-level setInterval — cleanup is triggered lazily via API calls.

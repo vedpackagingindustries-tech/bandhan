@@ -57,10 +57,10 @@ export function checkRateLimit(
   return { allowed: true }
 }
 
-// Clean up rate limit entries periodically
-setInterval(() => {
+// Clean up rate limit entries - lazy cleanup on next call instead of interval
+export function cleanupRateLimits() {
   const now = Date.now()
   for (const [key, record] of rateLimitMap.entries()) {
     if (now > record.resetAt) rateLimitMap.delete(key)
   }
-}, 5 * 60 * 1000)
+}

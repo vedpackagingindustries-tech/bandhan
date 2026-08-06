@@ -106,10 +106,4 @@ export const CACHE_KEYS = {
   PUBLIC_CONFIG: 'config:public',
 } as const
 
-// Periodic cleanup of expired entries
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, entry] of cache.entries()) {
-    if (now > entry.expiresAt) cache.delete(key)
-  }
-}, 10 * 60 * 1000) // Every 10 minutes
+// Lazy cleanup: expired entries are removed on access, no interval needed

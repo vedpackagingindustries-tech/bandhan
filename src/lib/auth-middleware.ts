@@ -109,5 +109,4 @@ export async function cleanExpiredSessions() {
   return result.count
 }
 
-// Auto-cleanup every 30 minutes
-setInterval(cleanExpiredSessions, 30 * 60 * 1000)
+// Session cleanup is handled lazily via API calls, no interval needed
