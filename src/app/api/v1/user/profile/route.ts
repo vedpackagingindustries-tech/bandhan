@@ -1,2 +1,1 @@
-import { GET as ProfileGET, PUT as ProfilePUT } from '@/app/api/user/profile/route'
-export { GET, PUT }
+export { GET as GET, PUT as PUT } from '@/app/api/user/profile/route'
