@@ -106,6 +106,26 @@ model User {
 }
 
 // ═══════════════════════════════════════════════════════════
+// GOTRA MASTER
+// ═══════════════════════════════════════════════════════════
+
+model Gotra {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  profiles  Profile[]
+
+  @@index([isActive])
+  @@index([name])
+  @@index([slug])
+}
+
+// ═══════════════════════════════════════════════════════════
 // USER PROFILE (Expandable per registration category)
 // ═══════════════════════════════════════════════════════════
 
@@ -121,8 +141,9 @@ model Profile {
   dateOfBirth String?
   // Marital status for matrimony
   maritalStatus String? // NEVER_MARRIED, DIVORCED, WIDOWED
-  // Gotra for community matching
-  gotra       String?
+  // Gotra for community matching (relation to Gotra master)
+  gotraId     String?
+  gotra       String? // Legacy free-text — preserved during migration
 
   // Location
   address     String?
@@ -191,6 +212,9 @@ model Profile {
   updatedAt   DateTime @updatedAt
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gotraMaster Gotra?   @relation(fields: [gotraId], references: [id], onDelete: SetNull)
+
+  @@index([gotraId])
 }
 
 // ═══════════════════════════════════════════════════════════

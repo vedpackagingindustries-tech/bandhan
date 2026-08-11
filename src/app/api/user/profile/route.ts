@@ -16,7 +16,11 @@ export async function GET(request: NextRequest) {
       where: { userId: session.userId },
       include: {
         user: {
-          select: { email: true, phone: true, status: true, membershipTier: true, registrationCategory: true, role: { select: { name: true, displayName: true } } } },
+          select: { email: true, phone: true, status: true, membershipTier: true, registrationCategory: true, role: { select: { name: true, displayName: true } } },
+        },
+        gotraMaster: {
+          select: { id: true, name: true, slug: true, isActive: true },
+        },
       },
     })
 
@@ -39,10 +43,17 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { ipAddress, userAgent } = getClientInfo(request)
 
+    // If gotraId is provided, validate it exists and is active
+    if (body.gotraId !== undefined && body.gotraId !== null) {
+      const gotra = await db.gotra.findUnique({ where: { id: body.gotraId } })
+      if (!gotra) return error('Invalid Gotra selected', 400)
+      if (!gotra.isActive) return error('Selected Gotra is not active', 400)
+    }
+
     // Only allow updating profile fields, never userId or user relations
     const allowedFields = [
       'firstName', 'lastName', 'displayName', 'gender', 'dateOfBirth',
-      'maritalStatus', 'gotra', 'address', 'city', 'state', 'country', 'pincode',
+      'maritalStatus', 'gotraId', 'address', 'city', 'state', 'country', 'pincode',
       'occupation', 'education', 'annualIncome', 'companyName', 'designation',
       'height', 'familyType', 'fatherName', 'motherName', 'familyCity', 'aboutFamily',
       'businessName', 'businessCategory', 'businessType', 'businessAddress',
@@ -63,6 +74,7 @@ export async function PUT(request: NextRequest) {
 
     const profile = await db.profile.update({
       where: { userId: session.userId },
+      include: { gotraMaster: { select: { id: true, name: true, slug: true, isActive: true } } },
       data: updateData,
     })
 

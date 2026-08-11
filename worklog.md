@@ -100,3 +100,33 @@ Stage Summary:
 - 4 Module Pages with auth, search, content, ads
 - Official assets integrated, mobile-first, Phase 2 preserved
 
+---
+Task ID: 4
+Agent: Main
+Task: Gotra Master Table — Full Implementation
+
+Work Log:
+- Added Gotra model to Prisma schema (id, name, slug, isActive, timestamps, indexes)
+- Added gotraId FK + gotraMaster relation to Profile model (legacy gotra preserved)
+- Ran prisma db push — schema synced, Prisma Client regenerated
+- Created scripts/seed-gotra.js with all 93 official Gotra names (exact Hindi spelling)
+- Seeded 93 records: 0 duplicates, 93 unique, 93 active
+- Migration safety: seed script links legacy free-text gotra to master (0 profiles affected)
+- Updated Registration API: accepts gotraId, validates against active master
+- Updated Profile PUT: gotraId in allowed fields, validates master existence + active status
+- Updated Search service: added gotraId to SearchParams, buildSearchWhere supports gotraId (with legacy gotra fallback)
+- Updated Search route: accepts gotraId param, returns gotraMaster in response
+- Updated AI Match service: fetches Gotra master data for both profiles, computes same-gotra check
+- Created GET /api/v1/gotras — public dropdown endpoint (active only, optional search filter)
+- Created GET /api/v1/admin/gotras — admin list with profile counts + status filter
+- Created PUT /api/v1/admin/gotras — super admin activate/deactivate with audit log
+- Fixed search.ts null-filter type narrowing (pre-existing TS issue)
+- Build passes, all new routes registered
+
+Stage Summary:
+- Gotra Master: 93 records, 0 duplicates, all active
+- 3 new API routes (public gotras, admin gotras GET/PUT)
+- 4 existing routes updated (register, profile, search, AI match)
+- Legacy gotra free-text preserved in Profile.gotra column
+- Build: PASS
+

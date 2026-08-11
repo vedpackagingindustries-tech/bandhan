@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const city = searchParams.get('city')
     const state = searchParams.get('state')
     const gotra = searchParams.get('gotra')
+    const gotraId = searchParams.get('gotraId')
     const education = searchParams.get('education')
     const occupation = searchParams.get('occupation')
     const maritalStatus = searchParams.get('maritalStatus')
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
       city: city || undefined,
       state: state || undefined,
       gotra: gotra || undefined,
+      gotraId: gotraId || undefined,
       education: education || undefined,
       occupation: occupation || undefined,
       maritalStatus: maritalStatus || undefined,
@@ -87,6 +89,8 @@ export async function GET(request: NextRequest) {
         occupation: item.profile.occupation,
         education: item.profile.education,
         gotra: item.profile.gotra,
+        gotraId: item.profile.gotraId,
+        gotraMaster: item.profile.gotraMaster || null,
         maritalStatus: item.profile.maritalStatus,
       } : null,
     }))

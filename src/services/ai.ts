@@ -20,10 +20,29 @@ export async function aiMatchProfile(params: {
     factors: { name: string; weight: number; match: boolean }[]
   }> {
   console.log(`[AI] Match requested: ${params.profileIdA} vs ${params.profileIdB}`)
+
+  // Fetch Gotra master data for both profiles
+  const { db } = await import('@/lib/db')
+  let gotraMatch = false
+  try {
+    const profiles = await db.profile.findMany({
+      where: { id: { in: [params.profileIdA, params.profileIdB] } },
+      select: { id: true, gotraId: true, gotraMaster: { select: { id: true, name: true } } },
+    })
+    const pA = profiles.find(p => p.id === params.profileIdA)
+    const pB = profiles.find(p => p.id === params.profileIdB)
+    // Same gotra = not a match (traditional rule)
+    if (pA?.gotraId && pB?.gotraId) {
+      gotraMatch = pA.gotraId !== pB.gotraId
+    }
+  } catch (_) {
+    // Foundation phase: non-blocking
+  }
+
   return {
     score: 0,
     factors: [
-      { name: 'gotra', weight: 20, match: false },
+      { name: 'gotra', weight: 20, match: gotraMatch },
       { name: 'location', weight: 15, match: false },
       { name: 'education', weight: 15, match: false },
       { name: 'occupation', weight: 10, match: false },

@@ -12,7 +12,7 @@ const VALID_CATEGORIES = ['MATRIMONY', 'BUSINESS', 'JOB', 'DIRECTORY', 'GENERAL'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, phone, password, category, firstName, lastName } = body
+    const { email, phone, password, category, firstName, lastName, gotraId } = body
 
     // ─── Validation ───
     if (!email && !phone) {
@@ -50,6 +50,13 @@ export async function POST(request: NextRequest) {
       if (existingPhone) return error('Phone number already registered')
     }
 
+    // ─── Validate gotraId against master if provided ───
+    if (gotraId) {
+      const gotra = await db.gotra.findUnique({ where: { id: gotraId } })
+      if (!gotra) return error('Invalid Gotra selected', 400)
+      if (!gotra.isActive) return error('Selected Gotra is not active', 400)
+    }
+
     const { ipAddress, userAgent } = getClientInfo(request)
 
     // ─── Hash Password ───
@@ -80,6 +87,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         firstName: firstName || null,
         lastName: lastName || null,
+        ...(gotraId ? { gotraId } : {}),
       },
     })
 

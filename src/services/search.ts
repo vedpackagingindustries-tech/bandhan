@@ -16,7 +16,8 @@ export interface SearchParams {
   gender?: string
   city?: string
   state?: string
-  gotra?: string
+  gotra?: string       // Legacy: free-text (fallback)
+  gotraId?: string    // New: Gotra master ID
   minAge?: number
   maxAge?: number
   status?: string
@@ -85,7 +86,12 @@ export function buildSearchWhere(params: SearchParams): Record<string, unknown> 
   if (params.gender) profileFilters.gender = params.gender
   if (params.city) profileFilters.city = { contains: params.city }
   if (params.state) profileFilters.state = { contains: params.state }
-  if (params.gotra) profileFilters.gotra = { contains: params.gotra }
+  if (params.gotraId) {
+    profileFilters.gotraId = params.gotraId
+  } else if (params.gotra) {
+    // Legacy free-text fallback
+    profileFilters.gotra = { contains: params.gotra }
+  }
   if (params.education) profileFilters.education = { contains: params.education }
   if (params.occupation) profileFilters.occupation = { contains: params.occupation }
   if (params.maritalStatus) profileFilters.maritalStatus = params.maritalStatus
@@ -196,7 +202,9 @@ export async function searchProfiles(
             profilePhotoUrl: true,
             occupation: true,
             education: true,
+            gotraId: true,
             gotra: true,
+            gotraMaster: { select: { id: true, name: true, slug: true, isActive: true } },
             maritalStatus: true,
             familyType: true,
             annualIncome: true,
@@ -223,17 +231,24 @@ export async function searchProfiles(
   }
 
   // Fetch available filter options for the UI (faceted search)
+  // Fetch available Gotras from master table (not free-text)
+  const availableGotraList = await db.gotra.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  })
+
   const filterData = await db.profile.findMany({
     where: { user: { status: 'ACTIVE', role: { name: { not: 'SUPER_ADMIN' } } } },
-    select: { city: true, state: true, gotra: true, occupation: true, education: true },
+    select: { city: true, state: true, occupation: true, education: true },
     distinct: ['city'],
   })
 
-  const availableCities = [...new Set(filterData.map((p) => p.city).filter(Boolean))].sort().slice(0, 50)
-  const availableStates = [...new Set(filterData.map((p) => p.state).filter(Boolean))].sort().slice(0, 50)
-  const availableGotras = [...new Set(filterData.map((p) => p.gotra).filter(Boolean))].sort().slice(0, 50)
-  const availableOccupations = [...new Set(filterData.map((p) => p.occupation).filter(Boolean))].sort().slice(0, 50)
-  const availableEducations = [...new Set(filterData.map((p) => p.education).filter(Boolean))].sort().slice(0, 50)
+  const availableCities = [...new Set(filterData.map((p) => p.city).filter((v): v is string => !!v))].sort().slice(0, 50)
+  const availableStates = [...new Set(filterData.map((p) => p.state).filter((v): v is string => !!v))].sort().slice(0, 50)
+  const availableGotras = availableGotraList.map((g) => g.name)
+  const availableOccupations = [...new Set(filterData.map((p) => p.occupation).filter((v): v is string => !!v))].sort().slice(0, 50)
+  const availableEducations = [...new Set(filterData.map((p) => p.education).filter((v): v is string => !!v))].sort().slice(0, 50)
 
   return {
     items: filteredItems as unknown as Record<string, unknown>[],
