@@ -103,6 +103,15 @@ model User {
   sessions      UserSession[]
   advertisements Advertisement[]
   reviewedApprovals Approval[] @relation("Reviewer")
+  reports           Report[]  @relation("ReporterReports")
+  reviewedReports   Report[]  @relation("ReviewerReports")
+  blockedUsers      UserBlock[] @relation("Blocker")
+  blockedBy         UserBlock[] @relation("Blocked")
+  payments          Payment[]  @relation("UserPayments")
+  jobs              Job[]      @relation("EmployerJobs")
+  jobApplications   JobApplication[] @relation("CandidateApplications")
+  businesses        Business[]  @relation("OwnerBusinesses")
+  directories       Directory[] @relation("OwnerDirectories")
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -213,6 +222,8 @@ model Profile {
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   gotraMaster Gotra?   @relation(fields: [gotraId], references: [id], onDelete: SetNull)
+  locations   Location[] @relation("ProfileLocation")
+  matrimonyProfile MatrimonyProfile?
 
   @@index([gotraId])
 }
@@ -484,6 +495,377 @@ model MembershipPlan {
 }
 
 // ═══════════════════════════════════════════════════════════
+// LOCATION MASTER (Hierarchical: State → District → Tehsil → City → Village)
+// ═══════════════════════════════════════════════════════════
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  nameHi    String?
+  level     String   // STATE, DISTRICT, TEHSIL, CITY, VILLAGE
+  parentId  String?
+  slug      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent    Location?  @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Location[] @relation("LocationHierarchy")
+  profiles  Profile[]  @relation("ProfileLocation")
+  matrimonyDistricts MatrimonyProfile[] @relation("ProfileLocation")
+  matrimonyTehsils MatrimonyProfile[] @relation("TehsilLocation")
+  matrimonyCities MatrimonyProfile[] @relation("CityLocation")
+  jobDistricts Job[] @relation("JobDistrict")
+  jobCities Job[] @relation("JobCity")
+  businessDistricts Business[] @relation("BusinessDistrict")
+  businessCities Business[] @relation("BusinessCity")
+  directoryDistricts Directory[] @relation("DirectoryDistrict")
+  directoryCities Directory[] @relation("DirectoryCity")
+
+  @@unique([slug])
+  @@index([parentId])
+  @@index([level])
+  @@index([isActive])
+}
+
+// ═══════════════════════════════════════════════════════════
+// MATRIMONY PROFILE (extends Profile with matrimony-specific data)
+// ═══════════════════════════════════════════════════════════
+
+model MatrimonyProfile {
+  id                String   @id @default(cuid())
+  profileId         String   @unique
+  status            String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, BLOCKED
+  gender            String   // MALE, FEMALE
+  dateOfBirth       String?
+  height            String?
+  weight            String?
+  complexion        String? // FAIR, WHEATISH, DARK
+  religion          String   @default("Hindu")
+  motherTongue      String?
+  maritalStatus     String? // NEVER_MARRIED, DIVORCED, WIDOWED
+  aboutMe           String?
+  familyDescription String?
+  education         String?
+  occupation        String?
+  annualIncome      String?
+  employerName      String?
+  workingCity       String?
+  districtId        String?
+  tehsilId          String?
+  cityId            String?
+  village           String?
+  partnerPreferences String? // JSON
+  familyType        String? // JOINT, NUCLEAR
+  fatherName        String?
+  fatherOccupation  String?
+  motherName        String?
+  motherOccupation  String?
+  siblings          String? // JSON: [{relation, name, occupation, maritalStatus}]
+  familyValues      String? // TRADITIONAL, MODERATE, LIBERAL
+  contactedCount    Int      @default(0)
+  contactLimit      Int      @default(10)
+  isFeatured        Boolean  @default(false)
+  featuredExpiry    DateTime?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+  approvedAt        DateTime?
+  approvedBy        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  district  Location? @relation("ProfileLocation", fields: [districtId], references: [id], onDelete: SetNull)
+  tehsil    Location? @relation("TehsilLocation", fields: [tehsilId], references: [id], onDelete: SetNull)
+  city      Location? @relation("CityLocation", fields: [cityId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([gender])
+  @@index([districtId])
+  @@index([tehsilId])
+  @@index([cityId])
+  @@index([isFeatured])
+  @@index([approvedAt])
+}
+
+// ═══════════════════════════════════════════════════════════
+// JOBS
+// ═══════════════════════════════════════════════════════════
+
+model Job {
+  id              String   @id @default(cuid())
+  employerId      String   // userId of the employer
+  title           String
+  description     String
+  category        String? // IT, HEALTHCARE, EDUCATION, MANUFACTURING, RETAIL, CONSTRUCTION, OTHER
+  type            String   @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT, FREELANCE, INTERNSHIP
+  salaryMin       String?
+  salaryMax       String?
+  salaryCurrency  String   @default("INR")
+  experience      String? // 0-1, 1-3, 3-5, 5-10, 10+
+  skills          String? // JSON array
+  education       String?
+  vacancies       Int      @default(1)
+  location        String?
+  districtId      String?
+  cityId          String?
+  isRemote        Boolean  @default(false)
+  isFeatured      Boolean  @default(false)
+  featuredExpiry  DateTime?
+  status          String   @default("PENDING") // PENDING, ACTIVE, CLOSED, EXPIRED, REJECTED
+  contactEmail    String?
+  contactPhone    String?
+  applyUrl        String?
+  viewsCount      Int      @default(0)
+  applicationsCount Int    @default(0)
+  expiresAt       DateTime?
+  approvedAt      DateTime?
+  approvedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employer   User      @relation("EmployerJobs", fields: [employerId], references: [id], onDelete: Cascade)
+  district  Location? @relation("JobDistrict", fields: [districtId], references: [id], onDelete: SetNull)
+  city      Location? @relation("JobCity", fields: [cityId], references: [id], onDelete: SetNull)
+  applications JobApplication[]
+
+  @@index([employerId])
+  @@index([status])
+  @@index([category])
+  @@index([type])
+  @@index([isFeatured])
+  @@index([expiresAt])
+  @@index([districtId])
+}
+
+model JobApplication {
+  id           String   @id @default(cuid())
+  jobId        String
+  candidateId  String // userId
+  status       String   @default("APPLIED") // APPLIED, VIEWED, SHORTLISTED, REJECTED, HIRED, WITHDRAWN
+  coverLetter  String?
+  resumeUrl    String?
+  viewedAt     DateTime?
+  shortlistedAt DateTime?
+  rejectedAt   DateTime?
+  hiredAt      DateTime?
+  withdrawnAt  DateTime?
+  employerNote String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  job       Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidate User @relation("CandidateApplications", fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, candidateId])
+  @@index([candidateId])
+  @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUSINESS DIRECTORY
+// ═════════════════════════════════════════════════════════
+
+model Business {
+  id                String   @id @default(cuid())
+  ownerId           String // userId
+  name              String
+  description       String?
+  category          String?
+  services          String? // JSON array
+  type              String   @default("SOLE_PROPRIETORSHIP") // SOLE_PROPRIETORSHIP, PARTNERSHIP, PVT_LTD, LLP
+  address           String?
+  districtId        String?
+  cityId            String?
+  phone             String?
+  email             String?
+  website           String?
+  gstNumber         String?
+  workingHours      String? // JSON: {mon:{open,close}, ...}
+  foundedYear       String?
+  employeeCount     String?
+  isVerified        Boolean  @default(false)
+  isFeatured        Boolean  @default(false)
+  featuredExpiry    DateTime?
+  status            String   @default("PENDING") // PENDING, ACTIVE, REJECTED, BLOCKED
+  viewsCount        Int      @default(0)
+  approvedAt        DateTime?
+  approvedBy        String?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  owner    User      @relation("OwnerBusinesses", fields: [ownerId], references: [id], onDelete: Cascade)
+  district Location? @relation("BusinessDistrict", fields: [districtId], references: [id], onDelete: SetNull)
+  city     Location? @relation("BusinessCity", fields: [cityId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([category])
+  @@index([isVerified])
+  @@index([isFeatured])
+  @@index([districtId])
+}
+
+// ═════════════════════════════════════════════════════════
+// COMMUNITY DIRECTORY
+// ═══════════════════════════════════════════════════════
+
+model Directory {
+  id                String   @id @default(cuid())
+  ownerId           String // userId
+  name              String
+  description       String?
+  category          String? // TRUST, SAMITI, SANGATHAN, ASSOCIATION, EDUCATIONAL, OTHER
+  type              String? // TRUST, SAMITI, SANGATHAN, ASSOCIATION
+  address           String?
+  districtId        String?
+  cityId            String?
+  phone             String?
+  email             String?
+  website           String?
+  memberCount       String?
+  isVerified        Boolean  @default(false)
+  isFeatured        Boolean  @default(false)
+  featuredExpiry    DateTime?
+  status            String   @default("PENDING") // PENDING, ACTIVE, REJECTED, BLOCKED
+  viewsCount        Int      @default(0)
+  approvedAt        DateTime?
+  approvedBy        String?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  owner    User      @relation("OwnerDirectories", fields: [ownerId], references: [id], onDelete: Cascade)
+  district Location? @relation("DirectoryDistrict", fields: [districtId], references: [id], onDelete: SetNull)
+  city     Location? @relation("DirectoryCity", fields: [cityId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([category])
+  @@index([isVerified])
+  @@index([isFeatured])
+}
+
+// ═════════════════════════════════════════════════════════
+// REPORTS
+// ═════════════════════════════════════════════════════════
+
+model Report {
+  id            String   @id @default(cuid())
+  reporterId    String
+  targetType    String   // USER, MATRIMONY_PROFILE, PHOTO, BUSINESS, JOB, DIRECTORY, ADVERTISEMENT
+  targetId      String
+  reason        String   // INAPPROPRIATE, FRAUD, SPAM, HARASSMENT, COPYRIGHT, OTHER
+  description   String?
+  status        String   @default("PENDING") // PENDING, REVIEWED, RESOLVED, DISMISSED
+  resolution    String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  reporter  User  @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reviewer  User? @relation("ReviewerReports", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([targetType])
+  @@index([targetId])
+  @@index([status])
+}
+
+// ═════════════════════════════════════════════════════════
+// USER BLOCKS
+// ═════════════════════════════════════════════════════════
+
+model UserBlock {
+  id         String   @id @default(cuid())
+  blockerId  String
+  blockedId  String
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+// ═════════════════════════════════════════════════════════
+// PAYMENTS (Provider-independent)
+// ═════════════════════════════════════════════════════════
+
+model Payment {
+  id              String   @id @default(cuid())
+  userId          String
+  provider        String   // RAZORPAY, STRIPE, PAYPAL, UPI, BANK_TRANSFER, MANUAL
+  providerTxnId   String?
+  amount          Float
+  currency        String   @default("INR")
+  status          String   @default("INITIATED") // INITIATED, PENDING, SUCCESS, FAILED, REFUNDED, CANCELLED
+  purpose         String   // MEMBERSHIP, BUSINESS_FEATURED, JOB_FEATURED, ADVERTISEMENT, SPONSORED_LISTING
+  purposeRefId    String? // ID of the entity this payment is for
+  membershipTier  String? // FREE, PREMIUM, ELITE
+  durationDays    Int?
+  metadata        String? // JSON: provider-specific data
+  failureReason   String?
+  refundReason    String?
+  refundedAt      DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider])
+  @@index([purpose])
+  @@index([createdAt])
+}
+
+// ═════════════════════════════════════════════════════════
+// AD CAMPAIGNS (Enhanced Advertisement)
+// ═════════════════════════════════════════════════════════
+
+model AdCampaign {
+  id            String   @id @default(cuid())
+  name          String
+  module        String   // MATRIMONY, BUSINESS, JOBS, DIRECTORY, GENERAL
+  placement     String   // HERO, MIDDLE, BOTTOM
+  mediaType     String   @default("IMAGE") // IMAGE, VIDEO, LOTTIE
+  mediaUrl      String
+  mobileMediaUrl String?
+  linkUrl       String?
+  ctaText       String?
+  ctaTextHi     String?
+  language      String   @default("ALL") // ALL, EN, HI
+  device        String   @default("ALL") // ALL, MOBILE, DESKTOP
+  priority      Int      @default(0)
+  impressions   Int      @default(0)
+  clicks        Int      @default(0)
+  status        String   @default("ACTIVE") // ACTIVE, PAUSED, EXPIRED
+  startDate     DateTime?
+  endDate       DateTime?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([module])
+  @@index([placement])
+  @@index([status])
+  @@index([priority])
+  @@index([startDate, endDate])
+}
+
+// ═════════════════════════════════════════════════════════
 // SYSTEM CONFIGURATION (Key-Value Store)
 // ═══════════════════════════════════════════════════════════
 
