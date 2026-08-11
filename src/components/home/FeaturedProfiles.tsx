@@ -74,6 +74,7 @@ const sampleOrgs: OrgCard[] = [
 
 /* ─── Scroll Container ─── */
 function ScrollRow({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslations()
   const ref = useRef<HTMLDivElement>(null)
 
   const scroll = (dir: 'left' | 'right') => {
@@ -86,7 +87,7 @@ function ScrollRow({ children }: { children: React.ReactNode }) {
       <button
         onClick={() => scroll('left')}
         className="absolute -left-2 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg border border-border/50 transition-all duration-200 hover:shadow-xl hover:scale-105 opacity-0 group-hover/scroll:opacity-100"
-        aria-label="Scroll left"
+        aria-label={t.aria.scrollLeft}
       >
         <ChevronLeft className="h-4 w-4 text-foreground" />
       </button>
@@ -96,7 +97,7 @@ function ScrollRow({ children }: { children: React.ReactNode }) {
       <button
         onClick={() => scroll('right')}
         className="absolute -right-2 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg border border-border/50 transition-all duration-200 hover:shadow-xl hover:scale-105 opacity-0 group-hover/scroll:opacity-100"
-        aria-label="Scroll right"
+        aria-label={t.aria.scrollRight}
       >
         <ChevronRight className="h-4 w-4 text-foreground" />
       </button>
@@ -105,7 +106,7 @@ function ScrollRow({ children }: { children: React.ReactNode }) {
 }
 
 /* ─── Profile Card ─── */
-function ProfileCardComponent({ profile, t }: { profile: ProfileCard; t: typeof import('@/i18n/translations').translations.en }) {
+function ProfileCardComponent({ profile, t }: { profile: ProfileCard; t: ReturnType<typeof useTranslations>['t'] }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -150,7 +151,7 @@ function ProfileCardComponent({ profile, t }: { profile: ProfileCard; t: typeof 
 }
 
 /* ─── Business Card ─── */
-function BusinessCardComponent({ business, t }: { business: BusinessCard; t: typeof import('@/i18n/translations').translations.en }) {
+function BusinessCardComponent({ business, t }: { business: BusinessCard; t: ReturnType<typeof useTranslations>['t'] }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -176,7 +177,7 @@ function BusinessCardComponent({ business, t }: { business: BusinessCard; t: typ
 }
 
 /* ─── Job Card ─── */
-function JobCardComponent({ job, t }: { job: JobCard; t: typeof import('@/i18n/translations').translations.en }) {
+function JobCardComponent({ job, t }: { job: JobCard; t: ReturnType<typeof useTranslations>['t'] }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -200,7 +201,7 @@ function JobCardComponent({ job, t }: { job: JobCard; t: typeof import('@/i18n/t
 }
 
 /* ─── Organization Card ─── */
-function OrgCardComponent({ org, t }: { org: OrgCard; t: typeof import('@/i18n/translations').translations.en }) {
+function OrgCardComponent({ org, t }: { org: OrgCard; t: ReturnType<typeof useTranslations>['t'] }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}

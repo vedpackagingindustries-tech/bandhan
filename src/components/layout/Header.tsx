@@ -78,7 +78,7 @@ export function Header() {
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 hover:bg-cream lg:hidden"
-            aria-label="Toggle menu"
+            aria-label={t.aria.toggleMenu}
           >
             {mobileOpen ? (
               <X className="h-5 w-5 text-foreground" />

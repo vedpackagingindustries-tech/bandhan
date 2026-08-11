@@ -124,14 +124,14 @@ export function PremiumHeroCarousel() {
       <button
         onClick={prev}
         className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 sm:opacity-60 hover:!opacity-100"
-        aria-label="Previous"
+        aria-label={t.aria.previous}
       >
         <ChevronLeft className="h-5 w-5 text-white" />
       </button>
       <button
         onClick={next}
         className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 sm:opacity-60 hover:!opacity-100"
-        aria-label="Next"
+        aria-label={t.aria.next}
       >
         <ChevronRight className="h-5 w-5 text-white" />
       </button>
@@ -148,7 +148,7 @@ export function PremiumHeroCarousel() {
                 ? 'w-8 bg-gold shadow-[0_0_8px_rgba(200,169,81,0.5)]'
                 : 'w-1.5 bg-white/40 hover:bg-white/60'
             )}
-            aria-label={`Go to slide ${idx + 1}`}
+            aria-label={`${t.aria.goToSlide} ${idx + 1}`}
           />
         ))}
       </div>

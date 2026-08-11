@@ -156,14 +156,14 @@ export function AdCarousel({ className }: { className?: string }) {
       <button
         onClick={prev}
         className="absolute left-2.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white hover:shadow-md opacity-0 group-hover:opacity-100 sm:h-9 sm:w-9"
-        aria-label="Previous"
+        aria-label={t.aria.previous}
       >
         <ChevronLeft className="h-4 w-4 text-burgundy" />
       </button>
       <button
         onClick={next}
         className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white hover:shadow-md opacity-0 group-hover:opacity-100 sm:h-9 sm:w-9"
-        aria-label="Next"
+        aria-label={t.aria.next}
       >
         <ChevronRight className="h-4 w-4 text-burgundy" />
       </button>
@@ -180,7 +180,7 @@ export function AdCarousel({ className }: { className?: string }) {
                 ? 'w-6 bg-gold'
                 : 'w-1.5 bg-gold/30 hover:bg-gold/50'
             )}
-            aria-label={`Go to slide ${idx + 1}`}
+            aria-label={`${t.aria.goToSlide} ${idx + 1}`}
           />
         ))}
       </div>

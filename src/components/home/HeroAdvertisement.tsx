@@ -119,7 +119,7 @@ export function HeroAdvertisement() {
                 ? 'w-8 bg-gold shadow-[0_0_8px_rgba(200,169,81,0.5)]'
                 : 'w-1.5 bg-white/40 hover:bg-white/60'
             )}
-            aria-label={`Go to slide ${idx + 1}`}
+            aria-label={`${t.aria.goToSlide} ${idx + 1}`}
           />
         ))}
       </div>

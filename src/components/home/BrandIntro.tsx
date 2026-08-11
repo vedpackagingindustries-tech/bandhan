@@ -7,6 +7,7 @@ import { useTranslations } from '@/i18n'
 import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
 import { MataKarmaVisual } from '@/components/shared/MataKarmaVisual'
+import { cn } from '@/lib/utils'
 
 const INTRO_KEY = 'bandhan-intro-seen'
 const MUTE_KEY = 'bandhan-intro-muted'
@@ -147,7 +148,7 @@ export function BrandIntro() {
             <div className="scale-150 sm:scale-[1.8]">
               <BandhanLogo />
             </div>
-            <p className="text-xs text-muted-foreground">SAHU SAMAJ CONNECTS</p>
+            <p className="text-xs text-muted-foreground">{t.hero.subtitle}</p>
           </div>
         </motion.div>
       ),
@@ -251,6 +252,3 @@ export function BrandIntro() {
   )
 }
 
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ')
-}
