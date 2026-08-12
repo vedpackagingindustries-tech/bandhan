@@ -164,7 +164,7 @@ export async function searchProfiles(
   // Determine sort field
   const sortBy = params.sortBy || 'createdAt'
   const sortOrder = params.sortOrder || 'desc'
-  const orderBy: Record<string, string> = {}
+  const orderBy: Record<string, unknown> = {}
 
   // Handle profile-level sort fields
   if (['firstName', 'lastName', 'displayName', 'city', 'createdAt'].includes(sortBy)) {

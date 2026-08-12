@@ -88,6 +88,6 @@ export async function POST(request: NextRequest) {
     return success({ job }, 201)
   } catch (err) {
     console.error('[JOBS POST] Error:', err)
-    return serverError('Failed to create job')
+    return error('Failed to create job', 500)
   }
 }

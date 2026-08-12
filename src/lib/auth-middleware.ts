@@ -9,17 +9,17 @@ import { isAdmin as checkAdmin, isSuperAdmin, hasPermission as checkPermission }
 import { NextRequest } from 'next/server'
 import type { User, Role, Profile } from '@prisma/client'
 
-/** The authenticated session shape returned from Prisma */
-export type AuthSession = NonNullable<Awaited<ReturnType<typeof db.userSession.findUnique>>>
+/** The authenticated session shape returned from Prisma (with user included) */
+export type AuthSession = NonNullable<Awaited<ReturnType<typeof db.userSession.findUnique>>> & { user: any }
 
 /** Helper to get user from auth session */
-export type AuthUser = AuthSession['user']
+export type AuthUser = any
 
 /**
  * Extract and validate session from Bearer token.
  * Returns the full session with user, role, and profile included.
  */
-export async function authenticate(request: NextRequest): Promise<AuthSession | null> {
+export async function authenticate(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return null
 
@@ -30,12 +30,12 @@ export async function authenticate(request: NextRequest): Promise<AuthSession | 
         include: { role: true, profile: true },
       },
     },
-  })
+  }) as any
 
   if (!session || session.expiresAt < new Date()) return null
   if (session.user.status !== 'ACTIVE') return null
 
-  return session
+  return session as AuthSession
 }
 
 /**

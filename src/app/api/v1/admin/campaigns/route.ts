@@ -9,12 +9,12 @@ export async function GET(request: NextRequest) {
     const result = await requireAdmin(request)
     if (result.error) return result.error
     const { searchParams } = new URL(request.url)
-    const module = searchParams.get('module')
+    const mod = searchParams.get('module')
     const status = searchParams.get('status')
     const { page, limit, skip } = parsePagination(searchParams)
 
     const where: Record<string, unknown> = {}
-    if (module) where.module = module
+    if (mod) where.module = mod
     if (status) where.status = status
 
     const [items, total] = await Promise.all([
@@ -34,18 +34,18 @@ export async function POST(request: NextRequest) {
     if (result.error) return result.error
     const { auth } = result
     const body = await request.json()
-    const { name, module, placement, mediaType, mediaUrl, mobileMediaUrl, linkUrl, ctaText, ctaTextHi, language, device, priority, startDate, endDate } = body
+    const { name, module: mod2, placement, mediaType, mediaUrl, mobileMediaUrl, linkUrl, ctaText, ctaTextHi, language, device, priority, startDate, endDate } = body
 
-    if (!name || !module || !placement || !mediaUrl) return error('name, module, placement, and mediaUrl are required')
+    if (!name || !mod2 || !placement || !mediaUrl) return error('name, module, placement, and mediaUrl are required')
     const VALID_PLACEMENTS = ['HERO', 'MIDDLE', 'BOTTOM']
     if (!VALID_PLACEMENTS.includes(placement)) return error('Invalid placement. Use HERO, MIDDLE, or BOTTOM.')
 
     const { ipAddress, userAgent } = getClientInfo(request)
     const campaign = await db.adCampaign.create({
-      data: { name, module, placement, mediaType: mediaType || 'IMAGE', mediaUrl, mobileMediaUrl, linkUrl, ctaText, ctaTextHi, language: language || 'ALL', device: device || 'ALL', priority: priority || 0, startDate: startDate ? new Date(startDate) : null, endDate: endDate ? new Date(endDate) : null, createdBy: auth.userId },
+      data: { name, module: mod2, placement, mediaType: mediaType || 'IMAGE', mediaUrl, mobileMediaUrl, linkUrl, ctaText, ctaTextHi, language: language || 'ALL', device: device || 'ALL', priority: priority || 0, startDate: startDate ? new Date(startDate) : null, endDate: endDate ? new Date(endDate) : null, createdBy: auth.userId },
     })
 
-    await logAudit({ userId: auth.userId, action: 'admin.campaign.create', entity: 'AdCampaign', entityId: campaign.id, details: { name, module, placement }, ipAddress, userAgent })
+    await logAudit({ userId: auth.userId, action: 'admin.campaign.create', entity: 'AdCampaign', entityId: campaign.id, details: { name, module: mod2, placement }, ipAddress, userAgent })
     return success({ campaign }, 201)
   } catch (err) {
     console.error('[ADMIN CAMPAIGNS POST] Error:', err)

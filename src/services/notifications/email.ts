@@ -45,7 +45,7 @@ export async function sendTemplatedEmail(
   templateId: string,
   data: Record<string, string>
 ): Promise<EmailResult> {
-  const templates: Record<string, { subject: string; body: (d: Record<string, string>) => string }> = {
+  const templates: Record<string, { subject: string | ((d: Record<string, string>) => string); body: (d: Record<string, string>) => string }> = {
     WELCOME: {
       subject: 'Welcome to Bandhan - Sahu Samaj Connects',
       body: (d) => `<h1>Welcome, ${d.name}!</h1><p>Thank you for registering on Bandhan. Your account is pending approval.</p><p>You will be notified once your account is verified.</p>`,
@@ -63,7 +63,7 @@ export async function sendTemplatedEmail(
       body: (d) => `<h1>Password Changed</h1><p>Hello ${d.name},</p><p>Your Bandhan account password was successfully changed. If you did not make this change, please contact support immediately.</p>`,
     },
     MEMBERSHIP_UPGRADE: {
-      subject: `Your Bandhan ${d.tier} Membership is Active`,
+      subject: (d) => `Your Bandhan ${d.tier} Membership is Active`,
       body: (d) => `<h1>${d.tier} Membership Active!</h1><p>Hello ${d.name},</p><p>Your ${d.tier} membership is now active. Enjoy your enhanced features!</p>`,
     },
     CONTACT_REQUEST: {
@@ -81,9 +81,10 @@ export async function sendTemplatedEmail(
     return { success: false, error: `Unknown template: ${templateId}` }
   }
 
+  const subject = typeof template.subject === 'function' ? template.subject(data) : template.subject
   return sendEmail({
     to,
-    subject: template.subject,
+    subject,
     html: template.body(data),
   })
 }
