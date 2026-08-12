@@ -1,0 +1,2002 @@
+ 30658→  export type MatrimonyProfileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 30659→    profile?: boolean | ProfileDefaultArgs<ExtArgs>
+ 30660→    district?: boolean | MatrimonyProfile$districtArgs<ExtArgs>
+ 30661→    tehsil?: boolean | MatrimonyProfile$tehsilArgs<ExtArgs>
+ 30662→    city?: boolean | MatrimonyProfile$cityArgs<ExtArgs>
+ 30663→  }
+ 30664→  export type MatrimonyProfileIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 30665→    profile?: boolean | ProfileDefaultArgs<ExtArgs>
+ 30666→    district?: boolean | MatrimonyProfile$districtArgs<ExtArgs>
+ 30667→    tehsil?: boolean | MatrimonyProfile$tehsilArgs<ExtArgs>
+ 30668→    city?: boolean | MatrimonyProfile$cityArgs<ExtArgs>
+ 30669→  }
+ 30670→  export type MatrimonyProfileIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 30671→    profile?: boolean | ProfileDefaultArgs<ExtArgs>
+ 30672→    district?: boolean | MatrimonyProfile$districtArgs<ExtArgs>
+ 30673→    tehsil?: boolean | MatrimonyProfile$tehsilArgs<ExtArgs>
+ 30674→    city?: boolean | MatrimonyProfile$cityArgs<ExtArgs>
+ 30675→  }
+ 30676→
+ 30677→  export type $MatrimonyProfilePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 30678→    name: "MatrimonyProfile"
+ 30679→    objects: {
+ 30680→      profile: Prisma.$ProfilePayload<ExtArgs>
+ 30681→      district: Prisma.$LocationPayload<ExtArgs> | null
+ 30682→      tehsil: Prisma.$LocationPayload<ExtArgs> | null
+ 30683→      city: Prisma.$LocationPayload<ExtArgs> | null
+ 30684→    }
+ 30685→    scalars: $Extensions.GetPayloadResult<{
+ 30686→      id: string
+ 30687→      profileId: string
+ 30688→      status: string
+ 30689→      gender: string
+ 30690→      dateOfBirth: string | null
+ 30691→      height: string | null
+ 30692→      weight: string | null
+ 30693→      complexion: string | null
+ 30694→      religion: string
+ 30695→      motherTongue: string | null
+ 30696→      maritalStatus: string | null
+ 30697→      aboutMe: string | null
+ 30698→      familyDescription: string | null
+ 30699→      education: string | null
+ 30700→      occupation: string | null
+ 30701→      annualIncome: string | null
+ 30702→      employerName: string | null
+ 30703→      workingCity: string | null
+ 30704→      districtId: string | null
+ 30705→      tehsilId: string | null
+ 30706→      cityId: string | null
+ 30707→      village: string | null
+ 30708→      partnerPreferences: string | null
+ 30709→      familyType: string | null
+ 30710→      fatherName: string | null
+ 30711→      fatherOccupation: string | null
+ 30712→      motherName: string | null
+ 30713→      motherOccupation: string | null
+ 30714→      siblings: string | null
+ 30715→      familyValues: string | null
+ 30716→      contactedCount: number
+ 30717→      contactLimit: number
+ 30718→      isFeatured: boolean
+ 30719→      featuredExpiry: Date | null
+ 30720→      rejectedAt: Date | null
+ 30721→      rejectionReason: string | null
+ 30722→      approvedAt: Date | null
+ 30723→      approvedBy: string | null
+ 30724→      createdAt: Date
+ 30725→      updatedAt: Date
+ 30726→    }, ExtArgs["result"]["matrimonyProfile"]>
+ 30727→    composites: {}
+ 30728→  }
+ 30729→
+ 30730→  type MatrimonyProfileGetPayload<S extends boolean | null | undefined | MatrimonyProfileDefaultArgs> = $Result.GetResult<Prisma.$MatrimonyProfilePayload, S>
+ 30731→
+ 30732→  type MatrimonyProfileCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+ 30733→    Omit<MatrimonyProfileFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+ 30734→      select?: MatrimonyProfileCountAggregateInputType | true
+ 30735→    }
+ 30736→
+ 30737→  export interface MatrimonyProfileDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+ 30738→    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['MatrimonyProfile'], meta: { name: 'MatrimonyProfile' } }
+ 30739→    /**
+ 30740→     * Find zero or one MatrimonyProfile that matches the filter.
+ 30741→     * @param {MatrimonyProfileFindUniqueArgs} args - Arguments to find a MatrimonyProfile
+ 30742→     * @example
+ 30743→     * // Get one MatrimonyProfile
+ 30744→     * const matrimonyProfile = await prisma.matrimonyProfile.findUnique({
+ 30745→     *   where: {
+ 30746→     *     // ... provide filter here
+ 30747→     *   }
+ 30748→     * })
+ 30749→     */
+ 30750→    findUnique<T extends MatrimonyProfileFindUniqueArgs>(args: SelectSubset<T, MatrimonyProfileFindUniqueArgs<ExtArgs>>): Prisma__MatrimonyProfileClient<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+ 30751→
+ 30752→    /**
+ 30753→     * Find one MatrimonyProfile that matches the filter or throw an error with `error.code='P2025'`
+ 30754→     * if no matches were found.
+ 30755→     * @param {MatrimonyProfileFindUniqueOrThrowArgs} args - Arguments to find a MatrimonyProfile
+ 30756→     * @example
+ 30757→     * // Get one MatrimonyProfile
+ 30758→     * const matrimonyProfile = await prisma.matrimonyProfile.findUniqueOrThrow({
+ 30759→     *   where: {
+ 30760→     *     // ... provide filter here
+ 30761→     *   }
+ 30762→     * })
+ 30763→     */
+ 30764→    findUniqueOrThrow<T extends MatrimonyProfileFindUniqueOrThrowArgs>(args: SelectSubset<T, MatrimonyProfileFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MatrimonyProfileClient<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 30765→
+ 30766→    /**
+ 30767→     * Find the first MatrimonyProfile that matches the filter.
+ 30768→     * Note, that providing `undefined` is treated as the value not being there.
+ 30769→     * Read more here: https://pris.ly/d/null-undefined
+ 30770→     * @param {MatrimonyProfileFindFirstArgs} args - Arguments to find a MatrimonyProfile
+ 30771→     * @example
+ 30772→     * // Get one MatrimonyProfile
+ 30773→     * const matrimonyProfile = await prisma.matrimonyProfile.findFirst({
+ 30774→     *   where: {
+ 30775→     *     // ... provide filter here
+ 30776→     *   }
+ 30777→     * })
+ 30778→     */
+ 30779→    findFirst<T extends MatrimonyProfileFindFirstArgs>(args?: SelectSubset<T, MatrimonyProfileFindFirstArgs<ExtArgs>>): Prisma__MatrimonyProfileClient<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+ 30780→
+ 30781→    /**
+ 30782→     * Find the first MatrimonyProfile that matches the filter or
+ 30783→     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+ 30784→     * Note, that providing `undefined` is treated as the value not being there.
+ 30785→     * Read more here: https://pris.ly/d/null-undefined
+ 30786→     * @param {MatrimonyProfileFindFirstOrThrowArgs} args - Arguments to find a MatrimonyProfile
+ 30787→     * @example
+ 30788→     * // Get one MatrimonyProfile
+ 30789→     * const matrimonyProfile = await prisma.matrimonyProfile.findFirstOrThrow({
+ 30790→     *   where: {
+ 30791→     *     // ... provide filter here
+ 30792→     *   }
+ 30793→     * })
+ 30794→     */
+ 30795→    findFirstOrThrow<T extends MatrimonyProfileFindFirstOrThrowArgs>(args?: SelectSubset<T, MatrimonyProfileFindFirstOrThrowArgs<ExtArgs>>): Prisma__MatrimonyProfileClient<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 30796→
+ 30797→    /**
+ 30798→     * Find zero or more MatrimonyProfiles that matches the filter.
+ 30799→     * Note, that providing `undefined` is treated as the value not being there.
+ 30800→     * Read more here: https://pris.ly/d/null-undefined
+ 30801→     * @param {MatrimonyProfileFindManyArgs} args - Arguments to filter and select certain fields only.
+ 30802→     * @example
+ 30803→     * // Get all MatrimonyProfiles
+ 30804→     * const matrimonyProfiles = await prisma.matrimonyProfile.findMany()
+ 30805→     * 
+ 30806→     * // Get first 10 MatrimonyProfiles
+ 30807→     * const matrimonyProfiles = await prisma.matrimonyProfile.findMany({ take: 10 })
+ 30808→     * 
+ 30809→     * // Only select the `id`
+ 30810→     * const matrimonyProfileWithIdOnly = await prisma.matrimonyProfile.findMany({ select: { id: true } })
+ 30811→     * 
+ 30812→     */
+ 30813→    findMany<T extends MatrimonyProfileFindManyArgs>(args?: SelectSubset<T, MatrimonyProfileFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+ 30814→
+ 30815→    /**
+ 30816→     * Create a MatrimonyProfile.
+ 30817→     * @param {MatrimonyProfileCreateArgs} args - Arguments to create a MatrimonyProfile.
+ 30818→     * @example
+ 30819→     * // Create one MatrimonyProfile
+ 30820→     * const MatrimonyProfile = await prisma.matrimonyProfile.create({
+ 30821→     *   data: {
+ 30822→     *     // ... data to create a MatrimonyProfile
+ 30823→     *   }
+ 30824→     * })
+ 30825→     * 
+ 30826→     */
+ 30827→    create<T extends MatrimonyProfileCreateArgs>(args: SelectSubset<T, MatrimonyProfileCreateArgs<ExtArgs>>): Prisma__MatrimonyProfileClient<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 30828→
+ 30829→    /**
+ 30830→     * Create many MatrimonyProfiles.
+ 30831→     * @param {MatrimonyProfileCreateManyArgs} args - Arguments to create many MatrimonyProfiles.
+ 30832→     * @example
+ 30833→     * // Create many MatrimonyProfiles
+ 30834→     * const matrimonyProfile = await prisma.matrimonyProfile.createMany({
+ 30835→     *   data: [
+ 30836→     *     // ... provide data here
+ 30837→     *   ]
+ 30838→     * })
+ 30839→     *     
+ 30840→     */
+ 30841→    createMany<T extends MatrimonyProfileCreateManyArgs>(args?: SelectSubset<T, MatrimonyProfileCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+ 30842→
+ 30843→    /**
+ 30844→     * Create many MatrimonyProfiles and returns the data saved in the database.
+ 30845→     * @param {MatrimonyProfileCreateManyAndReturnArgs} args - Arguments to create many MatrimonyProfiles.
+ 30846→     * @example
+ 30847→     * // Create many MatrimonyProfiles
+ 30848→     * const matrimonyProfile = await prisma.matrimonyProfile.createManyAndReturn({
+ 30849→     *   data: [
+ 30850→     *     // ... provide data here
+ 30851→     *   ]
+ 30852→     * })
+ 30853→     * 
+ 30854→     * // Create many MatrimonyProfiles and only return the `id`
+ 30855→     * const matrimonyProfileWithIdOnly = await prisma.matrimonyProfile.createManyAndReturn({
+ 30856→     *   select: { id: true },
+ 30857→     *   data: [
+ 30858→     *     // ... provide data here
+ 30859→     *   ]
+ 30860→     * })
+ 30861→     * Note, that providing `undefined` is treated as the value not being there.
+ 30862→     * Read more here: https://pris.ly/d/null-undefined
+ 30863→     * 
+ 30864→     */
+ 30865→    createManyAndReturn<T extends MatrimonyProfileCreateManyAndReturnArgs>(args?: SelectSubset<T, MatrimonyProfileCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+ 30866→
+ 30867→    /**
+ 30868→     * Delete a MatrimonyProfile.
+ 30869→     * @param {MatrimonyProfileDeleteArgs} args - Arguments to delete one MatrimonyProfile.
+ 30870→     * @example
+ 30871→     * // Delete one MatrimonyProfile
+ 30872→     * const MatrimonyProfile = await prisma.matrimonyProfile.delete({
+ 30873→     *   where: {
+ 30874→     *     // ... filter to delete one MatrimonyProfile
+ 30875→     *   }
+ 30876→     * })
+ 30877→     * 
+ 30878→     */
+ 30879→    delete<T extends MatrimonyProfileDeleteArgs>(args: SelectSubset<T, MatrimonyProfileDeleteArgs<ExtArgs>>): Prisma__MatrimonyProfileClient<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 30880→
+ 30881→    /**
+ 30882→     * Update one MatrimonyProfile.
+ 30883→     * @param {MatrimonyProfileUpdateArgs} args - Arguments to update one MatrimonyProfile.
+ 30884→     * @example
+ 30885→     * // Update one MatrimonyProfile
+ 30886→     * const matrimonyProfile = await prisma.matrimonyProfile.update({
+ 30887→     *   where: {
+ 30888→     *     // ... provide filter here
+ 30889→     *   },
+ 30890→     *   data: {
+ 30891→     *     // ... provide data here
+ 30892→     *   }
+ 30893→     * })
+ 30894→     * 
+ 30895→     */
+ 30896→    update<T extends MatrimonyProfileUpdateArgs>(args: SelectSubset<T, MatrimonyProfileUpdateArgs<ExtArgs>>): Prisma__MatrimonyProfileClient<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 30897→
+ 30898→    /**
+ 30899→     * Delete zero or more MatrimonyProfiles.
+ 30900→     * @param {MatrimonyProfileDeleteManyArgs} args - Arguments to filter MatrimonyProfiles to delete.
+ 30901→     * @example
+ 30902→     * // Delete a few MatrimonyProfiles
+ 30903→     * const { count } = await prisma.matrimonyProfile.deleteMany({
+ 30904→     *   where: {
+ 30905→     *     // ... provide filter here
+ 30906→     *   }
+ 30907→     * })
+ 30908→     * 
+ 30909→     */
+ 30910→    deleteMany<T extends MatrimonyProfileDeleteManyArgs>(args?: SelectSubset<T, MatrimonyProfileDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+ 30911→
+ 30912→    /**
+ 30913→     * Update zero or more MatrimonyProfiles.
+ 30914→     * Note, that providing `undefined` is treated as the value not being there.
+ 30915→     * Read more here: https://pris.ly/d/null-undefined
+ 30916→     * @param {MatrimonyProfileUpdateManyArgs} args - Arguments to update one or more rows.
+ 30917→     * @example
+ 30918→     * // Update many MatrimonyProfiles
+ 30919→     * const matrimonyProfile = await prisma.matrimonyProfile.updateMany({
+ 30920→     *   where: {
+ 30921→     *     // ... provide filter here
+ 30922→     *   },
+ 30923→     *   data: {
+ 30924→     *     // ... provide data here
+ 30925→     *   }
+ 30926→     * })
+ 30927→     * 
+ 30928→     */
+ 30929→    updateMany<T extends MatrimonyProfileUpdateManyArgs>(args: SelectSubset<T, MatrimonyProfileUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+ 30930→
+ 30931→    /**
+ 30932→     * Update zero or more MatrimonyProfiles and returns the data updated in the database.
+ 30933→     * @param {MatrimonyProfileUpdateManyAndReturnArgs} args - Arguments to update many MatrimonyProfiles.
+ 30934→     * @example
+ 30935→     * // Update many MatrimonyProfiles
+ 30936→     * const matrimonyProfile = await prisma.matrimonyProfile.updateManyAndReturn({
+ 30937→     *   where: {
+ 30938→     *     // ... provide filter here
+ 30939→     *   },
+ 30940→     *   data: [
+ 30941→     *     // ... provide data here
+ 30942→     *   ]
+ 30943→     * })
+ 30944→     * 
+ 30945→     * // Update zero or more MatrimonyProfiles and only return the `id`
+ 30946→     * const matrimonyProfileWithIdOnly = await prisma.matrimonyProfile.updateManyAndReturn({
+ 30947→     *   select: { id: true },
+ 30948→     *   where: {
+ 30949→     *     // ... provide filter here
+ 30950→     *   },
+ 30951→     *   data: [
+ 30952→     *     // ... provide data here
+ 30953→     *   ]
+ 30954→     * })
+ 30955→     * Note, that providing `undefined` is treated as the value not being there.
+ 30956→     * Read more here: https://pris.ly/d/null-undefined
+ 30957→     * 
+ 30958→     */
+ 30959→    updateManyAndReturn<T extends MatrimonyProfileUpdateManyAndReturnArgs>(args: SelectSubset<T, MatrimonyProfileUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+ 30960→
+ 30961→    /**
+ 30962→     * Create or update one MatrimonyProfile.
+ 30963→     * @param {MatrimonyProfileUpsertArgs} args - Arguments to update or create a MatrimonyProfile.
+ 30964→     * @example
+ 30965→     * // Update or create a MatrimonyProfile
+ 30966→     * const matrimonyProfile = await prisma.matrimonyProfile.upsert({
+ 30967→     *   create: {
+ 30968→     *     // ... data to create a MatrimonyProfile
+ 30969→     *   },
+ 30970→     *   update: {
+ 30971→     *     // ... in case it already exists, update
+ 30972→     *   },
+ 30973→     *   where: {
+ 30974→     *     // ... the filter for the MatrimonyProfile we want to update
+ 30975→     *   }
+ 30976→     * })
+ 30977→     */
+ 30978→    upsert<T extends MatrimonyProfileUpsertArgs>(args: SelectSubset<T, MatrimonyProfileUpsertArgs<ExtArgs>>): Prisma__MatrimonyProfileClient<$Result.GetResult<Prisma.$MatrimonyProfilePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 30979→
+ 30980→
+ 30981→    /**
+ 30982→     * Count the number of MatrimonyProfiles.
+ 30983→     * Note, that providing `undefined` is treated as the value not being there.
+ 30984→     * Read more here: https://pris.ly/d/null-undefined
+ 30985→     * @param {MatrimonyProfileCountArgs} args - Arguments to filter MatrimonyProfiles to count.
+ 30986→     * @example
+ 30987→     * // Count the number of MatrimonyProfiles
+ 30988→     * const count = await prisma.matrimonyProfile.count({
+ 30989→     *   where: {
+ 30990→     *     // ... the filter for the MatrimonyProfiles we want to count
+ 30991→     *   }
+ 30992→     * })
+ 30993→    **/
+ 30994→    count<T extends MatrimonyProfileCountArgs>(
+ 30995→      args?: Subset<T, MatrimonyProfileCountArgs>,
+ 30996→    ): Prisma.PrismaPromise<
+ 30997→      T extends $Utils.Record<'select', any>
+ 30998→        ? T['select'] extends true
+ 30999→          ? number
+ 31000→          : GetScalarType<T['select'], MatrimonyProfileCountAggregateOutputType>
+ 31001→        : number
+ 31002→    >
+ 31003→
+ 31004→    /**
+ 31005→     * Allows you to perform aggregations operations on a MatrimonyProfile.
+ 31006→     * Note, that providing `undefined` is treated as the value not being there.
+ 31007→     * Read more here: https://pris.ly/d/null-undefined
+ 31008→     * @param {MatrimonyProfileAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+ 31009→     * @example
+ 31010→     * // Ordered by age ascending
+ 31011→     * // Where email contains prisma.io
+ 31012→     * // Limited to the 10 users
+ 31013→     * const aggregations = await prisma.user.aggregate({
+ 31014→     *   _avg: {
+ 31015→     *     age: true,
+ 31016→     *   },
+ 31017→     *   where: {
+ 31018→     *     email: {
+ 31019→     *       contains: "prisma.io",
+ 31020→     *     },
+ 31021→     *   },
+ 31022→     *   orderBy: {
+ 31023→     *     age: "asc",
+ 31024→     *   },
+ 31025→     *   take: 10,
+ 31026→     * })
+ 31027→    **/
+ 31028→    aggregate<T extends MatrimonyProfileAggregateArgs>(args: Subset<T, MatrimonyProfileAggregateArgs>): Prisma.PrismaPromise<GetMatrimonyProfileAggregateType<T>>
+ 31029→
+ 31030→    /**
+ 31031→     * Group by MatrimonyProfile.
+ 31032→     * Note, that providing `undefined` is treated as the value not being there.
+ 31033→     * Read more here: https://pris.ly/d/null-undefined
+ 31034→     * @param {MatrimonyProfileGroupByArgs} args - Group by arguments.
+ 31035→     * @example
+ 31036→     * // Group by city, order by createdAt, get count
+ 31037→     * const result = await prisma.user.groupBy({
+ 31038→     *   by: ['city', 'createdAt'],
+ 31039→     *   orderBy: {
+ 31040→     *     createdAt: true
+ 31041→     *   },
+ 31042→     *   _count: {
+ 31043→     *     _all: true
+ 31044→     *   },
+ 31045→     * })
+ 31046→     * 
+ 31047→    **/
+ 31048→    groupBy<
+ 31049→      T extends MatrimonyProfileGroupByArgs,
+ 31050→      HasSelectOrTake extends Or<
+ 31051→        Extends<'skip', Keys<T>>,
+ 31052→        Extends<'take', Keys<T>>
+ 31053→      >,
+ 31054→      OrderByArg extends True extends HasSelectOrTake
+ 31055→        ? { orderBy: MatrimonyProfileGroupByArgs['orderBy'] }
+ 31056→        : { orderBy?: MatrimonyProfileGroupByArgs['orderBy'] },
+ 31057→      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+ 31058→      ByFields extends MaybeTupleToUnion<T['by']>,
+ 31059→      ByValid extends Has<ByFields, OrderFields>,
+ 31060→      HavingFields extends GetHavingFields<T['having']>,
+ 31061→      HavingValid extends Has<ByFields, HavingFields>,
+ 31062→      ByEmpty extends T['by'] extends never[] ? True : False,
+ 31063→      InputErrors extends ByEmpty extends True
+ 31064→      ? `Error: "by" must not be empty.`
+ 31065→      : HavingValid extends False
+ 31066→      ? {
+ 31067→          [P in HavingFields]: P extends ByFields
+ 31068→            ? never
+ 31069→            : P extends string
+ 31070→            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+ 31071→            : [
+ 31072→                Error,
+ 31073→                'Field ',
+ 31074→                P,
+ 31075→                ` in "having" needs to be provided in "by"`,
+ 31076→              ]
+ 31077→        }[HavingFields]
+ 31078→      : 'take' extends Keys<T>
+ 31079→      ? 'orderBy' extends Keys<T>
+ 31080→        ? ByValid extends True
+ 31081→          ? {}
+ 31082→          : {
+ 31083→              [P in OrderFields]: P extends ByFields
+ 31084→                ? never
+ 31085→                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+ 31086→            }[OrderFields]
+ 31087→        : 'Error: If you provide "take", you also need to provide "orderBy"'
+ 31088→      : 'skip' extends Keys<T>
+ 31089→      ? 'orderBy' extends Keys<T>
+ 31090→        ? ByValid extends True
+ 31091→          ? {}
+ 31092→          : {
+ 31093→              [P in OrderFields]: P extends ByFields
+ 31094→                ? never
+ 31095→                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+ 31096→            }[OrderFields]
+ 31097→        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+ 31098→      : ByValid extends True
+ 31099→      ? {}
+ 31100→      : {
+ 31101→          [P in OrderFields]: P extends ByFields
+ 31102→            ? never
+ 31103→            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+ 31104→        }[OrderFields]
+ 31105→    >(args: SubsetIntersection<T, MatrimonyProfileGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMatrimonyProfileGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+ 31106→  /**
+ 31107→   * Fields of the MatrimonyProfile model
+ 31108→   */
+ 31109→  readonly fields: MatrimonyProfileFieldRefs;
+ 31110→  }
+ 31111→
+ 31112→  /**
+ 31113→   * The delegate class that acts as a "Promise-like" for MatrimonyProfile.
+ 31114→   * Why is this prefixed with `Prisma__`?
+ 31115→   * Because we want to prevent naming conflicts as mentioned in
+ 31116→   * https://github.com/prisma/prisma-client-js/issues/707
+ 31117→   */
+ 31118→  export interface Prisma__MatrimonyProfileClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+ 31119→    readonly [Symbol.toStringTag]: "PrismaPromise"
+ 31120→    profile<T extends ProfileDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProfileDefaultArgs<ExtArgs>>): Prisma__ProfileClient<$Result.GetResult<Prisma.$ProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+ 31121→    district<T extends MatrimonyProfile$districtArgs<ExtArgs> = {}>(args?: Subset<T, MatrimonyProfile$districtArgs<ExtArgs>>): Prisma__LocationClient<$Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+ 31122→    tehsil<T extends MatrimonyProfile$tehsilArgs<ExtArgs> = {}>(args?: Subset<T, MatrimonyProfile$tehsilArgs<ExtArgs>>): Prisma__LocationClient<$Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+ 31123→    city<T extends MatrimonyProfile$cityArgs<ExtArgs> = {}>(args?: Subset<T, MatrimonyProfile$cityArgs<ExtArgs>>): Prisma__LocationClient<$Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+ 31124→    /**
+ 31125→     * Attaches callbacks for the resolution and/or rejection of the Promise.
+ 31126→     * @param onfulfilled The callback to execute when the Promise is resolved.
+ 31127→     * @param onrejected The callback to execute when the Promise is rejected.
+ 31128→     * @returns A Promise for the completion of which ever callback is executed.
+ 31129→     */
+ 31130→    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+ 31131→    /**
+ 31132→     * Attaches a callback for only the rejection of the Promise.
+ 31133→     * @param onrejected The callback to execute when the Promise is rejected.
+ 31134→     * @returns A Promise for the completion of the callback.
+ 31135→     */
+ 31136→    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+ 31137→    /**
+ 31138→     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+ 31139→     * resolved value cannot be modified from the callback.
+ 31140→     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+ 31141→     * @returns A Promise for the completion of the callback.
+ 31142→     */
+ 31143→    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+ 31144→  }
+ 31145→
+ 31146→
+ 31147→
+ 31148→
+ 31149→  /**
+ 31150→   * Fields of the MatrimonyProfile model
+ 31151→   */
+ 31152→  interface MatrimonyProfileFieldRefs {
+ 31153→    readonly id: FieldRef<"MatrimonyProfile", 'String'>
+ 31154→    readonly profileId: FieldRef<"MatrimonyProfile", 'String'>
+ 31155→    readonly status: FieldRef<"MatrimonyProfile", 'String'>
+ 31156→    readonly gender: FieldRef<"MatrimonyProfile", 'String'>
+ 31157→    readonly dateOfBirth: FieldRef<"MatrimonyProfile", 'String'>
+ 31158→    readonly height: FieldRef<"MatrimonyProfile", 'String'>
+ 31159→    readonly weight: FieldRef<"MatrimonyProfile", 'String'>
+ 31160→    readonly complexion: FieldRef<"MatrimonyProfile", 'String'>
+ 31161→    readonly religion: FieldRef<"MatrimonyProfile", 'String'>
+ 31162→    readonly motherTongue: FieldRef<"MatrimonyProfile", 'String'>
+ 31163→    readonly maritalStatus: FieldRef<"MatrimonyProfile", 'String'>
+ 31164→    readonly aboutMe: FieldRef<"MatrimonyProfile", 'String'>
+ 31165→    readonly familyDescription: FieldRef<"MatrimonyProfile", 'String'>
+ 31166→    readonly education: FieldRef<"MatrimonyProfile", 'String'>
+ 31167→    readonly occupation: FieldRef<"MatrimonyProfile", 'String'>
+ 31168→    readonly annualIncome: FieldRef<"MatrimonyProfile", 'String'>
+ 31169→    readonly employerName: FieldRef<"MatrimonyProfile", 'String'>
+ 31170→    readonly workingCity: FieldRef<"MatrimonyProfile", 'String'>
+ 31171→    readonly districtId: FieldRef<"MatrimonyProfile", 'String'>
+ 31172→    readonly tehsilId: FieldRef<"MatrimonyProfile", 'String'>
+ 31173→    readonly cityId: FieldRef<"MatrimonyProfile", 'String'>
+ 31174→    readonly village: FieldRef<"MatrimonyProfile", 'String'>
+ 31175→    readonly partnerPreferences: FieldRef<"MatrimonyProfile", 'String'>
+ 31176→    readonly familyType: FieldRef<"MatrimonyProfile", 'String'>
+ 31177→    readonly fatherName: FieldRef<"MatrimonyProfile", 'String'>
+ 31178→    readonly fatherOccupation: FieldRef<"MatrimonyProfile", 'String'>
+ 31179→    readonly motherName: FieldRef<"MatrimonyProfile", 'String'>
+ 31180→    readonly motherOccupation: FieldRef<"MatrimonyProfile", 'String'>
+ 31181→    readonly siblings: FieldRef<"MatrimonyProfile", 'String'>
+ 31182→    readonly familyValues: FieldRef<"MatrimonyProfile", 'String'>
+ 31183→    readonly contactedCount: FieldRef<"MatrimonyProfile", 'Int'>
+ 31184→    readonly contactLimit: FieldRef<"MatrimonyProfile", 'Int'>
+ 31185→    readonly isFeatured: FieldRef<"MatrimonyProfile", 'Boolean'>
+ 31186→    readonly featuredExpiry: FieldRef<"MatrimonyProfile", 'DateTime'>
+ 31187→    readonly rejectedAt: FieldRef<"MatrimonyProfile", 'DateTime'>
+ 31188→    readonly rejectionReason: FieldRef<"MatrimonyProfile", 'String'>
+ 31189→    readonly approvedAt: FieldRef<"MatrimonyProfile", 'DateTime'>
+ 31190→    readonly approvedBy: FieldRef<"MatrimonyProfile", 'String'>
+ 31191→    readonly createdAt: FieldRef<"MatrimonyProfile", 'DateTime'>
+ 31192→    readonly updatedAt: FieldRef<"MatrimonyProfile", 'DateTime'>
+ 31193→  }
+ 31194→    
+ 31195→
+ 31196→  // Custom InputTypes
+ 31197→  /**
+ 31198→   * MatrimonyProfile findUnique
+ 31199→   */
+ 31200→  export type MatrimonyProfileFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31201→    /**
+ 31202→     * Select specific fields to fetch from the MatrimonyProfile
+ 31203→     */
+ 31204→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31205→    /**
+ 31206→     * Omit specific fields from the MatrimonyProfile
+ 31207→     */
+ 31208→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31209→    /**
+ 31210→     * Choose, which related nodes to fetch as well
+ 31211→     */
+ 31212→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31213→    /**
+ 31214→     * Filter, which MatrimonyProfile to fetch.
+ 31215→     */
+ 31216→    where: MatrimonyProfileWhereUniqueInput
+ 31217→  }
+ 31218→
+ 31219→  /**
+ 31220→   * MatrimonyProfile findUniqueOrThrow
+ 31221→   */
+ 31222→  export type MatrimonyProfileFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31223→    /**
+ 31224→     * Select specific fields to fetch from the MatrimonyProfile
+ 31225→     */
+ 31226→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31227→    /**
+ 31228→     * Omit specific fields from the MatrimonyProfile
+ 31229→     */
+ 31230→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31231→    /**
+ 31232→     * Choose, which related nodes to fetch as well
+ 31233→     */
+ 31234→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31235→    /**
+ 31236→     * Filter, which MatrimonyProfile to fetch.
+ 31237→     */
+ 31238→    where: MatrimonyProfileWhereUniqueInput
+ 31239→  }
+ 31240→
+ 31241→  /**
+ 31242→   * MatrimonyProfile findFirst
+ 31243→   */
+ 31244→  export type MatrimonyProfileFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31245→    /**
+ 31246→     * Select specific fields to fetch from the MatrimonyProfile
+ 31247→     */
+ 31248→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31249→    /**
+ 31250→     * Omit specific fields from the MatrimonyProfile
+ 31251→     */
+ 31252→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31253→    /**
+ 31254→     * Choose, which related nodes to fetch as well
+ 31255→     */
+ 31256→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31257→    /**
+ 31258→     * Filter, which MatrimonyProfile to fetch.
+ 31259→     */
+ 31260→    where?: MatrimonyProfileWhereInput
+ 31261→    /**
+ 31262→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+ 31263→     * 
+ 31264→     * Determine the order of MatrimonyProfiles to fetch.
+ 31265→     */
+ 31266→    orderBy?: MatrimonyProfileOrderByWithRelationInput | MatrimonyProfileOrderByWithRelationInput[]
+ 31267→    /**
+ 31268→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+ 31269→     * 
+ 31270→     * Sets the position for searching for MatrimonyProfiles.
+ 31271→     */
+ 31272→    cursor?: MatrimonyProfileWhereUniqueInput
+ 31273→    /**
+ 31274→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+ 31275→     * 
+ 31276→     * Take `±n` MatrimonyProfiles from the position of the cursor.
+ 31277→     */
+ 31278→    take?: number
+ 31279→    /**
+ 31280→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+ 31281→     * 
+ 31282→     * Skip the first `n` MatrimonyProfiles.
+ 31283→     */
+ 31284→    skip?: number
+ 31285→    /**
+ 31286→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+ 31287→     * 
+ 31288→     * Filter by unique combinations of MatrimonyProfiles.
+ 31289→     */
+ 31290→    distinct?: MatrimonyProfileScalarFieldEnum | MatrimonyProfileScalarFieldEnum[]
+ 31291→  }
+ 31292→
+ 31293→  /**
+ 31294→   * MatrimonyProfile findFirstOrThrow
+ 31295→   */
+ 31296→  export type MatrimonyProfileFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31297→    /**
+ 31298→     * Select specific fields to fetch from the MatrimonyProfile
+ 31299→     */
+ 31300→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31301→    /**
+ 31302→     * Omit specific fields from the MatrimonyProfile
+ 31303→     */
+ 31304→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31305→    /**
+ 31306→     * Choose, which related nodes to fetch as well
+ 31307→     */
+ 31308→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31309→    /**
+ 31310→     * Filter, which MatrimonyProfile to fetch.
+ 31311→     */
+ 31312→    where?: MatrimonyProfileWhereInput
+ 31313→    /**
+ 31314→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+ 31315→     * 
+ 31316→     * Determine the order of MatrimonyProfiles to fetch.
+ 31317→     */
+ 31318→    orderBy?: MatrimonyProfileOrderByWithRelationInput | MatrimonyProfileOrderByWithRelationInput[]
+ 31319→    /**
+ 31320→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+ 31321→     * 
+ 31322→     * Sets the position for searching for MatrimonyProfiles.
+ 31323→     */
+ 31324→    cursor?: MatrimonyProfileWhereUniqueInput
+ 31325→    /**
+ 31326→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+ 31327→     * 
+ 31328→     * Take `±n` MatrimonyProfiles from the position of the cursor.
+ 31329→     */
+ 31330→    take?: number
+ 31331→    /**
+ 31332→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+ 31333→     * 
+ 31334→     * Skip the first `n` MatrimonyProfiles.
+ 31335→     */
+ 31336→    skip?: number
+ 31337→    /**
+ 31338→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+ 31339→     * 
+ 31340→     * Filter by unique combinations of MatrimonyProfiles.
+ 31341→     */
+ 31342→    distinct?: MatrimonyProfileScalarFieldEnum | MatrimonyProfileScalarFieldEnum[]
+ 31343→  }
+ 31344→
+ 31345→  /**
+ 31346→   * MatrimonyProfile findMany
+ 31347→   */
+ 31348→  export type MatrimonyProfileFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31349→    /**
+ 31350→     * Select specific fields to fetch from the MatrimonyProfile
+ 31351→     */
+ 31352→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31353→    /**
+ 31354→     * Omit specific fields from the MatrimonyProfile
+ 31355→     */
+ 31356→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31357→    /**
+ 31358→     * Choose, which related nodes to fetch as well
+ 31359→     */
+ 31360→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31361→    /**
+ 31362→     * Filter, which MatrimonyProfiles to fetch.
+ 31363→     */
+ 31364→    where?: MatrimonyProfileWhereInput
+ 31365→    /**
+ 31366→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+ 31367→     * 
+ 31368→     * Determine the order of MatrimonyProfiles to fetch.
+ 31369→     */
+ 31370→    orderBy?: MatrimonyProfileOrderByWithRelationInput | MatrimonyProfileOrderByWithRelationInput[]
+ 31371→    /**
+ 31372→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+ 31373→     * 
+ 31374→     * Sets the position for listing MatrimonyProfiles.
+ 31375→     */
+ 31376→    cursor?: MatrimonyProfileWhereUniqueInput
+ 31377→    /**
+ 31378→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+ 31379→     * 
+ 31380→     * Take `±n` MatrimonyProfiles from the position of the cursor.
+ 31381→     */
+ 31382→    take?: number
+ 31383→    /**
+ 31384→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+ 31385→     * 
+ 31386→     * Skip the first `n` MatrimonyProfiles.
+ 31387→     */
+ 31388→    skip?: number
+ 31389→    distinct?: MatrimonyProfileScalarFieldEnum | MatrimonyProfileScalarFieldEnum[]
+ 31390→  }
+ 31391→
+ 31392→  /**
+ 31393→   * MatrimonyProfile create
+ 31394→   */
+ 31395→  export type MatrimonyProfileCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31396→    /**
+ 31397→     * Select specific fields to fetch from the MatrimonyProfile
+ 31398→     */
+ 31399→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31400→    /**
+ 31401→     * Omit specific fields from the MatrimonyProfile
+ 31402→     */
+ 31403→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31404→    /**
+ 31405→     * Choose, which related nodes to fetch as well
+ 31406→     */
+ 31407→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31408→    /**
+ 31409→     * The data needed to create a MatrimonyProfile.
+ 31410→     */
+ 31411→    data: XOR<MatrimonyProfileCreateInput, MatrimonyProfileUncheckedCreateInput>
+ 31412→  }
+ 31413→
+ 31414→  /**
+ 31415→   * MatrimonyProfile createMany
+ 31416→   */
+ 31417→  export type MatrimonyProfileCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31418→    /**
+ 31419→     * The data used to create many MatrimonyProfiles.
+ 31420→     */
+ 31421→    data: MatrimonyProfileCreateManyInput | MatrimonyProfileCreateManyInput[]
+ 31422→  }
+ 31423→
+ 31424→  /**
+ 31425→   * MatrimonyProfile createManyAndReturn
+ 31426→   */
+ 31427→  export type MatrimonyProfileCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31428→    /**
+ 31429→     * Select specific fields to fetch from the MatrimonyProfile
+ 31430→     */
+ 31431→    select?: MatrimonyProfileSelectCreateManyAndReturn<ExtArgs> | null
+ 31432→    /**
+ 31433→     * Omit specific fields from the MatrimonyProfile
+ 31434→     */
+ 31435→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31436→    /**
+ 31437→     * The data used to create many MatrimonyProfiles.
+ 31438→     */
+ 31439→    data: MatrimonyProfileCreateManyInput | MatrimonyProfileCreateManyInput[]
+ 31440→    /**
+ 31441→     * Choose, which related nodes to fetch as well
+ 31442→     */
+ 31443→    include?: MatrimonyProfileIncludeCreateManyAndReturn<ExtArgs> | null
+ 31444→  }
+ 31445→
+ 31446→  /**
+ 31447→   * MatrimonyProfile update
+ 31448→   */
+ 31449→  export type MatrimonyProfileUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31450→    /**
+ 31451→     * Select specific fields to fetch from the MatrimonyProfile
+ 31452→     */
+ 31453→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31454→    /**
+ 31455→     * Omit specific fields from the MatrimonyProfile
+ 31456→     */
+ 31457→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31458→    /**
+ 31459→     * Choose, which related nodes to fetch as well
+ 31460→     */
+ 31461→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31462→    /**
+ 31463→     * The data needed to update a MatrimonyProfile.
+ 31464→     */
+ 31465→    data: XOR<MatrimonyProfileUpdateInput, MatrimonyProfileUncheckedUpdateInput>
+ 31466→    /**
+ 31467→     * Choose, which MatrimonyProfile to update.
+ 31468→     */
+ 31469→    where: MatrimonyProfileWhereUniqueInput
+ 31470→  }
+ 31471→
+ 31472→  /**
+ 31473→   * MatrimonyProfile updateMany
+ 31474→   */
+ 31475→  export type MatrimonyProfileUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31476→    /**
+ 31477→     * The data used to update MatrimonyProfiles.
+ 31478→     */
+ 31479→    data: XOR<MatrimonyProfileUpdateManyMutationInput, MatrimonyProfileUncheckedUpdateManyInput>
+ 31480→    /**
+ 31481→     * Filter which MatrimonyProfiles to update
+ 31482→     */
+ 31483→    where?: MatrimonyProfileWhereInput
+ 31484→    /**
+ 31485→     * Limit how many MatrimonyProfiles to update.
+ 31486→     */
+ 31487→    limit?: number
+ 31488→  }
+ 31489→
+ 31490→  /**
+ 31491→   * MatrimonyProfile updateManyAndReturn
+ 31492→   */
+ 31493→  export type MatrimonyProfileUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31494→    /**
+ 31495→     * Select specific fields to fetch from the MatrimonyProfile
+ 31496→     */
+ 31497→    select?: MatrimonyProfileSelectUpdateManyAndReturn<ExtArgs> | null
+ 31498→    /**
+ 31499→     * Omit specific fields from the MatrimonyProfile
+ 31500→     */
+ 31501→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31502→    /**
+ 31503→     * The data used to update MatrimonyProfiles.
+ 31504→     */
+ 31505→    data: XOR<MatrimonyProfileUpdateManyMutationInput, MatrimonyProfileUncheckedUpdateManyInput>
+ 31506→    /**
+ 31507→     * Filter which MatrimonyProfiles to update
+ 31508→     */
+ 31509→    where?: MatrimonyProfileWhereInput
+ 31510→    /**
+ 31511→     * Limit how many MatrimonyProfiles to update.
+ 31512→     */
+ 31513→    limit?: number
+ 31514→    /**
+ 31515→     * Choose, which related nodes to fetch as well
+ 31516→     */
+ 31517→    include?: MatrimonyProfileIncludeUpdateManyAndReturn<ExtArgs> | null
+ 31518→  }
+ 31519→
+ 31520→  /**
+ 31521→   * MatrimonyProfile upsert
+ 31522→   */
+ 31523→  export type MatrimonyProfileUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31524→    /**
+ 31525→     * Select specific fields to fetch from the MatrimonyProfile
+ 31526→     */
+ 31527→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31528→    /**
+ 31529→     * Omit specific fields from the MatrimonyProfile
+ 31530→     */
+ 31531→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31532→    /**
+ 31533→     * Choose, which related nodes to fetch as well
+ 31534→     */
+ 31535→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31536→    /**
+ 31537→     * The filter to search for the MatrimonyProfile to update in case it exists.
+ 31538→     */
+ 31539→    where: MatrimonyProfileWhereUniqueInput
+ 31540→    /**
+ 31541→     * In case the MatrimonyProfile found by the `where` argument doesn't exist, create a new MatrimonyProfile with this data.
+ 31542→     */
+ 31543→    create: XOR<MatrimonyProfileCreateInput, MatrimonyProfileUncheckedCreateInput>
+ 31544→    /**
+ 31545→     * In case the MatrimonyProfile was found with the provided `where` argument, update it with this data.
+ 31546→     */
+ 31547→    update: XOR<MatrimonyProfileUpdateInput, MatrimonyProfileUncheckedUpdateInput>
+ 31548→  }
+ 31549→
+ 31550→  /**
+ 31551→   * MatrimonyProfile delete
+ 31552→   */
+ 31553→  export type MatrimonyProfileDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31554→    /**
+ 31555→     * Select specific fields to fetch from the MatrimonyProfile
+ 31556→     */
+ 31557→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31558→    /**
+ 31559→     * Omit specific fields from the MatrimonyProfile
+ 31560→     */
+ 31561→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31562→    /**
+ 31563→     * Choose, which related nodes to fetch as well
+ 31564→     */
+ 31565→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31566→    /**
+ 31567→     * Filter which MatrimonyProfile to delete.
+ 31568→     */
+ 31569→    where: MatrimonyProfileWhereUniqueInput
+ 31570→  }
+ 31571→
+ 31572→  /**
+ 31573→   * MatrimonyProfile deleteMany
+ 31574→   */
+ 31575→  export type MatrimonyProfileDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31576→    /**
+ 31577→     * Filter which MatrimonyProfiles to delete
+ 31578→     */
+ 31579→    where?: MatrimonyProfileWhereInput
+ 31580→    /**
+ 31581→     * Limit how many MatrimonyProfiles to delete.
+ 31582→     */
+ 31583→    limit?: number
+ 31584→  }
+ 31585→
+ 31586→  /**
+ 31587→   * MatrimonyProfile.district
+ 31588→   */
+ 31589→  export type MatrimonyProfile$districtArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31590→    /**
+ 31591→     * Select specific fields to fetch from the Location
+ 31592→     */
+ 31593→    select?: LocationSelect<ExtArgs> | null
+ 31594→    /**
+ 31595→     * Omit specific fields from the Location
+ 31596→     */
+ 31597→    omit?: LocationOmit<ExtArgs> | null
+ 31598→    /**
+ 31599→     * Choose, which related nodes to fetch as well
+ 31600→     */
+ 31601→    include?: LocationInclude<ExtArgs> | null
+ 31602→    where?: LocationWhereInput
+ 31603→  }
+ 31604→
+ 31605→  /**
+ 31606→   * MatrimonyProfile.tehsil
+ 31607→   */
+ 31608→  export type MatrimonyProfile$tehsilArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31609→    /**
+ 31610→     * Select specific fields to fetch from the Location
+ 31611→     */
+ 31612→    select?: LocationSelect<ExtArgs> | null
+ 31613→    /**
+ 31614→     * Omit specific fields from the Location
+ 31615→     */
+ 31616→    omit?: LocationOmit<ExtArgs> | null
+ 31617→    /**
+ 31618→     * Choose, which related nodes to fetch as well
+ 31619→     */
+ 31620→    include?: LocationInclude<ExtArgs> | null
+ 31621→    where?: LocationWhereInput
+ 31622→  }
+ 31623→
+ 31624→  /**
+ 31625→   * MatrimonyProfile.city
+ 31626→   */
+ 31627→  export type MatrimonyProfile$cityArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31628→    /**
+ 31629→     * Select specific fields to fetch from the Location
+ 31630→     */
+ 31631→    select?: LocationSelect<ExtArgs> | null
+ 31632→    /**
+ 31633→     * Omit specific fields from the Location
+ 31634→     */
+ 31635→    omit?: LocationOmit<ExtArgs> | null
+ 31636→    /**
+ 31637→     * Choose, which related nodes to fetch as well
+ 31638→     */
+ 31639→    include?: LocationInclude<ExtArgs> | null
+ 31640→    where?: LocationWhereInput
+ 31641→  }
+ 31642→
+ 31643→  /**
+ 31644→   * MatrimonyProfile without action
+ 31645→   */
+ 31646→  export type MatrimonyProfileDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31647→    /**
+ 31648→     * Select specific fields to fetch from the MatrimonyProfile
+ 31649→     */
+ 31650→    select?: MatrimonyProfileSelect<ExtArgs> | null
+ 31651→    /**
+ 31652→     * Omit specific fields from the MatrimonyProfile
+ 31653→     */
+ 31654→    omit?: MatrimonyProfileOmit<ExtArgs> | null
+ 31655→    /**
+ 31656→     * Choose, which related nodes to fetch as well
+ 31657→     */
+ 31658→    include?: MatrimonyProfileInclude<ExtArgs> | null
+ 31659→  }
+ 31660→
+ 31661→
+ 31662→  /**
+ 31663→   * Model Job
+ 31664→   */
+ 31665→
+ 31666→  export type AggregateJob = {
+ 31667→    _count: JobCountAggregateOutputType | null
+ 31668→    _avg: JobAvgAggregateOutputType | null
+ 31669→    _sum: JobSumAggregateOutputType | null
+ 31670→    _min: JobMinAggregateOutputType | null
+ 31671→    _max: JobMaxAggregateOutputType | null
+ 31672→  }
+ 31673→
+ 31674→  export type JobAvgAggregateOutputType = {
+ 31675→    vacancies: number | null
+ 31676→    viewsCount: number | null
+ 31677→    applicationsCount: number | null
+ 31678→  }
+ 31679→
+ 31680→  export type JobSumAggregateOutputType = {
+ 31681→    vacancies: number | null
+ 31682→    viewsCount: number | null
+ 31683→    applicationsCount: number | null
+ 31684→  }
+ 31685→
+ 31686→  export type JobMinAggregateOutputType = {
+ 31687→    id: string | null
+ 31688→    employerId: string | null
+ 31689→    title: string | null
+ 31690→    description: string | null
+ 31691→    category: string | null
+ 31692→    type: string | null
+ 31693→    salaryMin: string | null
+ 31694→    salaryMax: string | null
+ 31695→    salaryCurrency: string | null
+ 31696→    experience: string | null
+ 31697→    skills: string | null
+ 31698→    education: string | null
+ 31699→    vacancies: number | null
+ 31700→    location: string | null
+ 31701→    districtId: string | null
+ 31702→    cityId: string | null
+ 31703→    isRemote: boolean | null
+ 31704→    isFeatured: boolean | null
+ 31705→    featuredExpiry: Date | null
+ 31706→    status: string | null
+ 31707→    contactEmail: string | null
+ 31708→    contactPhone: string | null
+ 31709→    applyUrl: string | null
+ 31710→    viewsCount: number | null
+ 31711→    applicationsCount: number | null
+ 31712→    expiresAt: Date | null
+ 31713→    approvedAt: Date | null
+ 31714→    approvedBy: string | null
+ 31715→    rejectedAt: Date | null
+ 31716→    rejectionReason: string | null
+ 31717→    createdAt: Date | null
+ 31718→    updatedAt: Date | null
+ 31719→  }
+ 31720→
+ 31721→  export type JobMaxAggregateOutputType = {
+ 31722→    id: string | null
+ 31723→    employerId: string | null
+ 31724→    title: string | null
+ 31725→    description: string | null
+ 31726→    category: string | null
+ 31727→    type: string | null
+ 31728→    salaryMin: string | null
+ 31729→    salaryMax: string | null
+ 31730→    salaryCurrency: string | null
+ 31731→    experience: string | null
+ 31732→    skills: string | null
+ 31733→    education: string | null
+ 31734→    vacancies: number | null
+ 31735→    location: string | null
+ 31736→    districtId: string | null
+ 31737→    cityId: string | null
+ 31738→    isRemote: boolean | null
+ 31739→    isFeatured: boolean | null
+ 31740→    featuredExpiry: Date | null
+ 31741→    status: string | null
+ 31742→    contactEmail: string | null
+ 31743→    contactPhone: string | null
+ 31744→    applyUrl: string | null
+ 31745→    viewsCount: number | null
+ 31746→    applicationsCount: number | null
+ 31747→    expiresAt: Date | null
+ 31748→    approvedAt: Date | null
+ 31749→    approvedBy: string | null
+ 31750→    rejectedAt: Date | null
+ 31751→    rejectionReason: string | null
+ 31752→    createdAt: Date | null
+ 31753→    updatedAt: Date | null
+ 31754→  }
+ 31755→
+ 31756→  export type JobCountAggregateOutputType = {
+ 31757→    id: number
+ 31758→    employerId: number
+ 31759→    title: number
+ 31760→    description: number
+ 31761→    category: number
+ 31762→    type: number
+ 31763→    salaryMin: number
+ 31764→    salaryMax: number
+ 31765→    salaryCurrency: number
+ 31766→    experience: number
+ 31767→    skills: number
+ 31768→    education: number
+ 31769→    vacancies: number
+ 31770→    location: number
+ 31771→    districtId: number
+ 31772→    cityId: number
+ 31773→    isRemote: number
+ 31774→    isFeatured: number
+ 31775→    featuredExpiry: number
+ 31776→    status: number
+ 31777→    contactEmail: number
+ 31778→    contactPhone: number
+ 31779→    applyUrl: number
+ 31780→    viewsCount: number
+ 31781→    applicationsCount: number
+ 31782→    expiresAt: number
+ 31783→    approvedAt: number
+ 31784→    approvedBy: number
+ 31785→    rejectedAt: number
+ 31786→    rejectionReason: number
+ 31787→    createdAt: number
+ 31788→    updatedAt: number
+ 31789→    _all: number
+ 31790→  }
+ 31791→
+ 31792→
+ 31793→  export type JobAvgAggregateInputType = {
+ 31794→    vacancies?: true
+ 31795→    viewsCount?: true
+ 31796→    applicationsCount?: true
+ 31797→  }
+ 31798→
+ 31799→  export type JobSumAggregateInputType = {
+ 31800→    vacancies?: true
+ 31801→    viewsCount?: true
+ 31802→    applicationsCount?: true
+ 31803→  }
+ 31804→
+ 31805→  export type JobMinAggregateInputType = {
+ 31806→    id?: true
+ 31807→    employerId?: true
+ 31808→    title?: true
+ 31809→    description?: true
+ 31810→    category?: true
+ 31811→    type?: true
+ 31812→    salaryMin?: true
+ 31813→    salaryMax?: true
+ 31814→    salaryCurrency?: true
+ 31815→    experience?: true
+ 31816→    skills?: true
+ 31817→    education?: true
+ 31818→    vacancies?: true
+ 31819→    location?: true
+ 31820→    districtId?: true
+ 31821→    cityId?: true
+ 31822→    isRemote?: true
+ 31823→    isFeatured?: true
+ 31824→    featuredExpiry?: true
+ 31825→    status?: true
+ 31826→    contactEmail?: true
+ 31827→    contactPhone?: true
+ 31828→    applyUrl?: true
+ 31829→    viewsCount?: true
+ 31830→    applicationsCount?: true
+ 31831→    expiresAt?: true
+ 31832→    approvedAt?: true
+ 31833→    approvedBy?: true
+ 31834→    rejectedAt?: true
+ 31835→    rejectionReason?: true
+ 31836→    createdAt?: true
+ 31837→    updatedAt?: true
+ 31838→  }
+ 31839→
+ 31840→  export type JobMaxAggregateInputType = {
+ 31841→    id?: true
+ 31842→    employerId?: true
+ 31843→    title?: true
+ 31844→    description?: true
+ 31845→    category?: true
+ 31846→    type?: true
+ 31847→    salaryMin?: true
+ 31848→    salaryMax?: true
+ 31849→    salaryCurrency?: true
+ 31850→    experience?: true
+ 31851→    skills?: true
+ 31852→    education?: true
+ 31853→    vacancies?: true
+ 31854→    location?: true
+ 31855→    districtId?: true
+ 31856→    cityId?: true
+ 31857→    isRemote?: true
+ 31858→    isFeatured?: true
+ 31859→    featuredExpiry?: true
+ 31860→    status?: true
+ 31861→    contactEmail?: true
+ 31862→    contactPhone?: true
+ 31863→    applyUrl?: true
+ 31864→    viewsCount?: true
+ 31865→    applicationsCount?: true
+ 31866→    expiresAt?: true
+ 31867→    approvedAt?: true
+ 31868→    approvedBy?: true
+ 31869→    rejectedAt?: true
+ 31870→    rejectionReason?: true
+ 31871→    createdAt?: true
+ 31872→    updatedAt?: true
+ 31873→  }
+ 31874→
+ 31875→  export type JobCountAggregateInputType = {
+ 31876→    id?: true
+ 31877→    employerId?: true
+ 31878→    title?: true
+ 31879→    description?: true
+ 31880→    category?: true
+ 31881→    type?: true
+ 31882→    salaryMin?: true
+ 31883→    salaryMax?: true
+ 31884→    salaryCurrency?: true
+ 31885→    experience?: true
+ 31886→    skills?: true
+ 31887→    education?: true
+ 31888→    vacancies?: true
+ 31889→    location?: true
+ 31890→    districtId?: true
+ 31891→    cityId?: true
+ 31892→    isRemote?: true
+ 31893→    isFeatured?: true
+ 31894→    featuredExpiry?: true
+ 31895→    status?: true
+ 31896→    contactEmail?: true
+ 31897→    contactPhone?: true
+ 31898→    applyUrl?: true
+ 31899→    viewsCount?: true
+ 31900→    applicationsCount?: true
+ 31901→    expiresAt?: true
+ 31902→    approvedAt?: true
+ 31903→    approvedBy?: true
+ 31904→    rejectedAt?: true
+ 31905→    rejectionReason?: true
+ 31906→    createdAt?: true
+ 31907→    updatedAt?: true
+ 31908→    _all?: true
+ 31909→  }
+ 31910→
+ 31911→  export type JobAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31912→    /**
+ 31913→     * Filter which Job to aggregate.
+ 31914→     */
+ 31915→    where?: JobWhereInput
+ 31916→    /**
+ 31917→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+ 31918→     * 
+ 31919→     * Determine the order of Jobs to fetch.
+ 31920→     */
+ 31921→    orderBy?: JobOrderByWithRelationInput | JobOrderByWithRelationInput[]
+ 31922→    /**
+ 31923→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+ 31924→     * 
+ 31925→     * Sets the start position
+ 31926→     */
+ 31927→    cursor?: JobWhereUniqueInput
+ 31928→    /**
+ 31929→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+ 31930→     * 
+ 31931→     * Take `±n` Jobs from the position of the cursor.
+ 31932→     */
+ 31933→    take?: number
+ 31934→    /**
+ 31935→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+ 31936→     * 
+ 31937→     * Skip the first `n` Jobs.
+ 31938→     */
+ 31939→    skip?: number
+ 31940→    /**
+ 31941→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+ 31942→     * 
+ 31943→     * Count returned Jobs
+ 31944→    **/
+ 31945→    _count?: true | JobCountAggregateInputType
+ 31946→    /**
+ 31947→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+ 31948→     * 
+ 31949→     * Select which fields to average
+ 31950→    **/
+ 31951→    _avg?: JobAvgAggregateInputType
+ 31952→    /**
+ 31953→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+ 31954→     * 
+ 31955→     * Select which fields to sum
+ 31956→    **/
+ 31957→    _sum?: JobSumAggregateInputType
+ 31958→    /**
+ 31959→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+ 31960→     * 
+ 31961→     * Select which fields to find the minimum value
+ 31962→    **/
+ 31963→    _min?: JobMinAggregateInputType
+ 31964→    /**
+ 31965→     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+ 31966→     * 
+ 31967→     * Select which fields to find the maximum value
+ 31968→    **/
+ 31969→    _max?: JobMaxAggregateInputType
+ 31970→  }
+ 31971→
+ 31972→  export type GetJobAggregateType<T extends JobAggregateArgs> = {
+ 31973→        [P in keyof T & keyof AggregateJob]: P extends '_count' | 'count'
+ 31974→      ? T[P] extends true
+ 31975→        ? number
+ 31976→        : GetScalarType<T[P], AggregateJob[P]>
+ 31977→      : GetScalarType<T[P], AggregateJob[P]>
+ 31978→  }
+ 31979→
+ 31980→
+ 31981→
+ 31982→
+ 31983→  export type JobGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 31984→    where?: JobWhereInput
+ 31985→    orderBy?: JobOrderByWithAggregationInput | JobOrderByWithAggregationInput[]
+ 31986→    by: JobScalarFieldEnum[] | JobScalarFieldEnum
+ 31987→    having?: JobScalarWhereWithAggregatesInput
+ 31988→    take?: number
+ 31989→    skip?: number
+ 31990→    _count?: JobCountAggregateInputType | true
+ 31991→    _avg?: JobAvgAggregateInputType
+ 31992→    _sum?: JobSumAggregateInputType
+ 31993→    _min?: JobMinAggregateInputType
+ 31994→    _max?: JobMaxAggregateInputType
+ 31995→  }
+ 31996→
+ 31997→  export type JobGroupByOutputType = {
+ 31998→    id: string
+ 31999→    employerId: string
+ 32000→    title: string
+ 32001→    description: string
+ 32002→    category: string | null
+ 32003→    type: string
+ 32004→    salaryMin: string | null
+ 32005→    salaryMax: string | null
+ 32006→    salaryCurrency: string
+ 32007→    experience: string | null
+ 32008→    skills: string | null
+ 32009→    education: string | null
+ 32010→    vacancies: number
+ 32011→    location: string | null
+ 32012→    districtId: string | null
+ 32013→    cityId: string | null
+ 32014→    isRemote: boolean
+ 32015→    isFeatured: boolean
+ 32016→    featuredExpiry: Date | null
+ 32017→    status: string
+ 32018→    contactEmail: string | null
+ 32019→    contactPhone: string | null
+ 32020→    applyUrl: string | null
+ 32021→    viewsCount: number
+ 32022→    applicationsCount: number
+ 32023→    expiresAt: Date | null
+ 32024→    approvedAt: Date | null
+ 32025→    approvedBy: string | null
+ 32026→    rejectedAt: Date | null
+ 32027→    rejectionReason: string | null
+ 32028→    createdAt: Date
+ 32029→    updatedAt: Date
+ 32030→    _count: JobCountAggregateOutputType | null
+ 32031→    _avg: JobAvgAggregateOutputType | null
+ 32032→    _sum: JobSumAggregateOutputType | null
+ 32033→    _min: JobMinAggregateOutputType | null
+ 32034→    _max: JobMaxAggregateOutputType | null
+ 32035→  }
+ 32036→
+ 32037→  type GetJobGroupByPayload<T extends JobGroupByArgs> = Prisma.PrismaPromise<
+ 32038→    Array<
+ 32039→      PickEnumerable<JobGroupByOutputType, T['by']> &
+ 32040→        {
+ 32041→          [P in ((keyof T) & (keyof JobGroupByOutputType))]: P extends '_count'
+ 32042→            ? T[P] extends boolean
+ 32043→              ? number
+ 32044→              : GetScalarType<T[P], JobGroupByOutputType[P]>
+ 32045→            : GetScalarType<T[P], JobGroupByOutputType[P]>
+ 32046→        }
+ 32047→      >
+ 32048→    >
+ 32049→
+ 32050→
+ 32051→  export type JobSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+ 32052→    id?: boolean
+ 32053→    employerId?: boolean
+ 32054→    title?: boolean
+ 32055→    description?: boolean
+ 32056→    category?: boolean
+ 32057→    type?: boolean
+ 32058→    salaryMin?: boolean
+ 32059→    salaryMax?: boolean
+ 32060→    salaryCurrency?: boolean
+ 32061→    experience?: boolean
+ 32062→    skills?: boolean
+ 32063→    education?: boolean
+ 32064→    vacancies?: boolean
+ 32065→    location?: boolean
+ 32066→    districtId?: boolean
+ 32067→    cityId?: boolean
+ 32068→    isRemote?: boolean
+ 32069→    isFeatured?: boolean
+ 32070→    featuredExpiry?: boolean
+ 32071→    status?: boolean
+ 32072→    contactEmail?: boolean
+ 32073→    contactPhone?: boolean
+ 32074→    applyUrl?: boolean
+ 32075→    viewsCount?: boolean
+ 32076→    applicationsCount?: boolean
+ 32077→    expiresAt?: boolean
+ 32078→    approvedAt?: boolean
+ 32079→    approvedBy?: boolean
+ 32080→    rejectedAt?: boolean
+ 32081→    rejectionReason?: boolean
+ 32082→    createdAt?: boolean
+ 32083→    updatedAt?: boolean
+ 32084→    employer?: boolean | UserDefaultArgs<ExtArgs>
+ 32085→    district?: boolean | Job$districtArgs<ExtArgs>
+ 32086→    city?: boolean | Job$cityArgs<ExtArgs>
+ 32087→    applications?: boolean | Job$applicationsArgs<ExtArgs>
+ 32088→    _count?: boolean | JobCountOutputTypeDefaultArgs<ExtArgs>
+ 32089→  }, ExtArgs["result"]["job"]>
+ 32090→
+ 32091→  export type JobSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+ 32092→    id?: boolean
+ 32093→    employerId?: boolean
+ 32094→    title?: boolean
+ 32095→    description?: boolean
+ 32096→    category?: boolean
+ 32097→    type?: boolean
+ 32098→    salaryMin?: boolean
+ 32099→    salaryMax?: boolean
+ 32100→    salaryCurrency?: boolean
+ 32101→    experience?: boolean
+ 32102→    skills?: boolean
+ 32103→    education?: boolean
+ 32104→    vacancies?: boolean
+ 32105→    location?: boolean
+ 32106→    districtId?: boolean
+ 32107→    cityId?: boolean
+ 32108→    isRemote?: boolean
+ 32109→    isFeatured?: boolean
+ 32110→    featuredExpiry?: boolean
+ 32111→    status?: boolean
+ 32112→    contactEmail?: boolean
+ 32113→    contactPhone?: boolean
+ 32114→    applyUrl?: boolean
+ 32115→    viewsCount?: boolean
+ 32116→    applicationsCount?: boolean
+ 32117→    expiresAt?: boolean
+ 32118→    approvedAt?: boolean
+ 32119→    approvedBy?: boolean
+ 32120→    rejectedAt?: boolean
+ 32121→    rejectionReason?: boolean
+ 32122→    createdAt?: boolean
+ 32123→    updatedAt?: boolean
+ 32124→    employer?: boolean | UserDefaultArgs<ExtArgs>
+ 32125→    district?: boolean | Job$districtArgs<ExtArgs>
+ 32126→    city?: boolean | Job$cityArgs<ExtArgs>
+ 32127→  }, ExtArgs["result"]["job"]>
+ 32128→
+ 32129→  export type JobSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+ 32130→    id?: boolean
+ 32131→    employerId?: boolean
+ 32132→    title?: boolean
+ 32133→    description?: boolean
+ 32134→    category?: boolean
+ 32135→    type?: boolean
+ 32136→    salaryMin?: boolean
+ 32137→    salaryMax?: boolean
+ 32138→    salaryCurrency?: boolean
+ 32139→    experience?: boolean
+ 32140→    skills?: boolean
+ 32141→    education?: boolean
+ 32142→    vacancies?: boolean
+ 32143→    location?: boolean
+ 32144→    districtId?: boolean
+ 32145→    cityId?: boolean
+ 32146→    isRemote?: boolean
+ 32147→    isFeatured?: boolean
+ 32148→    featuredExpiry?: boolean
+ 32149→    status?: boolean
+ 32150→    contactEmail?: boolean
+ 32151→    contactPhone?: boolean
+ 32152→    applyUrl?: boolean
+ 32153→    viewsCount?: boolean
+ 32154→    applicationsCount?: boolean
+ 32155→    expiresAt?: boolean
+ 32156→    approvedAt?: boolean
+ 32157→    approvedBy?: boolean
+ 32158→    rejectedAt?: boolean
+ 32159→    rejectionReason?: boolean
+ 32160→    createdAt?: boolean
+ 32161→    updatedAt?: boolean
+ 32162→    employer?: boolean | UserDefaultArgs<ExtArgs>
+ 32163→    district?: boolean | Job$districtArgs<ExtArgs>
+ 32164→    city?: boolean | Job$cityArgs<ExtArgs>
+ 32165→  }, ExtArgs["result"]["job"]>
+ 32166→
+ 32167→  export type JobSelectScalar = {
+ 32168→    id?: boolean
+ 32169→    employerId?: boolean
+ 32170→    title?: boolean
+ 32171→    description?: boolean
+ 32172→    category?: boolean
+ 32173→    type?: boolean
+ 32174→    salaryMin?: boolean
+ 32175→    salaryMax?: boolean
+ 32176→    salaryCurrency?: boolean
+ 32177→    experience?: boolean
+ 32178→    skills?: boolean
+ 32179→    education?: boolean
+ 32180→    vacancies?: boolean
+ 32181→    location?: boolean
+ 32182→    districtId?: boolean
+ 32183→    cityId?: boolean
+ 32184→    isRemote?: boolean
+ 32185→    isFeatured?: boolean
+ 32186→    featuredExpiry?: boolean
+ 32187→    status?: boolean
+ 32188→    contactEmail?: boolean
+ 32189→    contactPhone?: boolean
+ 32190→    applyUrl?: boolean
+ 32191→    viewsCount?: boolean
+ 32192→    applicationsCount?: boolean
+ 32193→    expiresAt?: boolean
+ 32194→    approvedAt?: boolean
+ 32195→    approvedBy?: boolean
+ 32196→    rejectedAt?: boolean
+ 32197→    rejectionReason?: boolean
+ 32198→    createdAt?: boolean
+ 32199→    updatedAt?: boolean
+ 32200→  }
+ 32201→
+ 32202→  export type JobOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "employerId" | "title" | "description" | "category" | "type" | "salaryMin" | "salaryMax" | "salaryCurrency" | "experience" | "skills" | "education" | "vacancies" | "location" | "districtId" | "cityId" | "isRemote" | "isFeatured" | "featuredExpiry" | "status" | "contactEmail" | "contactPhone" | "applyUrl" | "viewsCount" | "applicationsCount" | "expiresAt" | "approvedAt" | "approvedBy" | "rejectedAt" | "rejectionReason" | "createdAt" | "updatedAt", ExtArgs["result"]["job"]>
+ 32203→  export type JobInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 32204→    employer?: boolean | UserDefaultArgs<ExtArgs>
+ 32205→    district?: boolean | Job$districtArgs<ExtArgs>
+ 32206→    city?: boolean | Job$cityArgs<ExtArgs>
+ 32207→    applications?: boolean | Job$applicationsArgs<ExtArgs>
+ 32208→    _count?: boolean | JobCountOutputTypeDefaultArgs<ExtArgs>
+ 32209→  }
+ 32210→  export type JobIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 32211→    employer?: boolean | UserDefaultArgs<ExtArgs>
+ 32212→    district?: boolean | Job$districtArgs<ExtArgs>
+ 32213→    city?: boolean | Job$cityArgs<ExtArgs>
+ 32214→  }
+ 32215→  export type JobIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 32216→    employer?: boolean | UserDefaultArgs<ExtArgs>
+ 32217→    district?: boolean | Job$districtArgs<ExtArgs>
+ 32218→    city?: boolean | Job$cityArgs<ExtArgs>
+ 32219→  }
+ 32220→
+ 32221→  export type $JobPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+ 32222→    name: "Job"
+ 32223→    objects: {
+ 32224→      employer: Prisma.$UserPayload<ExtArgs>
+ 32225→      district: Prisma.$LocationPayload<ExtArgs> | null
+ 32226→      city: Prisma.$LocationPayload<ExtArgs> | null
+ 32227→      applications: Prisma.$JobApplicationPayload<ExtArgs>[]
+ 32228→    }
+ 32229→    scalars: $Extensions.GetPayloadResult<{
+ 32230→      id: string
+ 32231→      employerId: string
+ 32232→      title: string
+ 32233→      description: string
+ 32234→      category: string | null
+ 32235→      type: string
+ 32236→      salaryMin: string | null
+ 32237→      salaryMax: string | null
+ 32238→      salaryCurrency: string
+ 32239→      experience: string | null
+ 32240→      skills: string | null
+ 32241→      education: string | null
+ 32242→      vacancies: number
+ 32243→      location: string | null
+ 32244→      districtId: string | null
+ 32245→      cityId: string | null
+ 32246→      isRemote: boolean
+ 32247→      isFeatured: boolean
+ 32248→      featuredExpiry: Date | null
+ 32249→      status: string
+ 32250→      contactEmail: string | null
+ 32251→      contactPhone: string | null
+ 32252→      applyUrl: string | null
+ 32253→      viewsCount: number
+ 32254→      applicationsCount: number
+ 32255→      expiresAt: Date | null
+ 32256→      approvedAt: Date | null
+ 32257→      approvedBy: string | null
+ 32258→      rejectedAt: Date | null
+ 32259→      rejectionReason: string | null
+ 32260→      createdAt: Date
+ 32261→      updatedAt: Date
+ 32262→    }, ExtArgs["result"]["job"]>
+ 32263→    composites: {}
+ 32264→  }
+ 32265→
+ 32266→  type JobGetPayload<S extends boolean | null | undefined | JobDefaultArgs> = $Result.GetResult<Prisma.$JobPayload, S>
+ 32267→
+ 32268→  type JobCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+ 32269→    Omit<JobFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+ 32270→      select?: JobCountAggregateInputType | true
+ 32271→    }
+ 32272→
+ 32273→  export interface JobDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+ 32274→    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Job'], meta: { name: 'Job' } }
+ 32275→    /**
+ 32276→     * Find zero or one Job that matches the filter.
+ 32277→     * @param {JobFindUniqueArgs} args - Arguments to find a Job
+ 32278→     * @example
+ 32279→     * // Get one Job
+ 32280→     * const job = await prisma.job.findUnique({
+ 32281→     *   where: {
+ 32282→     *     // ... provide filter here
+ 32283→     *   }
+ 32284→     * })
+ 32285→     */
+ 32286→    findUnique<T extends JobFindUniqueArgs>(args: SelectSubset<T, JobFindUniqueArgs<ExtArgs>>): Prisma__JobClient<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+ 32287→
+ 32288→    /**
+ 32289→     * Find one Job that matches the filter or throw an error with `error.code='P2025'`
+ 32290→     * if no matches were found.
+ 32291→     * @param {JobFindUniqueOrThrowArgs} args - Arguments to find a Job
+ 32292→     * @example
+ 32293→     * // Get one Job
+ 32294→     * const job = await prisma.job.findUniqueOrThrow({
+ 32295→     *   where: {
+ 32296→     *     // ... provide filter here
+ 32297→     *   }
+ 32298→     * })
+ 32299→     */
+ 32300→    findUniqueOrThrow<T extends JobFindUniqueOrThrowArgs>(args: SelectSubset<T, JobFindUniqueOrThrowArgs<ExtArgs>>): Prisma__JobClient<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 32301→
+ 32302→    /**
+ 32303→     * Find the first Job that matches the filter.
+ 32304→     * Note, that providing `undefined` is treated as the value not being there.
+ 32305→     * Read more here: https://pris.ly/d/null-undefined
+ 32306→     * @param {JobFindFirstArgs} args - Arguments to find a Job
+ 32307→     * @example
+ 32308→     * // Get one Job
+ 32309→     * const job = await prisma.job.findFirst({
+ 32310→     *   where: {
+ 32311→     *     // ... provide filter here
+ 32312→     *   }
+ 32313→     * })
+ 32314→     */
+ 32315→    findFirst<T extends JobFindFirstArgs>(args?: SelectSubset<T, JobFindFirstArgs<ExtArgs>>): Prisma__JobClient<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+ 32316→
+ 32317→    /**
+ 32318→     * Find the first Job that matches the filter or
+ 32319→     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+ 32320→     * Note, that providing `undefined` is treated as the value not being there.
+ 32321→     * Read more here: https://pris.ly/d/null-undefined
+ 32322→     * @param {JobFindFirstOrThrowArgs} args - Arguments to find a Job
+ 32323→     * @example
+ 32324→     * // Get one Job
+ 32325→     * const job = await prisma.job.findFirstOrThrow({
+ 32326→     *   where: {
+ 32327→     *     // ... provide filter here
+ 32328→     *   }
+ 32329→     * })
+ 32330→     */
+ 32331→    findFirstOrThrow<T extends JobFindFirstOrThrowArgs>(args?: SelectSubset<T, JobFindFirstOrThrowArgs<ExtArgs>>): Prisma__JobClient<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 32332→
+ 32333→    /**
+ 32334→     * Find zero or more Jobs that matches the filter.
+ 32335→     * Note, that providing `undefined` is treated as the value not being there.
+ 32336→     * Read more here: https://pris.ly/d/null-undefined
+ 32337→     * @param {JobFindManyArgs} args - Arguments to filter and select certain fields only.
+ 32338→     * @example
+ 32339→     * // Get all Jobs
+ 32340→     * const jobs = await prisma.job.findMany()
+ 32341→     * 
+ 32342→     * // Get first 10 Jobs
+ 32343→     * const jobs = await prisma.job.findMany({ take: 10 })
+ 32344→     * 
+ 32345→     * // Only select the `id`
+ 32346→     * const jobWithIdOnly = await prisma.job.findMany({ select: { id: true } })
+ 32347→     * 
+ 32348→     */
+ 32349→    findMany<T extends JobFindManyArgs>(args?: SelectSubset<T, JobFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+ 32350→
+ 32351→    /**
+ 32352→     * Create a Job.
+ 32353→     * @param {JobCreateArgs} args - Arguments to create a Job.
+ 32354→     * @example
+ 32355→     * // Create one Job
+ 32356→     * const Job = await prisma.job.create({
+ 32357→     *   data: {
+ 32358→     *     // ... data to create a Job
+ 32359→     *   }
+ 32360→     * })
+ 32361→     * 
+ 32362→     */
+ 32363→    create<T extends JobCreateArgs>(args: SelectSubset<T, JobCreateArgs<ExtArgs>>): Prisma__JobClient<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 32364→
+ 32365→    /**
+ 32366→     * Create many Jobs.
+ 32367→     * @param {JobCreateManyArgs} args - Arguments to create many Jobs.
+ 32368→     * @example
+ 32369→     * // Create many Jobs
+ 32370→     * const job = await prisma.job.createMany({
+ 32371→     *   data: [
+ 32372→     *     // ... provide data here
+ 32373→     *   ]
+ 32374→     * })
+ 32375→     *     
+ 32376→     */
+ 32377→    createMany<T extends JobCreateManyArgs>(args?: SelectSubset<T, JobCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+ 32378→
+ 32379→    /**
+ 32380→     * Create many Jobs and returns the data saved in the database.
+ 32381→     * @param {JobCreateManyAndReturnArgs} args - Arguments to create many Jobs.
+ 32382→     * @example
+ 32383→     * // Create many Jobs
+ 32384→     * const job = await prisma.job.createManyAndReturn({
+ 32385→     *   data: [
+ 32386→     *     // ... provide data here
+ 32387→     *   ]
+ 32388→     * })
+ 32389→     * 
+ 32390→     * // Create many Jobs and only return the `id`
+ 32391→     * const jobWithIdOnly = await prisma.job.createManyAndReturn({
+ 32392→     *   select: { id: true },
+ 32393→     *   data: [
+ 32394→     *     // ... provide data here
+ 32395→     *   ]
+ 32396→     * })
+ 32397→     * Note, that providing `undefined` is treated as the value not being there.
+ 32398→     * Read more here: https://pris.ly/d/null-undefined
+ 32399→     * 
+ 32400→     */
+ 32401→    createManyAndReturn<T extends JobCreateManyAndReturnArgs>(args?: SelectSubset<T, JobCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+ 32402→
+ 32403→    /**
+ 32404→     * Delete a Job.
+ 32405→     * @param {JobDeleteArgs} args - Arguments to delete one Job.
+ 32406→     * @example
+ 32407→     * // Delete one Job
+ 32408→     * const Job = await prisma.job.delete({
+ 32409→     *   where: {
+ 32410→     *     // ... filter to delete one Job
+ 32411→     *   }
+ 32412→     * })
+ 32413→     * 
+ 32414→     */
+ 32415→    delete<T extends JobDeleteArgs>(args: SelectSubset<T, JobDeleteArgs<ExtArgs>>): Prisma__JobClient<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 32416→
+ 32417→    /**
+ 32418→     * Update one Job.
+ 32419→     * @param {JobUpdateArgs} args - Arguments to update one Job.
+ 32420→     * @example
+ 32421→     * // Update one Job
+ 32422→     * const job = await prisma.job.update({
+ 32423→     *   where: {
+ 32424→     *     // ... provide filter here
+ 32425→     *   },
+ 32426→     *   data: {
+ 32427→     *     // ... provide data here
+ 32428→     *   }
+ 32429→     * })
+ 32430→     * 
+ 32431→     */
+ 32432→    update<T extends JobUpdateArgs>(args: SelectSubset<T, JobUpdateArgs<ExtArgs>>): Prisma__JobClient<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 32433→
+ 32434→    /**
+ 32435→     * Delete zero or more Jobs.
+ 32436→     * @param {JobDeleteManyArgs} args - Arguments to filter Jobs to delete.
+ 32437→     * @example
+ 32438→     * // Delete a few Jobs
+ 32439→     * const { count } = await prisma.job.deleteMany({
+ 32440→     *   where: {
+ 32441→     *     // ... provide filter here
+ 32442→     *   }
+ 32443→     * })
+ 32444→     * 
+ 32445→     */
+ 32446→    deleteMany<T extends JobDeleteManyArgs>(args?: SelectSubset<T, JobDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+ 32447→
+ 32448→    /**
+ 32449→     * Update zero or more Jobs.
+ 32450→     * Note, that providing `undefined` is treated as the value not being there.
+ 32451→     * Read more here: https://pris.ly/d/null-undefined
+ 32452→     * @param {JobUpdateManyArgs} args - Arguments to update one or more rows.
+ 32453→     * @example
+ 32454→     * // Update many Jobs
+ 32455→     * const job = await prisma.job.updateMany({
+ 32456→     *   where: {
+ 32457→     *     // ... provide filter here
+ 32458→     *   },
+ 32459→     *   data: {
+ 32460→     *     // ... provide data here
+ 32461→     *   }
+ 32462→     * })
+ 32463→     * 
+ 32464→     */
+ 32465→    updateMany<T extends JobUpdateManyArgs>(args: SelectSubset<T, JobUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+ 32466→
+ 32467→    /**
+ 32468→     * Update zero or more Jobs and returns the data updated in the database.
+ 32469→     * @param {JobUpdateManyAndReturnArgs} args - Arguments to update many Jobs.
+ 32470→     * @example
+ 32471→     * // Update many Jobs
+ 32472→     * const job = await prisma.job.updateManyAndReturn({
+ 32473→     *   where: {
+ 32474→     *     // ... provide filter here
+ 32475→     *   },
+ 32476→     *   data: [
+ 32477→     *     // ... provide data here
+ 32478→     *   ]
+ 32479→     * })
+ 32480→     * 
+ 32481→     * // Update zero or more Jobs and only return the `id`
+ 32482→     * const jobWithIdOnly = await prisma.job.updateManyAndReturn({
+ 32483→     *   select: { id: true },
+ 32484→     *   where: {
+ 32485→     *     // ... provide filter here
+ 32486→     *   },
+ 32487→     *   data: [
+ 32488→     *     // ... provide data here
+ 32489→     *   ]
+ 32490→     * })
+ 32491→     * Note, that providing `undefined` is treated as the value not being there.
+ 32492→     * Read more here: https://pris.ly/d/null-undefined
+ 32493→     * 
+ 32494→     */
+ 32495→    updateManyAndReturn<T extends JobUpdateManyAndReturnArgs>(args: SelectSubset<T, JobUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+ 32496→
+ 32497→    /**
+ 32498→     * Create or update one Job.
+ 32499→     * @param {JobUpsertArgs} args - Arguments to update or create a Job.
+ 32500→     * @example
+ 32501→     * // Update or create a Job
+ 32502→     * const job = await prisma.job.upsert({
+ 32503→     *   create: {
+ 32504→     *     // ... data to create a Job
+ 32505→     *   },
+ 32506→     *   update: {
+ 32507→     *     // ... in case it already exists, update
+ 32508→     *   },
+ 32509→     *   where: {
+ 32510→     *     // ... the filter for the Job we want to update
+ 32511→     *   }
+ 32512→     * })
+ 32513→     */
+ 32514→    upsert<T extends JobUpsertArgs>(args: SelectSubset<T, JobUpsertArgs<ExtArgs>>): Prisma__JobClient<$Result.GetResult<Prisma.$JobPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+ 32515→
+ 32516→
+ 32517→    /**
+ 32518→     * Count the number of Jobs.
+ 32519→     * Note, that providing `undefined` is treated as the value not being there.
+ 32520→     * Read more here: https://pris.ly/d/null-undefined
+ 32521→     * @param {JobCountArgs} args - Arguments to filter Jobs to count.
+ 32522→     * @example
+ 32523→     * // Count the number of Jobs
+ 32524→     * const count = await prisma.job.count({
+ 32525→     *   where: {
+ 32526→     *     // ... the filter for the Jobs we want to count
+ 32527→     *   }
+ 32528→     * })
+ 32529→    **/
+ 32530→    count<T extends JobCountArgs>(
+ 32531→      args?: Subset<T, JobCountArgs>,
+ 32532→    ): Prisma.PrismaPromise<
+ 32533→      T extends $Utils.Record<'select', any>
+ 32534→        ? T['select'] extends true
+ 32535→          ? number
+ 32536→          : GetScalarType<T['select'], JobCountAggregateOutputType>
+ 32537→        : number
+ 32538→    >
+ 32539→
+ 32540→    /**
+ 32541→     * Allows you to perform aggregations operations on a Job.
+ 32542→     * Note, that providing `undefined` is treated as the value not being there.
+ 32543→     * Read more here: https://pris.ly/d/null-undefined
+ 32544→     * @param {JobAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+ 32545→     * @example
+ 32546→     * // Ordered by age ascending
+ 32547→     * // Where email contains prisma.io
+ 32548→     * // Limited to the 10 users
+ 32549→     * const aggregations = await prisma.user.aggregate({
+ 32550→     *   _avg: {
+ 32551→     *     age: true,
+ 32552→     *   },
+ 32553→     *   where: {
+ 32554→     *     email: {
+ 32555→     *       contains: "prisma.io",
+ 32556→     *     },
+ 32557→     *   },
+ 32558→     *   orderBy: {
+ 32559→     *     age: "asc",
+ 32560→     *   },
+ 32561→     *   take: 10,
+ 32562→     * })
+ 32563→    **/
+ 32564→    aggregate<T extends JobAggregateArgs>(args: Subset<T, JobAggregateArgs>): Prisma.PrismaPromise<GetJobAggregateType<T>>
+ 32565→
+ 32566→    /**
+ 32567→     * Group by Job.
+ 32568→     * Note, that providing `undefined` is treated as the value not being there.
+ 32569→     * Read more here: https://pris.ly/d/null-undefined
+ 32570→     * @param {JobGroupByArgs} args - Group by arguments.
+ 32571→     * @example
+ 32572→     * // Group by city, order by createdAt, get count
+ 32573→     * const result = await prisma.user.groupBy({
+ 32574→     *   by: ['city', 'createdAt'],
+ 32575→     *   orderBy: {
+ 32576→     *     createdAt: true
+ 32577→     *   },
+ 32578→     *   _count: {
+ 32579→     *     _all: true
+ 32580→     *   },
+ 32581→     * })
+ 32582→     * 
+ 32583→    **/
+ 32584→    groupBy<
+ 32585→      T extends JobGroupByArgs,
+ 32586→      HasSelectOrTake extends Or<
+ 32587→        Extends<'skip', Keys<T>>,
+ 32588→        Extends<'take', Keys<T>>
+ 32589→      >,
+ 32590→      OrderByArg extends True extends HasSelectOrTake
+ 32591→        ? { orderBy: JobGroupByArgs['orderBy'] }
+ 32592→        : { orderBy?: JobGroupByArgs['orderBy'] },
+ 32593→      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+ 32594→      ByFields extends MaybeTupleToUnion<T['by']>,
+ 32595→      ByValid extends Has<ByFields, OrderFields>,
+ 32596→      HavingFields extends GetHavingFields<T['having']>,
+ 32597→      HavingValid extends Has<ByFields, HavingFields>,
+ 32598→      ByEmpty extends T['by'] extends never[] ? True : False,
+ 32599→      InputErrors extends ByEmpty extends True
+ 32600→      ? `Error: "by" must not be empty.`
+ 32601→      : HavingValid extends False
+ 32602→      ? {
+ 32603→          [P in HavingFields]: P extends ByFields
+ 32604→            ? never
+ 32605→            : P extends string
+ 32606→            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+ 32607→            : [
+ 32608→                Error,
+ 32609→                'Field ',
+ 32610→                P,
+ 32611→                ` in "having" needs to be provided in "by"`,
+ 32612→              ]
+ 32613→        }[HavingFields]
+ 32614→      : 'take' extends Keys<T>
+ 32615→      ? 'orderBy' extends Keys<T>
+ 32616→        ? ByValid extends True
+ 32617→          ? {}
+ 32618→          : {
+ 32619→              [P in OrderFields]: P extends ByFields
+ 32620→                ? never
+ 32621→                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+ 32622→            }[OrderFields]
+ 32623→        : 'Error: If you provide "take", you also need to provide "orderBy"'
+ 32624→      : 'skip' extends Keys<T>
+ 32625→      ? 'orderBy' extends Keys<T>
+ 32626→        ? ByValid extends True
+ 32627→          ? {}
+ 32628→          : {
+ 32629→              [P in OrderFields]: P extends ByFields
+ 32630→                ? never
+ 32631→                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+ 32632→            }[OrderFields]
+ 32633→        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+ 32634→      : ByValid extends True
+ 32635→      ? {}
+ 32636→      : {
+ 32637→          [P in OrderFields]: P extends ByFields
+ 32638→            ? never
+ 32639→            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+ 32640→        }[OrderFields]
+ 32641→    >(args: SubsetIntersection<T, JobGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetJobGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+ 32642→  /**
+ 32643→   * Fields of the Job model
+ 32644→   */
+ 32645→  readonly fields: JobFieldRefs;
+ 32646→  }
+ 32647→
+ 32648→  /**
+ 32649→   * The delegate class that acts as a "Promise-like" for Job.
+ 32650→   * Why is this prefixed with `Prisma__`?
+ 32651→   * Because we want to prevent naming conflicts as mentioned in
+ 32652→   * https://github.com/prisma/prisma-client-js/issues/707
+ 32653→   */
+ 32654→  export interface Prisma__JobClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+ 32655→    readonly [Symbol.toStringTag]: "PrismaPromise"
+ 32656→    employer<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+ 32657→    district<T extends Job$districtArgs<ExtArgs> = {}>(args?: Subset<T, Job$districtArgs<ExtArgs>>): Prisma__LocationClient<$Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+[showing lines 30658-32657 of 89876; use offset=32658 with limit to continue reading]
