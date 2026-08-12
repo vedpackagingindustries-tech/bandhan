@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { requireSuperAdmin, parsePagination, paginate } from '@/lib/auth-middleware'
 import { success, error, serverError, getClientInfo } from '@/lib/api-response'
 import { logAudit } from '@/lib/audit'
-import { moderateImage } from '@/services/ai'
+import { aiModerateImage as moderateImage } from '@/services/ai'
 import { NextRequest } from 'next/server'
 
 const VALID_CATEGORIES = ['PROFILE', 'BUSINESS', 'ADVERTISEMENT', 'DOCUMENT', 'GENERAL']
