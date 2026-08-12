@@ -802,7 +802,7 @@ export const translations = {
       maxLoginAttempts: 'अधिकतम लॉगिन प्रयास',
       sessionDuration: 'सेशन अवधि (दिन)',
       settingsSaved: 'सेटिंग्स सहेजी गई',
-      general: 'सामान्य', security: 'सुरक्षा', notification: 'सूचना',
+      general: 'सामान्य', secSettings: 'सुरक्षा सेटिंग्स', notification: 'सूचना',
       saving: 'सहेज रहा है...', creating: 'बना रहा है...', deleting: 'हटा रहा है...',
       yes: 'हाँ', no: 'नहीं',
       confirmDelete: 'क्या आप हटाना चाहते हैं?',
