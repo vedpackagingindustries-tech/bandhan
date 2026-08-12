@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const result = await requireSuperAdmin(request)
     if (result.error) return result.error
 
-    const { searchParams } = request.nextUrl.searchParams
+    const searchParams = request.nextUrl.searchParams
     const { page, limit, skip } = parsePagination(searchParams)
 
     const search = sanitizeString(searchParams.get('search') || '')
@@ -67,11 +67,11 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search } },
         { phone: { contains: search } },
-        { profile: { firstName: { contains: search, mode: 'insensitive' } } },
-        { profile: { lastName: { contains: search, mode: 'insensitive' } } },
-        { profile: { displayName: { contains: search, mode: 'insensitive' } } },
+        { profile: { firstName: { contains: search } } },
+        { profile: { lastName: { contains: search } } },
+        { profile: { displayName: { contains: search } } },
       ]
     }
 

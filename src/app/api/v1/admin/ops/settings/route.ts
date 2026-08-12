@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest) {
     const { ipAddress, userAgent } = getClientInfo(request)
 
     // Upsert each setting
-    const updated = []
+    const updated: Record<string, unknown>[] = []
     for (const s of settings) {
       const record = await db.systemConfiguration.upsert({
         where: { key: s.key },

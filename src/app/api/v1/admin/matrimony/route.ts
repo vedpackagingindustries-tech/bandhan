@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const [items, total] = await Promise.all([
       db.matrimonyProfile.findMany({
         where,
-        include: { profile: { select: { userId: true, firstName: true, lastName: true, gotraMaster: { select: { name: true } } }, user: { select: { email: true, phone: true, status: true, membershipTier: true } } }, district: { select: { name: true } }, city: { select: { name: true } } },
+        include: { profile: { select: { userId: true, firstName: true, lastName: true, gotraMaster: { select: { name: true } } } }, district: { select: { name: true } }, city: { select: { name: true } } },
         orderBy: { createdAt: 'desc' }, skip, take: limit,
       }),
       db.matrimonyProfile.count({ where }),

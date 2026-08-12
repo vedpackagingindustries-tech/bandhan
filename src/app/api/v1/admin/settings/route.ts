@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest) {
       return error('Settings array is required')
     }
 
-    const results = []
+    const results: Record<string, unknown>[] = []
     for (const setting of settings) {
       const config = await db.systemConfiguration.upsert({
         where: { key: setting.key },

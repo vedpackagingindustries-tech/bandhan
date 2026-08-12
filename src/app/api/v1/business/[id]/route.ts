@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const business = await db.business.findUnique({
       where: { id },
       include: {
-        owner: { select: { id: true, profile: { select: { firstName: true, lastName: true, phone: true } } } },
+        owner: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
         district: { select: { id: true, name: true, nameHi: true } },
         city: { select: { id: true, name: true, nameHi: true } },
       },

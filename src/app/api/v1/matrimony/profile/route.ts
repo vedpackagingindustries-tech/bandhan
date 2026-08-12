@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         data: {
           profileId: profile.id,
           ...matrimonyData,
-        },
+        } as any,
       })
 
       await logAudit({

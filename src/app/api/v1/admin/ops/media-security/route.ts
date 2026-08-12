@@ -200,14 +200,13 @@ export async function POST(request: NextRequest) {
             const modResult = await moderateImage({
               mediaId: media.id,
               imageUrl: media.url,
-              userId: auth.user.id,
             })
             moderationOutcomes.push({
               mediaId: media.id,
-              verdict: modResult.verdict,
+              verdict: modResult.approved ? 'SAFE' : 'REVIEW',
               confidence: modResult.confidence,
-              flags: modResult.flags.map((f) => f.category),
-              autoAction: modResult.autoAction,
+              flags: modResult.flags,
+              autoAction: modResult.approved ? 'APPROVE' : 'FLAG_FOR_REVIEW',
             })
           } catch (modErr) {
             moderationOutcomes.push({

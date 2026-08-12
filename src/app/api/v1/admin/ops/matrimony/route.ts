@@ -77,7 +77,6 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          gotraMaster: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,

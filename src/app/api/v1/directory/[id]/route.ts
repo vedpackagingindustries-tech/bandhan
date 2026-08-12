@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const dir = await db.directory.findUnique({
       where: { id },
-      include: { owner: { select: { id: true, profile: { select: { firstName: true, lastName: true, phone: true } } } }, district: { select: { id: true, name: true, nameHi: true } }, city: { select: { id: true, name: true, nameHi: true } } },
+      include: { owner: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } }, district: { select: { id: true, name: true, nameHi: true } }, city: { select: { id: true, name: true, nameHi: true } } },
     })
     if (!dir || dir.status !== 'ACTIVE') return error('Directory listing not found', 404)
 

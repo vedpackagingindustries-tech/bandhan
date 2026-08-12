@@ -80,7 +80,7 @@ export async function PATCH(request: NextRequest) {
       UNBLOCK: 'ACTIVE',
     }
 
-    const user = await db.user.findUnique({ where: { id: userId } })
+    const user = await db.user.findUnique({ where: { id: userId }, include: { role: true, profile: true } })
     if (!user) return error('User not found', 404)
 
     const previousRoleName = user.roleId
