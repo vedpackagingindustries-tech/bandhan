@@ -1155,3 +1155,33 @@ model AdClick {
   @@index([createdAt])
   @@index([device])
 }
+
+// ═══════════════════════════════════════════════════════════
+// OFFERS & DISCOUNTS
+// ═══════════════════════════════════════════════════════════
+
+model Offer {
+  id              String   @id @default(cuid())
+  name            String
+  nameHi          String?
+  description     String?
+  descriptionHi   String?
+  discountType    String   @default("PERCENTAGE") // PERCENTAGE, FLAT, FREE_TRIAL
+  discountValue   Float    @default(0)
+  applicableTo    String   @default("ALL")        // MEMBERSHIP, ADVERTISEMENT, ALL
+  applicableTier   String   @default("ALL")        // FREE, PREMIUM, ELITE, ALL
+  promoCode       String?  @unique
+  maxUses         Int      @default(0)             // 0 = unlimited
+  usedCount       Int      @default(0)
+  minAmount       Float?  // minimum amount for offer to apply
+  startDate       DateTime?
+  endDate         DateTime?
+  status          String   @default("ACTIVE")      // ACTIVE, PAUSED, EXPIRED
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([promoCode])
+  @@index([applicableTo])
+}
