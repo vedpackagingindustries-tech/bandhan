@@ -1,0 +1,803 @@
+     1→// ═══════════════════════════════════════════════════════════
+     2→// AI COUPLE MATCH 2.0 — PRODUCTION MATCHING ENGINE
+     3→// Modular scoring pipeline with deterministic + AI layers.
+     4→// ═══════════════════════════════════════════════════════════
+     5→
+     6→import { db } from '@/lib/db'
+     7→import type { MatchFactor, MatchResult, EligibilityResult } from './types'
+     8→import { executeChat } from './provider'
+     9→import { createAIRequest, completeAIRequest, recordAIUsage } from './audit'
+    10→
+    11→// --- Scoring Pipeline ---
+    12→
+    13→/**
+    14→ * Step 1: Eligibility Filter
+    15→ * Check if both profiles can be matched at all.
+    16→ */
+    17→async function checkEligibility(profileA: FullProfileData, profileB: FullProfileData): Promise<EligibilityResult> {
+    18→  const reasons: string[] = []
+    19→  let eligible = true
+    20→
+    21→  // Both must have active matrimony profiles
+    22→  if (!profileA.matrimony || profileA.matrimony.status !== 'APPROVED') {
+    23→    reasons.push('Profile A matrimony not approved')
+    24→    eligible = false
+    25→  }
+    26→  if (!profileB.matrimony || profileB.matrimony.status !== 'APPROVED') {
+    27→    reasons.push('Profile B matrimony not approved')
+    28→    eligible = false
+    29→  }
+    30→
+    31→  // Both must have active users
+    32→  if (profileA.user?.status !== 'ACTIVE') {
+    33→    reasons.push('Profile A user not active')
+    34→    eligible = false
+    35→  }
+    36→  if (profileB.user?.status !== 'ACTIVE') {
+    37→    reasons.push('Profile B user not active')
+    38→    eligible = false
+    39→  }
+    40→
+    41→  // Cannot match same profile
+    42→  if (profileA.id === profileB.id) {
+    43→    reasons.push('Cannot match a profile with itself')
+    44→    eligible = false
+    45→  }
+    46→
+    47→  // Same gender check (matrimony is opposite-gender)
+    48→  if (profileA.matrimony && profileB.matrimony && profileA.matrimony.gender === profileB.matrimony.gender) {
+    49→    reasons.push('Same gender — not applicable for matrimony matching')
+    50→    eligible = false
+    51→  }
+    52→
+    53→  // Blocked check
+    54→  if (profileA.blockedIds?.includes(profileB.id)) {
+    55→    reasons.push('Profile A has blocked Profile B')
+    56→    eligible = false
+    57→  }
+    58→  if (profileB.blockedIds?.includes(profileA.id)) {
+    59→    reasons.push('Profile B has blocked Profile A')
+    60→    eligible = false
+    61→  }
+    62→
+    63→  // Rejected/blocked matrimony profiles
+    64→  if (profileA.matrimony?.status === 'BLOCKED' || profileA.matrimony?.status === 'REJECTED') {
+    65→    reasons.push('Profile A matrimony is blocked/rejected')
+    66→    eligible = false
+    67→  }
+    68→  if (profileB.matrimony?.status === 'BLOCKED' || profileB.matrimony?.status === 'REJECTED') {
+    69→    reasons.push('Profile B matrimony is blocked/rejected')
+    70→    eligible = false
+    71→  }
+    72→
+    73→  return { eligible, reasons }
+    74→}
+    75→
+    76→/**
+    77→ * Step 2: Privacy Filter
+    78→ * Ensure neither profile has restricted visibility.
+    79→ */
+    80→function checkPrivacy(profileA: FullProfileData, profileB: FullProfileData): EligibilityResult {
+    81→  const reasons: string[] = []
+    82→  let eligible = true
+    83→
+    84→  if (profileA.profileVisible === false) {
+    85→    reasons.push('Profile A is not visible')
+    86→    eligible = false
+    87→  }
+    88→  if (profileB.profileVisible === false) {
+    89→    reasons.push('Profile B is not visible')
+    90→    eligible = false
+    91→  }
+    92→
+    93→  return { eligible, reasons }
+    94→}
+    95→
+    96→/**
+    97→ * Step 3: Gotra Compatibility
+    98→ * Same gotra = NOT a match (traditional Sahu Samaj rule).
+    99→ * Uses the 93-record Gotra Master — never free-text.
+   100→ */
+   101→function scoreGotra(profileA: FullProfileData, profileB: FullProfileData): MatchFactor {
+   102→  const pAGotra = profileA.gotraMaster
+   103→  const pBGotra = profileB.gotraMaster
+   104→
+   105→  // Both must have Gotra from master
+   106→  if (!pAGotra || !pBGotra) {
+   107→    return {
+   108→      name: 'gotra',
+   109→      weight: 20,
+   110→      score: 0,
+   111→      matched: false,
+   112→      details: 'One or both profiles lack Gotra Master assignment',
+   113→    }
+   114→  }
+   115→
+   116→  // Same gotra = not compatible
+   117→  if (pAGotra.id === pBGotra.id) {
+   118→    return {
+   119→      name: 'gotra',
+   120→      weight: 20,
+   121→      score: 0,
+   122→      matched: false,
+   123→      details: `Both profiles belong to ${pAGotra.name} — not compatible per tradition`,
+   124→    }
+   125→  }
+   126→
+   127→  return {
+   128→    name: 'gotra',
+   129→    weight: 20,
+   130→    score: 100,
+   131→    matched: true,
+   132→    details: `Different Gotras: ${pAGotra.name} and ${pBGotra.name} — compatible`,
+   133→  }
+   134→}
+   135→
+   136→/**
+   137→ * Step 4: Location Scoring
+   138→ */
+   139→function scoreLocation(profileA: FullProfileData, profileB: FullProfileData): MatchFactor {
+   140→  const aCity = profileA.matrimony?.cityId
+   141→  const bCity = profileB.matrimony?.cityId
+   142→  const aDistrict = profileA.matrimony?.districtId
+   143→  const bDistrict = profileB.matrimony?.districtId
+   144→
+   145→  let score = 30 // Base score (different locations not penalized heavily)
+   146→  let details = 'Different locations'
+   147→
+   148→  if (aCity && bCity && aCity === bCity) {
+   149→    score = 100
+   150→    details = 'Same city'
+   151→  } else if (aDistrict && bDistrict && aDistrict === bDistrict) {
+   152→    score = 75
+   153→    details = 'Same district'
+   154→  } else {
+   155→    // Same state gets bonus
+   156→    const aState = profileA.state || 'Chhattisgarh'
+   157→    const bState = profileB.state || 'Chhattisgarh'
+   158→    if (aState === bState) {
+   159→      score = 55
+   160→      details = 'Same state'
+   161→    }
+   162→  }
+   163→
+   164→  return {
+   165→    name: 'location',
+   166→    weight: 15,
+   167→    score,
+   168→    matched: score >= 50,
+   169→    details,
+   170→  }
+   171→}
+   172→
+   173→/**
+   174→ * Step 5: Education Scoring
+   175→ */
+   176→function scoreEducation(profileA: FullProfileData, profileB: FullProfileData): MatchFactor {
+   177→  const aEdu = (profileA.matrimony?.education || profileA.education || '').toLowerCase()
+   178→  const bEdu = (profileB.matrimony?.education || profileB.education || '').toLowerCase()
+   179→
+   180→  if (!aEdu || !bEdu) {
+   181→    return { name: 'education', weight: 15, score: 50, matched: false, details: 'Education data incomplete' }
+   182→  }
+   183→
+   184→  const eduLevels = ['none', 'school', 'higher secondary', 'diploma', 'bachelor', 'master', 'phd', 'doctor']
+   185→  const getLevel = (edu: string) => {
+   186→    const idx = eduLevels.findIndex(l => edu.includes(l))
+   187→    return idx >= 0 ? idx : 2
+   188→  }
+   189→
+   190→  const aLevel = getLevel(aEdu)
+   191→  const bLevel = getLevel(bEdu)
+   192→  const diff = Math.abs(aLevel - bLevel)
+   193→
+   194→  let score: number
+   195→  let details: string
+   196→  if (diff === 0) {
+   197→    score = 100
+   198→    details = 'Same education level'
+   199→  } else if (diff === 1) {
+   200→    score = 80
+   201→    details = 'Similar education levels'
+   202→  } else if (diff === 2) {
+   203→    score = 55
+   204→    details = 'Moderate education difference'
+   205→  } else {
+   206→    score = 30
+   207→    details = 'Significant education difference'
+   208→  }
+   209→
+   210→  return { name: 'education', weight: 15, score, matched: score >= 50, details }
+   211→}
+   212→
+   213→/**
+   214→ * Step 6: Occupation Scoring
+   215→ */
+   216→function scoreOccupation(profileA: FullProfileData, profileB: FullProfileData): MatchFactor {
+   217→  const aOcc = (profileA.matrimony?.occupation || profileA.occupation || '').toLowerCase()
+   218→  const bOcc = (profileB.matrimony?.occupation || profileB.occupation || '').toLowerCase()
+   219→
+   220→  if (!aOcc || !bOcc) {
+   221→    return { name: 'occupation', weight: 10, score: 50, matched: false, details: 'Occupation data incomplete' }
+   222→  }
+   223→
+   224→  // Same occupation category
+   225→  if (aOcc === bOcc) {
+   226→    return { name: 'occupation', weight: 10, score: 100, matched: true, details: 'Same occupation' }
+   227→  }
+   228→
+   229→  // Professional categories
+   230→  const profCategories = ['engineer', 'doctor', 'teacher', 'business', 'government', 'lawyer', 'accountant', 'manager', 'software', 'it']
+   231→  const aProf = profCategories.some(c => aOcc.includes(c))
+   232→  const bProf = profCategories.some(c => bOcc.includes(c))
+   233→
+   234→  if (aProf && bProf) {
+   235→    return { name: 'occupation', weight: 10, score: 75, matched: true, details: 'Both in professional categories' }
+   236→  }
+   237→
+   238→  return { name: 'occupation', weight: 10, score: 50, matched: false, details: 'Different occupation categories' }
+   239→}
+   240→
+   241→/**
+   242→ * Step 7: Age Compatibility Scoring
+   243→ */
+   244→function scoreAge(profileA: FullProfileData, profileB: FullProfileData): MatchFactor {
+   245→  const aDob = profileA.matrimony?.dateOfBirth || profileA.dateOfBirth
+   246→  const bDob = profileB.matrimony?.dateOfBirth || profileB.dateOfBirth
+   247→
+   248→  if (!aDob || !bDob) {
+   249→    return { name: 'age', weight: 10, score: 50, matched: false, details: 'Date of birth data incomplete' }
+   250→  }
+   251→
+   252→  const parseDob = (dob: string) => {
+   253→    const d = new Date(dob)
+   254→    return isNaN(d.getTime()) ? null : d
+   255→  }
+   256→
+   257→  const aDate = parseDob(aDob)
+   258→  const bDate = parseDob(bDob)
+   259→  if (!aDate || !bDate) {
+   260→    return { name: 'age', weight: 10, score: 50, matched: false, details: 'Could not parse dates' }
+   261→  }
+   262→
+   263→  const ageA = Math.floor((Date.now() - aDate.getTime()) / (365.25 * 86400000))
+   264→  const ageB = Math.floor((Date.now() - bDate.getTime()) / (365.25 * 86400000))
+   265→  const diff = Math.abs(ageA - ageB)
+   266→
+   267→  let score: number
+   268→  let details: string
+   269→  if (diff <= 2) {
+   270→    score = 100
+   271→    details = `${diff} year age difference`
+   272→  } else if (diff <= 5) {
+   273→    score = 80
+   274→    details = `${diff} year age difference — generally compatible`
+   275→  } else if (diff <= 10) {
+   276→    score = 55
+   277→    details = `${diff} year age difference — moderate gap`
+   278→  } else {
+   279→    score = 25
+   280→    details = `${diff} year age difference — significant gap`
+   281→  }
+   282→
+   283→  return { name: 'age', weight: 10, score, matched: score >= 50, details }
+   284→}
+   285→
+   286→/**
+   287→ * Step 8: Preference Matching
+   288→ * Compares profile A's partner preferences against profile B's actual data.
+   289→ */
+   290→function scorePreferences(profileA: FullProfileData, profileB: FullProfileData): MatchFactor {
+   291→  const prefs = profileA.matrimony?.partnerPreferences
+   292→  if (!prefs || typeof prefs !== 'object') {
+   293→    return { name: 'preferences', weight: 30, score: 50, matched: false, details: 'No partner preferences set' }
+   294→  }
+   295→
+   296→  const pref = prefs as Record<string, unknown>
+   297→  let matched = 0
+   298→  let total = 0
+   299→  const matchedItems: string[] = []
+   300→  const unmatchedItems: string[] = []
+   301→
+   302→  // Age preference
+   303→  if (pref.minAge || pref.maxAge) {
+   304→    total++
+   305→    const bDob = profileB.matrimony?.dateOfBirth || profileB.dateOfBirth
+   306→    if (bDob) {
+   307→      const bDate = new Date(bDob)
+   308→      const ageB = Math.floor((Date.now() - bDate.getTime()) / (365.25 * 86400000))
+   309→      const minAge = (pref.minAge as number) || 18
+   310→      const maxAge = (pref.maxAge as number) || 100
+   311→      if (ageB >= minAge && ageB <= maxAge) {
+   312→        matched++
+   313→        matchedItems.push('age')
+   314→      } else {
+   315→        unmatchedItems.push('age')
+   316→      }
+   317→    }
+   318→  }
+   319→
+   320→  // Height preference
+   321→  if (pref.minHeight || pref.maxHeight) {
+   322→    total++
+   323→    const bHeight = profileB.matrimony?.height
+   324→    if (bHeight) {
+   325→      const minH = (pref.minHeight as number) || 0
+   326→      const maxH = (pref.maxHeight as number) || 300
+   327→      if (bHeight >= minH && bHeight <= maxH) {
+   328→        matched++
+   329→        matchedItems.push('height')
+   330→      } else {
+   331→        unmatchedItems.push('height')
+   332→      }
+   333→    }
+   334→  }
+   335→
+   336→  // Education preference
+   337→  if (pref.education) {
+   338→    total++
+   339→    const bEdu = (profileB.matrimony?.education || profileB.education || '').toLowerCase()
+   340→    const prefEdu = (pref.education as string).toLowerCase()
+   341→    if (bEdu && bEdu.includes(prefEdu)) {
+   342→      matched++
+   343→      matchedItems.push('education')
+   344→    } else {
+   345→      unmatchedItems.push('education')
+   346→    }
+   347→  }
+   348→
+   349→  // Marital status preference
+   350→  if (pref.maritalStatus) {
+   351→    total++
+   352→    const bStatus = profileB.matrimony?.maritalStatus || profileB.maritalStatus
+   353→    if (bStatus && bStatus === pref.maritalStatus) {
+   354→      matched++
+   355→      matchedItems.push('marital status')
+   356→    } else {
+   357→      unmatchedItems.push('marital status')
+   358→    }
+   359→  }
+   360→
+   361→  // Location preference
+   362→  if (pref.city || pref.district) {
+   363→    total++
+   364→    const bCity = profileB.matrimony?.cityId
+   365→    const bDistrict = profileB.matrimony?.districtId
+   366→    if ((pref.city && bCity === pref.city) || (pref.district && bDistrict === pref.district)) {
+   367→      matched++
+   368→      matchedItems.push('location')
+   369→    } else {
+   370→      unmatchedItems.push('location')
+   371→    }
+   372→  }
+   373→
+   374→  // Family type preference
+   375→  if (pref.familyType) {
+   376→    total++
+   377→    const bFamily = profileB.matrimony?.familyType
+   378→    if (bFamily && bFamily === pref.familyType) {
+   379→      matched++
+   380→      matchedItems.push('family type')
+   381→    } else {
+   382→      unmatchedItems.push('family type')
+   383→    }
+   384→  }
+   385→
+   386→  if (total === 0) {
+   387→    return { name: 'preferences', weight: 30, score: 50, matched: false, details: 'No specific preferences to evaluate' }
+   388→  }
+   389→
+   390→  const score = Math.round((matched / total) * 100)
+   391→  const details = `Matched ${matched}/${total} preferences: ${matchedItems.join(', ')}${unmatchedItems.length > 0 ? `. Unmatched: ${unmatchedItems.join(', ')}` : ''}`
+   392→
+   393→  return { name: 'preferences', weight: 30, score, matched: score >= 50, details }
+   394→}
+   395→
+   396→/**
+   397→ * Step 9: AI Compatibility Analysis (via LLM)
+   398→ * Adds an AI perspective on top of deterministic scores.
+   399→ */
+   400→async function aiCompatibilityAnalysis(
+   401→  profileA: FullProfileData,
+   402→  profileB: FullProfileData,
+   403→  deterministicScore: number,
+   404→  factors: MatchFactor[]
+   405→): Promise<{ score: number; explanation: string; positiveFactors: string[]; potentialDifferences: string[] }> {
+   406→  const provider = await (await import('./provider')).getProviderFor('chat')
+   407→  if (!provider) {
+   408→    return {
+   409→      score: 0,
+   410→      explanation: 'AI analysis not available — relying on deterministic scoring.',
+   411→      positiveFactors: factors.filter(f => f.matched).map(f => f.details),
+   412→      potentialDifferences: factors.filter(f => !f.matched).map(f => f.details),
+   413→    }
+   414→  }
+   415→
+   416→  const systemPrompt = `You are a matrimonial compatibility advisor for the Sahu Samaj community.
+   417→Analyze the compatibility between two profiles and provide:
+   418→1. An AI compatibility score (0-100)
+   419→2. A brief explanation (2-3 sentences)
+   420→3. List of positive match factors (array of strings)
+   421→4. List of potential differences (array of strings)
+   422→
+   423→Respond ONLY in valid JSON format:
+   424→{"score": number, "explanation": "string", "positiveFactors": ["string"], "potentialDifferences": ["string"]}
+   425→
+   426→Do NOT make discriminatory conclusions. Do NOT present AI output as certainty.
+   427→Be respectful and culturally appropriate.`
+   428→
+   429→  const userProfile = (p: FullProfileData) => {
+   430→    const parts = [`Gender: ${p.matrimony?.gender || p.gender || 'unknown'}`]
+   431→    if (p.matrimony?.education || p.education) parts.push(`Education: ${p.matrimony?.education || p.education}`)
+   432→    if (p.matrimony?.occupation || p.occupation) parts.push(`Occupation: ${p.matrimony?.occupation || p.occupation}`)
+   433→    if (p.matrimony?.familyType) parts.push(`Family: ${p.matrimony.familyType}`)
+   434→    if (p.matrimony?.familyValues) parts.push(`Values: ${p.matrimony.familyValues}`)
+   435→    if (p.matrimony?.aboutMe) parts.push(`About: ${(p.matrimony.aboutMe || '').slice(0, 200)}`)
+   436→    return parts.join('\n')
+   437→  }
+   438→
+   439→  const userPrompt = `Profile A:\n${userProfile(profileA)}\n\nProfile B:\n${userProfile(profileB)}\n\nDeterministic score: ${deterministicScore}/100\nFactor breakdown: ${factors.map(f => `${f.name}: ${f.score}/100 (${f.details})`).join('; ')}\n\nProvide your AI-enhanced analysis.`
+   440→
+   441→  try {
+   442→    const result = await (await import('./provider')).executeChat({
+   443→      messages: [
+   444→        { role: 'system', content: systemPrompt },
+   445→        { role: 'user', content: userPrompt },
+   446→      ],
+   447→      maxTokens: 1024,
+   448→      temperature: 0.3,
+   449→      jsonMode: true,
+   450→    })
+   451→
+   452→    if (result.success && result.data?.content) {
+   453→      const parsed = JSON.parse(result.data.content)
+   454→      return {
+   455→        score: typeof parsed.score === 'number' ? Math.min(100, Math.max(0, parsed.score)) : 0,
+   456→        explanation: String(parsed.explanation || '').slice(0, 500),
+   457→        positiveFactors: Array.isArray(parsed.positiveFactors) ? parsed.positiveFactors.slice(0, 10).map(String) : [],
+   458→        potentialDifferences: Array.isArray(parsed.potentialDifferences) ? parsed.potentialDifferences.slice(0, 10).map(String) : [],
+   459→      }
+   460→    }
+   461→  } catch (err) {
+   462→    console.error('[MATCH_ENGINE] AI analysis failed:', err)
+   463→  }
+   464→
+   465→  return {
+   466→    score: 0,
+   467→    explanation: 'AI analysis could not be completed — relying on deterministic scoring.',
+   468→    positiveFactors: factors.filter(f => f.matched).map(f => f.details),
+   469→    potentialDifferences: factors.filter(f => !f.matched).map(f => f.details),
+   470→  }
+   471→}
+   472→
+   473→// --- Internal Types ---
+   474→
+   475→interface FullProfileData {
+   476→  id: string
+   477→  gender?: string
+   478→  dateOfBirth?: string | null
+   479→  education?: string | null
+   480→  occupation?: string | null
+   481→  maritalStatus?: string | null
+   482→  state?: string | null
+   483→  profileVisible?: boolean
+   484→  gotraId?: string | null
+   485→  gotraMaster?: { id: string; name: string; slug: string } | null
+   486→  matrimony?: {
+   487→    status: string
+   488→    gender: string
+   489→    dateOfBirth?: string | null
+   490→    height?: number | null
+   491→    education?: string | null
+   492→    occupation?: string | null
+   493→    annualIncome?: number | null
+   494→    employerName?: string | null
+   495→    workingCity?: string | null
+   496→    cityId?: string | null
+   497→    districtId?: string | null
+   498→    tehsilId?: string | null
+   499→    maritalStatus?: string | null
+   500→    partnerPreferences?: unknown
+   501→    familyType?: string | null
+   502→    familyValues?: string | null
+   503→    aboutMe?: string | null
+   504→  } | null
+   505→  user?: { status: string } | null
+   506→  blockedIds?: string[]
+   507→}
+   508→
+   509→/**
+   510→ * Fetch full profile data for matching.
+   511→ */
+   512→async function fetchFullProfile(profileId: string): Promise<FullProfileData | null> {
+   513→  const profile = await db.profile.findUnique({
+   514→    where: { id: profileId },
+   515→    select: {
+   516→      id: true,
+   517→      gender: true,
+   518→      dateOfBirth: true,
+   519→      education: true,
+   520→      occupation: true,
+   521→      maritalStatus: true,
+   522→      state: true,
+   523→      profileVisible: true,
+   524→      gotraId: true,
+   525→      gotraMaster: { select: { id: true, name: true, slug: true } },
+   526→      matrimonyProfile: {
+   527→        select: {
+   528→          status: true,
+   529→          gender: true,
+   530→          dateOfBirth: true,
+   531→          height: true,
+   532→          education: true,
+   533→          occupation: true,
+   534→          cityId: true,
+   535→          districtId: true,
+   536→          partnerPreferences: true,
+   537→          familyType: true,
+   538→          familyValues: true,
+   539→          aboutMe: true,
+   540→        },
+   541→      },
+   542→      user: { select: { status: true } },
+   543→    },
+   544→  })
+   545→
+   546→  if (!profile) return null
+   547→
+   548→  // Get blocked user IDs
+   549→  const blockedUsers = await db.userBlock.findMany({
+   550→    where: { blockerId: profile.id },
+   551→    select: { blockedId: true },
+   552→  })
+   553→
+   554→  return {
+   555→    id: profile.id,
+   556→    gender: profile.gender,
+   557→    dateOfBirth: profile.dateOfBirth,
+   558→    education: profile.education,
+   559→    occupation: profile.occupation,
+   560→    maritalStatus: profile.maritalStatus,
+   561→    state: profile.state,
+   562→    profileVisible: profile.profileVisible,
+   563→    gotraId: profile.gotraId,
+   564→    gotraMaster: profile.gotraMaster,
+   565→    matrimony: profile.matrimonyProfile || null,
+   566→    blockedIds: blockedUsers.map(b => b.blockedId),
+   567→  }
+   568→}
+   569→
+   570→// --- Public API ---
+   571→
+   572→/**
+   573→ * Full production matching pipeline.
+   574→ * Eligibility → Privacy → Gotra Rule → Location → Education → Occupation → Age → Preferences → AI Analysis → Weighted Score → Recommendation
+   575→ */
+   576→export async function matchProfiles(params: {
+   577→  profileIdA: string
+   578→  profileIdB: string
+   579→  userId?: string
+   580→  locale?: 'en' | 'hi'
+   581→}): Promise<MatchResult> {
+   582→  const startMs = Date.now()
+   583→
+   584→  // Fetch profiles
+   585→  const [profileA, profileB] = await Promise.all([
+   586→    fetchFullProfile(params.profileIdA),
+   587→    fetchFullProfile(params.profileIdB),
+   588→  ])
+   589→
+   590→  if (!profileA || !profileB) {
+   591→    return {
+   592→      profileIdA: params.profileIdA,
+   593→      profileIdB: params.profileIdB,
+   594→      overallScore: 0,
+   595→      factors: [],
+   596→      positiveFactors: ['One or both profiles not found'],
+   597→      potentialDifferences: [],
+   598→      explanation: 'Profile lookup failed.',
+   599→      recommendation: 'NOT_RECOMMENDED',
+   600→      confidence: 0,
+   601→    }
+   602→  }
+   603→
+   604→  // Pipeline
+   605→  const eligibility = await checkEligibility(profileA, profileB)
+   606→  if (!eligibility.eligible) {
+   607→    return {
+   608→      profileIdA: params.profileIdA,
+   609→      profileIdB: params.profileIdB,
+   610→      overallScore: 0,
+   611→      factors: [],
+   612→      positiveFactors: [],
+   613→      potentialDifferences: eligibility.reasons,
+   614→      explanation: eligibility.reasons.join('. '),
+   615→      recommendation: 'NOT_RECOMMENDED',
+   616→      confidence: 1.0,
+   617→    }
+   618→  }
+   619→
+   620→  const privacy = checkPrivacy(profileA, profileB)
+   621→  if (!privacy.eligible) {
+   622→    return {
+   623→      profileIdA: params.profileIdA,
+   624→      profileIdB: params.profileIdB,
+   625→      overallScore: 0,
+   626→      factors: [],
+   627→      positiveFactors: [],
+   628→      potentialDifferences: privacy.reasons,
+   629→      explanation: privacy.reasons.join('. '),
+   630→      recommendation: 'NOT_RECOMMENDED',
+   631→      confidence: 1.0,
+   632→    }
+   633→  }
+   634→
+   635→  // Deterministic scoring factors
+   636→  const gotraFactor = scoreGotra(profileA, profileB)
+   637→  const locationFactor = scoreLocation(profileA, profileB)
+   638→  const educationFactor = scoreEducation(profileA, profileB)
+   639→  const occupationFactor = scoreOccupation(profileA, profileB)
+   640→  const ageFactor = scoreAge(profileA, profileB)
+   641→  const preferenceFactor = scorePreferences(profileA, profileB)
+   642→
+   643→  const deterministicFactors = [gotraFactor, locationFactor, educationFactor, occupationFactor, ageFactor, preferenceFactor]
+   644→
+   645→  // Weighted deterministic score
+   646→  const totalWeight = deterministicFactors.reduce((s, f) => s + f.weight, 0)
+   647→  const deterministicScore = Math.round(
+   648→    deterministicFactors.reduce((s, f) => s + (f.score * f.weight) / totalWeight, 0)
+   649→  )
+   650→
+   651→  // AI analysis (async, non-blocking for the pipeline)
+   652→  let aiResult = { score: 0, explanation: '', positiveFactors: [] as string[], potentialDifferences: [] as string[] }
+   653→  try {
+   654→    aiResult = await aiCompatibilityAnalysis(profileA, profileB, deterministicScore, deterministicFactors)
+   655→  } catch {
+   656→    // AI failure doesn't break matching
+   657→  }
+   658→
+   659→  // Final score: 80% deterministic + 20% AI (when available)
+   660→  const aiContribution = aiResult.score > 0 ? aiResult.score * 0.2 : 0
+   661→  const finalScore = Math.min(100, Math.round(deterministicScore * 0.8 + aiContribution))
+   662→
+   663→  // Recommendation
+   664→  let recommendation: MatchResult['recommendation']
+   665→  if (finalScore >= 70 && gotraFactor.matched) {
+   666→    recommendation = 'RECOMMENDED'
+   667→  } else if (finalScore >= 45 && gotraFactor.matched) {
+   668→    recommendation = 'POTENTIAL'
+   669→  } else {
+   670→    recommendation = 'NOT_RECOMMENDED'
+   671→  }
+   672→
+   673→  const confidence = gotraFactor.matched
+   674→    ? Math.min(0.95, 0.6 + (finalScore / 100) * 0.35)
+   675→    : 0.3
+   676→
+   677→  const result: MatchResult = {
+   678→    profileIdA: params.profileIdA,
+   679→    profileIdB: params.profileIdB,
+   680→    overallScore: finalScore,
+   681→    factors: deterministicFactors.map(f => ({
+   682→      name: f.name,
+   683→      weight: f.weight,
+   684→      score: f.score,
+   685→      matched: f.matched,
+   686→      details: f.details,
+   687→    })),
+   688→    positiveFactors: aiResult.positiveFactors.length > 0
+   689→      ? aiResult.positiveFactors
+   690→      : deterministicFactors.filter(f => f.matched).map(f => f.details),
+   691→    potentialDifferences: aiResult.potentialDifferences.length > 0
+   692→      ? aiResult.potentialDifferences
+   693→      : deterministicFactors.filter(f => !f.matched).map(f => f.details),
+   694→    explanation: aiResult.explanation || `Overall compatibility score of ${finalScore}/100 based on ${deterministicFactors.filter(f => f.matched).length} matching factors.`,
+   695→    recommendation,
+   696→    confidence,
+   697→  }
+   698→
+   699→  // Persist MatchScore
+   700→  try {
+   701→    const aiRequest = await createAIRequest({
+   702→      userId: params.userId,
+   703→      operation: 'MATCH',
+   704→      provider: 'ZAI',
+   705→      model: 'match-engine-v2',
+   706→      inputSummary: `Match ${params.profileIdA} vs ${params.profileIdB}`,
+   707→      inputContent: `${params.profileIdA}:${params.profileIdB}:${deterministicScore}`,
+   708→    })
+   709→
+   710→    await db.matchScore.upsert({
+   711→      where: {
+   712→        profileIdA_profileIdB: {
+   713→          profileIdA: params.profileIdA,
+   714→          profileIdB: params.profileIdB,
+   715→        },
+   716→      },
+   717→      create: {
+   718→        profileIdA: params.profileIdA,
+   719→        profileIdB: params.profileIdB,
+   720→        overallScore: finalScore,
+   721→        gotraScore: gotraFactor.score,
+   722→        locationScore: locationFactor.score,
+   723→        educationScore: educationFactor.score,
+   724→        occupationScore: occupationFactor.score,
+   725→        ageScore: ageFactor.score,
+   726→        preferenceScore: preferenceFactor.score,
+   727→        aiScore: aiResult.score,
+   728→        factorsJson: JSON.stringify(deterministicFactors),
+   729→        recommendation,
+   730→        confidence,
+   731→        aiRequestId: aiRequest.id,
+   732→      },
+   733→      update: {
+   734→        overallScore: finalScore,
+   735→        gotraScore: gotraFactor.score,
+   736→        locationScore: locationFactor.score,
+   737→        educationScore: educationFactor.score,
+   738→        occupationScore: occupationFactor.score,
+   739→        ageScore: ageFactor.score,
+   740→        preferenceScore: preferenceFactor.score,
+   741→        aiScore: aiResult.score,
+   742→        factorsJson: JSON.stringify(deterministicFactors),
+   743→        recommendation,
+   744→        confidence,
+   745→        aiRequestId: aiRequest.id,
+   746→      },
+   747→    })
+   748→
+   749→    await completeAIRequest({
+   750→      requestId: aiRequest.id,
+   751→      status: 'COMPLETED',
+   752→      resultStatus: recommendation,
+   753→      confidence,
+   754→      durationMs: Date.now() - startMs,
+   755→      inputTokens: 0,
+   756→      outputTokens: 0,
+   757→    })
+   758→
+   759→    await recordAIUsage({
+   760→      operation: 'MATCH',
+   761→      provider: 'ZAI',
+   762→      model: 'match-engine-v2',
+   763→      success: true,
+   764→      latencyMs: Date.now() - startMs,
+   765→    })
+   766→  } catch (err) {
+   767→    console.error('[MATCH_ENGINE] Persistence failed:', err)
+   768→  }
+   769→
+   770→  return result
+   771→}
+   772→
+   773→/**
+   774→ * Get cached match score if available.
+   775→ */
+   776→export async function getCachedMatch(profileIdA: string, profileIdB: string) {
+   777→  return db.matchScore.findUnique({
+   778→    where: {
+   779→      profileIdA_profileIdB: {
+   780→        profileIdA: profileIdA,
+   781→        profileIdB: profileIdB,
+   782→      },
+   783→    },
+   784→  })
+   785→}
+   786→
+   787→/**
+   788→ * Get top matches for a profile (for recommendations).
+   789→ */
+   790→export async function getTopMatches(profileId: string, limit: number = 20) {
+   791→  return db.matchScore.findMany({
+   792→    where: {
+   793→      OR: [
+   794→        { profileIdA: profileId },
+   795→        { profileIdB: profileId },
+   796→      ],
+   797→      recommendation: { in: ['RECOMMENDED', 'POTENTIAL'] },
+   798→    },
+   799→    orderBy: { overallScore: 'desc' },
+   800→    take: limit,
+   801→  })
+   802→}
+   803→

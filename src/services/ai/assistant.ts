@@ -103,7 +103,7 @@ export async function assistantChat(params: {
 
       return {
         response: responseText,
-        responseHi: locale === 'hi' ? responseText : responseText, // AI responds in the requested language
+        responseHi: responseText, // AI responds in the language matching the user's input via system prompt
         module: detectModule(params.message),
       }
     }

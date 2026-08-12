@@ -30,7 +30,6 @@ export async function generateAdminInsights(params: {
     activeJobs,
     activeBusinesses,
     approvedMatrimony,
-    blockedContent,
     recentRiskHigh,
   ] = await Promise.all([
     db.user.count(),
@@ -121,7 +120,11 @@ Data: ${dataForAI}`
     })
 
     if (result.success && result.data?.content) {
-      summary = result.data.content
+      if (locale === 'hi') {
+        summaryHi = result.data.content
+      } else {
+        summary = result.data.content
+      }
     }
   } catch {
     // Non-blocking

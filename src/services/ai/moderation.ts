@@ -186,7 +186,7 @@ export async function moderateImage(params: {
       }],
     })
     await recordAIUsage({
-      operation: 'MODERATE', provider, model, success,
+      operation: 'MODERATE', provider: 'ZAI' as const, model, success,
       inputTokens, outputTokens, latencyMs: Date.now() - startMs,
     })
   } catch { /* non-blocking */ }

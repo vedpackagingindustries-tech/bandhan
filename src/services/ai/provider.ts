@@ -15,7 +15,7 @@ import type {
   VisionResponse,
 } from './types'
 import { db } from '@/lib/db'
-import { getCache, setCache } from '@/services/cache'
+import { getCache, setCache, deleteCache } from '@/services/cache'
 
 const CACHE_KEY = 'AI_PROVIDERS'
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
@@ -37,7 +37,8 @@ class ZAIProvider implements AIProvider {
   private async getSDK() {
     if (!this.sdkInstance) {
       const mod = await import('z-ai-web-dev-sdk')
-      this.sdkInstance = new mod.default()
+      const ZAIClass = (mod.default || mod.default) as any
+      this.sdkInstance = new ZAIClass()
     }
     return this.sdkInstance
   }
@@ -147,8 +148,8 @@ export async function getConfiguredProviders(): Promise<{
   priority: number
   capabilities: AICapability[]
 }[]> {
-  const cached = getCache(CACHE_KEY)
-  if (cached) return cached as typeof cached
+  const cached = getCache<{ provider: AIProviderName; priority: number; capabilities: AICapability[] }[]>(CACHE_KEY)
+  if (cached) return cached
 
   const configs = await db.aIProviderConfig.findMany({
     where: { enabled: true },
@@ -276,6 +277,5 @@ export function estimateCost(params: {
  * Invalidate provider cache (called when admin changes config).
  */
 export function invalidateProviderCache() {
-  const { deleteCache } = await import('@/services/cache')
   deleteCache(CACHE_KEY)
 }

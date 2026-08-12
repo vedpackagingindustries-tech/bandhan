@@ -171,7 +171,6 @@ export async function getMatrimonyRecommendations(params: {
         reasonHi: item.reasonHi,
         expiresAt: new Date(Date.now() + 7 * 86400000), // 7 days
       })),
-      skipDuplicates: false,
     })
   } catch (err) {
     console.error('[REC] Persist failed:', err)

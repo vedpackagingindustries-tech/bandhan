@@ -11,14 +11,8 @@ import { NextRequest } from 'next/server'
  */
 export async function POST(request: NextRequest) {
   try {
-    const result = await requireAuth(request)
+    const result = await requireAdmin(request)
     if (result.error) return result.error
-
-    // Only admin can trigger workflows manually
-    const role = (result.auth as any).user?.role;
-    if (!role || role.level < 4) {
-      return error('Admin access required', 403)
-    }
 
     const body = await request.json()
     const { workflowType, targetId, contentText, imageUrl, mediaId } = body

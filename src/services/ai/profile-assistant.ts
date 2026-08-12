@@ -194,7 +194,7 @@ export async function translateText(params: {
 
     if (result.success && result.data?.content) {
       await recordAIUsage({
-        operation: 'TRANSLATE', provider: result.model ? 'ZAI' : 'ZAI',
+        operation: 'TRANSLATE', provider: 'ZAI',
         success: true, latencyMs: Date.now() - startMs,
         inputTokens: result.inputTokens, outputTokens: result.outputTokens,
       })

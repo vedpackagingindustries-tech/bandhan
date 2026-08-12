@@ -89,7 +89,7 @@ export async function analyzePhotoQuality(params: {
         ? parsed.issues.filter((i: Record<string, unknown>) => i.type && i.severity)
         : []
 
-      return {
+      const qualityResult: PhotoQualityResult = {
         mediaId: params.mediaId,
         overallQuality: parsed.overallQuality || 'ACCEPTABLE',
         issues: aiIssues.map((i: Record<string, unknown>) => ({
@@ -101,19 +101,51 @@ export async function analyzePhotoQuality(params: {
         recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String) : [],
         recommendationsHi: Array.isArray(parsed.recommendationsHi) ? parsed.recommendationsHi.map(String) : [],
       }
+
+      // Audit successful AI analysis
+      try {
+        const aiReq = await createAIRequest({
+          userId: params.userId,
+          operation: 'ANALYZE',
+          provider: 'ZAI',
+          model: 'photo-quality',
+          inputSummary: `Photo quality: ${params.mediaId}`,
+          inputContent: params.mediaId,
+        })
+        await completeAIRequest({
+          requestId: aiReq.id,
+          status: 'COMPLETED',
+          resultStatus: parsed.overallQuality || 'ACCEPTABLE',
+          confidence: 0.8,
+          durationMs: Date.now() - startMs,
+          inputTokens: result.inputTokens,
+          outputTokens: result.outputTokens,
+          results: [{
+            operation: 'ANALYZE', targetType: 'MEDIA', targetId: params.mediaId,
+            resultJson: JSON.stringify(qualityResult),
+          }],
+        })
+        await recordAIUsage({
+          operation: 'ANALYZE', provider: 'ZAI', model: 'photo-quality',
+          success: true, inputTokens: result.inputTokens, outputTokens: result.outputTokens,
+          latencyMs: Date.now() - startMs,
+        })
+      } catch { /* non-blocking */ }
+
+      return qualityResult
     }
   } catch (err) {
     console.error('[PHOTO_QUALITY] AI analysis failed:', err)
   }
 
-  // Audit
+  // Audit failed/deterministic analysis
   try {
     const aiReq = await createAIRequest({
       userId: params.userId,
       operation: 'ANALYZE',
       provider: 'ZAI',
       model: 'photo-quality',
-      inputSummary: `Photo quality: ${params.mediaId}`,
+      inputSummary: `Photo quality (fallback): ${params.mediaId}`,
       inputContent: params.mediaId,
     })
     await completeAIRequest({
@@ -127,5 +159,7 @@ export async function analyzePhotoQuality(params: {
     })
   } catch { /* non-blocking */ }
 
-  return defaultResult
+  return issues.length > 0
+    ? { mediaId: params.mediaId, overallQuality: 'POOR', issues, recommendations: ['Upload a better quality photo'], recommendationsHi: ['बेहतर गुणवत्ता वाली फ़ोटो अपलोड करें'] }
+    : defaultResult
 }

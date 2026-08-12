@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════════
 
 import { db } from '@/lib/db'
-import type { RiskAssessmentResult, RiskSignal, RiskLevel, AutomationWorkflowType } from './types'
+import type { RiskAssessmentResult, RiskLevel } from './types'
 import { createAIRequest, completeAIRequest, recordAIUsage } from './audit'
 
 interface RiskContext {

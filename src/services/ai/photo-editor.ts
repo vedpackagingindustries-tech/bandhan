@@ -45,7 +45,8 @@ export async function editPhoto(params: PhotoEditRequest & { userId: string }): 
   // Use image-editing SDK for actual operations
   try {
     const sdkMod = await import('z-ai-web-dev-sdk')
-    const sdkInstance = new sdkMod.default()
+    const ZAIClass = (sdkMod.default || sdkMod.default) as any
+    const sdkInstance = new ZAIClass()
     if (typeof sdkInstance.createImageEdit !== 'function') {
       throw new Error('Photo editing not available in SDK')
     }
@@ -67,7 +68,7 @@ export async function editPhoto(params: PhotoEditRequest & { userId: string }): 
         fileSize: 0,
         mimeType: media.mimeType,
         url: editUrl,
-        alt: `Edited version of ${media.fileName}. Operations: ${params.operations.join(', ')}`,
+        alt: `Edited version of ${media.id}. Original: ${media.fileName}. Operations: ${params.operations.join(', ')}`,
         sortOrder: media.sortOrder,
         isPublic: media.isPublic,
       },

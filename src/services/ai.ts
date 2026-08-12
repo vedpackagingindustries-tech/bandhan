@@ -8,7 +8,7 @@
 import { matchProfiles } from './ai/match-engine'
 import { moderateImage } from './ai/moderation'
 import { getRecommendations } from './ai/recommendations'
-import { assistantChat as aiAssistantChat } from './ai/assistant'
+import { assistantChat } from './ai/assistant'
 import { runRegistrationWorkflow } from './ai/automation'
 import { assessRisk, collectRegistrationSignals } from './ai/risk-detection'
 
@@ -112,10 +112,7 @@ export async function aiAssistantChat(params: {
   userId: string
   message: string
   context?: string[]
-}): Promise<{
-    response: string
-    sources?: string[]
-  }> {
+}): Promise<{ response: string; sources?: string[] }> {
   // Get user's locale and membership tier
   const { db } = await import('@/lib/db')
   const user = await db.user.findUnique({
@@ -123,10 +120,10 @@ export async function aiAssistantChat(params: {
     select: { membershipTier: true, profile: { select: { displayName: true } } },
   })
 
-  const result = await aiAssistantChat({
+  const result = await assistantChat({
     context: {
       userId: params.userId,
-      locale: 'en', // Default, could be detected
+      locale: 'en' as const,
       membershipTier: user?.membershipTier || 'FREE',
       userName: user?.profile?.displayName || undefined,
     },

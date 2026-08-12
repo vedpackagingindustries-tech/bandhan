@@ -12,14 +12,8 @@ import { NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await requireAuth(request)
+    const result = await requireAdmin(request)
     if (result.error) return result.error
-
-    // Only admin can trigger risk assessment
-    const role = (result.auth as any).user?.role;
-    if (!role || role.level < 4) {
-      return error('Admin access required', 403)
-    }
 
     const body = await request.json()
     const { targetType, targetId, userId } = body

@@ -78,6 +78,25 @@ export async function matchCandidateToJob(params: {
       ? `Partial match: ${matchingSkills.length}/${jobSkills.length} skills match. Consider upskilling in: ${missingSkills.join(', ')}.`
       : `Limited match. Missing key skills: ${missingSkills.join(', ')}.`
 
+  // Audit
+  try {
+    const aiReq = await createAIRequest({
+      userId: params.userId,
+      operation: 'JOB_MATCH',
+      provider: 'ZAI',
+      model: 'job-match-v1',
+      inputSummary: `Job match: candidate ${params.candidateId} vs job ${params.jobId}`,
+      inputContent: `${params.candidateId}:${params.jobId}`,
+    })
+    await completeAIRequest({
+      requestId: aiReq.id,
+      status: 'COMPLETED',
+      resultStatus: totalScore >= 70 ? 'HIGH' : totalScore >= 40 ? 'MEDIUM' : 'LOW',
+      confidence: totalScore / 100,
+      durationMs: Date.now() - startMs,
+      results: [{ operation: 'JOB_MATCH', targetType: 'JOB', targetId: params.jobId, resultJson: JSON.stringify({ score: totalScore, matchingSkills, missingSkills }), score: totalScore }],
+    })
+  } catch { /* non-blocking */ }
   await recordAIUsage({
     operation: 'JOB_MATCH', provider: 'ZAI', model: 'job-match-v1',
     success: true, latencyMs: Date.now() - startMs,

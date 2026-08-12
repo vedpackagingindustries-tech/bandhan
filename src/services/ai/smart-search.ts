@@ -81,23 +81,60 @@ export async function parseSmartSearch(params: {
 
     if (result.success && result.data?.content) {
       const parsed = JSON.parse(result.data.content)
-
-      await recordAIUsage({
-        operation: 'SMART_SEARCH', provider: 'ZAI',
-        success: true, latencyMs: Date.now() - startMs,
-        inputTokens: result.inputTokens, outputTokens: result.outputTokens,
-      })
-
-      return {
+      const parseResult: SmartSearchParseResult = {
         filters: parsed.filters || {},
         query: parsed.query || params.query,
         intent: parsed.intent || 'GENERAL',
         language: parsed.language || (params.locale || 'en'),
         confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.7,
       }
+
+      // Full audit
+      try {
+        const aiReq = await createAIRequest({
+          userId: params.userId,
+          operation: 'SMART_SEARCH',
+          provider: 'ZAI',
+          inputSummary: `Smart search: ${params.query.slice(0, 200)}`,
+          inputContent: params.query,
+        })
+        await completeAIRequest({
+          requestId: aiReq.id,
+          status: 'COMPLETED',
+          resultStatus: parseResult.intent,
+          confidence: parseResult.confidence,
+          durationMs: Date.now() - startMs,
+          inputTokens: result.inputTokens,
+          outputTokens: result.outputTokens,
+        })
+      } catch { /* non-blocking */ }
+      await recordAIUsage({
+        operation: 'SMART_SEARCH', provider: 'ZAI',
+        success: true, latencyMs: Date.now() - startMs,
+        inputTokens: result.inputTokens, outputTokens: result.outputTokens,
+      })
+
+      return parseResult
     }
   } catch (err) {
     console.error('[SMART_SEARCH] Parse failed:', err)
+
+    // Audit failure
+    try {
+      const aiReq = await createAIRequest({
+        userId: params.userId,
+        operation: 'SMART_SEARCH',
+        provider: 'ZAI',
+        inputSummary: `Smart search (failed): ${params.query.slice(0, 200)}`,
+        inputContent: params.query,
+      })
+      await completeAIRequest({
+        requestId: aiReq.id,
+        status: 'FAILED',
+        durationMs: Date.now() - startMs,
+        error: 'Parse failed',
+      })
+    } catch { /* non-blocking */ }
   }
 
   return {

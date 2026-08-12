@@ -92,7 +92,7 @@ export async function runRegistrationWorkflow(params: {
     workflowType: 'REGISTRATION',
     targetId: params.userId,
     steps,
-    finalStatus: humanReviewRequired ? 'PENDING_REVIEW' : 'PENDING_REVIEW', // Always requires admin for registration
+    finalStatus: 'PENDING_REVIEW', // Registration always requires admin approval
     humanReviewRequired: true,
     reviewReason,
   }
@@ -116,7 +116,11 @@ export async function runContentWorkflow(params: {
   // Step 1: Validation
   const s1Start = Date.now()
   const { db } = await import('@/lib/db')
-  steps.push({ step: 'validation', status: 'COMPLETED', durationMs: Date.now() - s1Start, result: 'Content record found' })
+  const targetExists = await db.user.findUnique({ where: { id: params.userId }, select: { id: true } })
+  steps.push({ step: 'validation', status: targetExists ? 'COMPLETED' : 'FAILED', durationMs: Date.now() - s1Start, result: targetExists ? 'User verified' : 'User not found' })
+  if (!targetExists) {
+    return { workflowType: params.workflowType, targetId: params.targetId, steps, finalStatus: 'REJECTED', humanReviewRequired: true, reviewReason: 'User not found' }
+  }
 
   // Step 2: Risk Analysis
   const s2Start = Date.now()
