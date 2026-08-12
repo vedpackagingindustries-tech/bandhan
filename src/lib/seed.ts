@@ -238,6 +238,29 @@ export async function seedDatabase() {
     })
   }
   console.log('  System configurations created:', configs.length)
+
+  // 7. Seed scheduled tasks
+  const tasks = [
+    { name: 'AD_EXPIRY', type: 'AD_EXPIRY', intervalMinutes: 60, isEnabled: true, metadata: JSON.stringify({ description: 'Expire completed ad campaigns' }) },
+    { name: 'JOB_EXPIRY', type: 'JOB_EXPIRY', intervalMinutes: 60, isEnabled: true, metadata: JSON.stringify({ description: 'Expire jobs past their end date' }) },
+    { name: 'MEMBERSHIP_EXPIRY', type: 'MEMBERSHIP_EXPIRY', intervalMinutes: 60, isEnabled: true, metadata: JSON.stringify({ description: 'Downgrade expired memberships' }) },
+    { name: 'SESSION_CLEANUP', type: 'SESSION_CLEANUP', intervalMinutes: 30, isEnabled: true, metadata: JSON.stringify({ description: 'Remove expired user sessions' }) },
+    { name: 'BACKUP', type: 'BACKUP', intervalMinutes: 1440, isEnabled: true, metadata: JSON.stringify({ description: 'Daily database backup', retentionDays: 30 }) },
+    { name: 'HEALTH_CHECK', type: 'HEALTH_CHECK', intervalMinutes: 5, isEnabled: true, metadata: JSON.stringify({ description: 'System health monitoring' }) },
+    { name: 'NOTIFICATION_RETRY', type: 'NOTIFICATION_RETRY', intervalMinutes: 15, isEnabled: false, metadata: JSON.stringify({ description: 'Retry failed notification deliveries' }) },
+    { name: 'AI_PROVIDER_CHECK', type: 'AI_PROVIDER_CHECK', intervalMinutes: 10, isEnabled: true, metadata: JSON.stringify({ description: 'Check AI provider health' }) },
+    { name: 'FEATURED_CONTENT_EXPIRY', type: 'AD_EXPIRY', intervalMinutes: 60, isEnabled: true, metadata: JSON.stringify({ description: 'Remove expired featured content' }) },
+  ]
+
+  for (const task of tasks) {
+    const nextRun = new Date(Date.now() + task.intervalMinutes * 60 * 1000)
+    await db.scheduledTask.upsert({
+      where: { name: task.name },
+      update: { type: task.type, intervalMinutes: task.intervalMinutes, isEnabled: task.isEnabled, metadata: task.metadata, nextRunAt: nextRun },
+      create: { ...task, nextRunAt: nextRun },
+    })
+  }
+  console.log('  Scheduled tasks created:', tasks.length)
 }
 
 // Run directly

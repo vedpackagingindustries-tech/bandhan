@@ -863,6 +863,8 @@ model AdCampaign {
   @@index([status])
   @@index([priority])
   @@index([startDate, endDate])
+  impressionRecords AdImpression[]
+  clickRecords      AdClick[]
 }
 
 // ═════════════════════════════════════════════════════════
@@ -1069,4 +1071,87 @@ model UserPreference {
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════
+// PHASE 5 — PRODUCTION HARDENING
+// ═══════════════════════════════════════════════════════════
+
+model BackupRecord {
+  id            String   @id @default(cuid())
+  type          String   // DATABASE, MEDIA, CONFIG
+  status        String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, FAILED
+  filePath      String?
+  fileSize      Int?
+  checksum      String?
+  triggeredBy   String?  // userId or SYSTEM
+  triggeredByRole String?
+  notes         String?
+  retentionDays Int      @default(90)
+ expiresAt     DateTime?
+  completedAt   DateTime?
+  error         String?
+  createdAt     DateTime @default(now())
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ScheduledTask {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  type          String   // AD_EXPIRY, JOB_EXPIRY, MEMBERSHIP_EXPIRY, SESSION_CLEANUP, BACKUP, HEALTH_CHECK, NOTIFICATION_RETRY, AI_PROVIDER_CHECK
+  cronExpression String?
+  intervalMinutes Int?
+  isEnabled     Boolean  @default(true)
+  lastRunAt     DateTime?
+  nextRunAt     DateTime?
+  lastStatus    String?  // SUCCESS, FAILED
+  lastError     String?
+  metadata      String?  // JSON: task-specific config
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isEnabled])
+  @@index([type])
+  @@index([nextRunAt])
+}
+
+model AdImpression {
+  id            String   @id @default(cuid())
+  campaignId    String
+  ipAddress     String?
+  userAgent     String?
+  device        String?  // MOBILE, DESKTOP, TABLET
+  language      String?
+  module        String?
+  placement     String?
+  createdAt     DateTime @default(now())
+
+  campaign      AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([createdAt])
+  @@index([device])
+  @@index([module])
+}
+
+model AdClick {
+  id            String   @id @default(cuid())
+  campaignId    String
+  impressionId  String?
+  ipAddress     String?
+  userAgent     String?
+  device        String?
+  language      String?
+  module        String?
+  placement     String?
+  createdAt     DateTime @default(now())
+
+  campaign      AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([createdAt])
+  @@index([device])
 }
