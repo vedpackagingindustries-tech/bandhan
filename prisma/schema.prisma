@@ -881,3 +881,192 @@ model SystemConfiguration {
 
   @@index([category])
 }
+
+// ═══════════════════════════════════════════════════════════
+// PHASE 4 — AI INTELLIGENCE LAYER
+// ═══════════════════════════════════════════════════════════
+
+model AIProviderConfig {
+  id            String   @id @default(cuid())
+  provider      String   @unique  // ZAI, OPENAI, GOOGLE, ANTHROPIC, LOCAL
+  displayName   String
+  description   String?
+  enabled       Boolean  @default(true)
+  config        String   // JSON: { apiKey, baseUrl, model, maxTokens, etc. }
+  capabilities  String   // JSON array: ["chat","vision","moderation","matching"]
+  priority      Int      @default(0)  // Higher = preferred
+  rateLimitRpm  Int      @default(60)
+  costPer1kTok  Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([enabled])
+  @@index([priority])
+}
+
+model AIRequest {
+  id            String   @id @default(cuid())
+  userId        String?
+  operation     String   // MATCH, MODERATE, RECOMMEND, ASSIST, TRANSLATE, ANALYZE, EDIT, SMART_SEARCH, JOB_MATCH, BUSINESS_REC, DIRECTORY_REC, ADMIN_COPILOT, RISK_ANALYSIS, PROFILE_ASSIST
+  provider      String   // ZAI, OPENAI, GOOGLE, ANTHROPIC, LOCAL
+  model         String?
+  inputHash     String?  // For deduplication
+  inputSummary  String?  // Non-sensitive description of the request
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED
+  resultStatus  String?  // SAFE, REVIEW, BLOCKED, LOW, MEDIUM, HIGH (operation-specific)
+ confidence    Float?
+ durationMs    Int?
+ inputTokens   Int?
+  outputTokens  Int?
+  costUsd       Float?
+  error         String?
+  createdAt     DateTime @default(now())
+  completedAt   DateTime?
+
+  results       AIResult[]
+
+  @@index([userId])
+  @@index([operation])
+  @@index([status])
+  @@index([provider])
+  @@index([inputHash])
+  @@index([createdAt])
+}
+
+model AIResult {
+  id            String   @id @default(cuid())
+  requestId     String
+  operation     String
+  targetType    String?  // PROFILE, MEDIA, JOB, BUSINESS, DIRECTORY, USER
+  targetId      String?
+  resultJson    String   // Structured JSON result
+  score         Float?
+  metadata      String?  // Additional context
+  createdAt     DateTime @default(now())
+
+  request       AIRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([operation])
+  @@index([targetType, targetId])
+}
+
+model AIRecommendation {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String   // MATRIMONY, JOB, BUSINESS, DIRECTORY
+  targetId      String
+  score         Float
+  factors       String   // JSON: [{name, weight, matched}]
+  reason        String?
+  reasonHi      String?
+  engaged       Boolean  @default(false)  // User clicked/viewed
+  dismissed     Boolean  @default(false)  // User dismissed
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, type])
+  @@index([userId, type, createdAt])
+  @@index([targetId])
+  @@index([score])
+  @@index([expiresAt])
+}
+
+model MatchScore {
+  id              String   @id @default(cuid())
+  profileIdA      String
+  profileIdB      String
+  overallScore    Float
+  gotraScore      Float    @default(0)
+  locationScore   Float    @default(0)
+  educationScore  Float    @default(0)
+  occupationScore Float    @default(0)
+  ageScore        Float    @default(0)
+  preferenceScore Float    @default(0)
+  aiScore         Float    @default(0)  // AI-enhanced component
+  factorsJson     String   // Detailed factor breakdown
+  recommendation  String   @default("NONE") // NONE, RECOMMENDED, POTENTIAL, NOT_RECOMMENDED
+  confidence      Float?
+  aiRequestId     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([profileIdA, profileIdB])
+  @@index([profileIdA])
+  @@index([profileIdB])
+  @@index([overallScore])
+  @@index([recommendation])
+}
+
+model ModerationResult {
+  id            String   @id @default(cuid())
+  mediaId       String   @unique
+  verdict       String   // SAFE, REVIEW, BLOCKED
+  confidence    Float
+  flags         String   // JSON array: ["nudity", "violence", ...]
+  autoAction    String   // NONE, BLUR, HIDE, FLAG_FOR_REVIEW
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  reviewOutcome String?  // UPHELD, OVERTURNED, ESCALATED
+  aiRequestId   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([verdict])
+  @@index([mediaId])
+  @@index([createdAt])
+}
+
+model RiskAssessment {
+  id            String   @id @default(cuid())
+  userId        String?
+  targetType    String   // USER, BUSINESS, JOB, ADVERTISEMENT, DIRECTORY
+  targetId      String?
+  riskLevel     String   @default("LOW") // LOW, MEDIUM, HIGH
+  riskScore     Float    @default(0)  // 0-100
+  signals       String   // JSON array of detected signals
+  actionTaken   String?  // NONE, FLAGGED, NOTIFIED_ADMIN, AUTO_BLOCKED
+  aiRequestId   String?
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  resolution    String?  // DISMISSED, CONFIRMED, ESCALATED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([targetType, targetId])
+  @@index([riskLevel])
+  @@index([createdAt])
+}
+
+model AIUsage {
+  id            String   @id @default(cuid())
+  date          String   // YYYY-MM-DD for daily aggregation
+  operation     String
+  provider      String
+  model         String?
+  totalRequests Int      @default(0)
+  successCount  Int      @default(0)
+  failCount     Int      @default(0)
+  totalInputTok Int      @default(0)
+  totalOutputTok Int     @default(0)
+  totalCostUsd  Float    @default(0)
+  avgLatencyMs  Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([date, operation, provider, model])
+  @@index([date])
+  @@index([operation])
+  @@index([provider])
+}
+
+model UserPreference {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  preferences   String   // JSON: {searchHistory, language, interactionSignals, savedItems, matrimonyPrefs, jobPrefs}
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}

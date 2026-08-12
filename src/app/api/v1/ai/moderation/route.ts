@@ -1,18 +1,19 @@
 import { success, error, serverError } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth-middleware'
-import { aiModerateImage } from '@/services/ai'
+import { moderateImage, getPendingModeration } from '@/services/ai/moderation'
+import { analyzePhotoQuality } from '@/services/ai/photo-quality'
 import { NextRequest } from 'next/server'
 
 /**
- * AI Photo Moderation Integration Point
- * POST /api/v1/ai/moderation
- * Body: { mediaId, imageUrl }
- * Returns: approval status, confidence, flags
+ * AI Photo Moderation
+ * POST /api/v1/ai/moderation — Moderate an image
+ * GET /api/v1/ai/moderation — Get pending moderation queue (admin)
  */
+
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireAuth(request)
-    if (authResult.error) return authResult.error
+    const result = await requireAuth(request)
+    if (result.error) return result.error
 
     const body = await request.json()
     const { mediaId, imageUrl } = body
@@ -21,24 +22,39 @@ export async function POST(request: NextRequest) {
       return error('mediaId and imageUrl are required')
     }
 
-    const moderationResult = await aiModerateImage({ mediaId, imageUrl })
-
-    // Update media record with moderation status
-    if (moderationResult.approved) {
-      const { db } = await import('@/lib/db')
-      await db.media.update({
-        where: { id: mediaId },
-        data: { aiModerated: true },
-      })
-    }
-
-    return success({
+    const modResult = await moderateImage({
       mediaId,
-      ...moderationResult,
-      message: 'AI moderation is in foundation phase. All images are approved by default.',
+      imageUrl,
+      userId: result.auth.userId,
     })
+
+    return success(modResult)
   } catch (err) {
     console.error('[AI MODERATION] Error:', err)
     return serverError('AI moderation failed')
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const result = await requireAuth(request)
+    if (result.error) return result.error
+
+    // Only admin/moderator can view moderation queue
+    const role = (result.auth as any).user?.role;
+    if (!role || role.level < 4) {
+      return error('Admin access required', 403)
+    }
+
+    const { searchParams } = new URL(request.url)
+    const verdict = searchParams.get('verdict') || undefined
+    const limit = Math.min(50, parseInt(searchParams.get('limit') || '20'))
+    const offset = parseInt(searchParams.get('offset') || '0')
+
+    const result_data = await getPendingModeration({ verdict, limit, offset })
+    return success(result_data)
+  } catch (err) {
+    console.error('[AI MODERATION] GET Error:', err)
+    return serverError('Failed to get moderation queue')
   }
 }

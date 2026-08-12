@@ -1,18 +1,18 @@
 import { success, error, serverError } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth-middleware'
-import { aiMatchProfile } from '@/services/ai'
+import { matchProfiles } from '@/services/ai/match-engine'
 import { NextRequest } from 'next/server'
 
 /**
- * AI Match Integration Point
+ * AI Match 2.0 — Production Matching Engine
  * POST /api/v1/ai/match
  * Body: { profileIdA, profileIdB }
- * Returns: compatibility score and factor breakdown
  */
 export async function POST(request: NextRequest) {
   try {
     const result = await requireAuth(request)
     if (result.error) return result.error
+    const auth = result.auth
 
     const body = await request.json()
     const { profileIdA, profileIdB } = body
@@ -21,15 +21,17 @@ export async function POST(request: NextRequest) {
       return error('Both profileIdA and profileIdB are required')
     }
 
-    // AI matching service integration — returns foundation-phase scores until external AI service is connected
-    const matchResult = await aiMatchProfile({ profileIdA, profileIdB })
+    // Get locale from header
+    const locale = request.headers.get('x-locale') === 'hi' ? 'hi' : 'en'
 
-    return success({
+    const matchResult = await matchProfiles({
       profileIdA,
       profileIdB,
-      ...matchResult,
-      message: 'AI matching is in foundation phase. Scores will be populated when AI service is connected.',
+      userId: auth.userId,
+      locale,
     })
+
+    return success(matchResult)
   } catch (err) {
     console.error('[AI MATCH] Error:', err)
     return serverError('AI match failed')

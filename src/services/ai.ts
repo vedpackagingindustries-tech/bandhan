@@ -1,60 +1,38 @@
 // ═══════════════════════════════════════════════════════════
-// AI INTEGRATION POINTS
-// Each function provides the interface and integration
-// architecture for future AI service connections.
-// Returns foundation-phase defaults until external
-// AI services (ML models, Vedic astrology, LLM, vision)
-// are connected in Phase 3.
+// AI SERVICE — LEGACY COMPATIBILITY LAYER
+// Delegates to Phase 4 AI Intelligence Layer.
+// These functions maintain backward compatibility with
+// existing API routes that import from '@/services/ai'.
 // ═══════════════════════════════════════════════════════════
+
+import { matchProfiles } from './ai/match-engine'
+import { moderateImage } from './ai/moderation'
+import { getRecommendations } from './ai/recommendations'
+import { assistantChat as aiAssistantChat } from './ai/assistant'
+import { runRegistrationWorkflow } from './ai/automation'
+import { assessRisk, collectRegistrationSignals } from './ai/risk-detection'
 
 /**
  * AI Match: compatibility scoring between two profiles.
- * Integration: ML model scoring based on preferences, gotra,
- * location, education, occupation etc.
+ * Now delegates to production Match Engine 2.0.
  */
 export async function aiMatchProfile(params: {
   profileIdA: string
   profileIdB: string
 }): Promise<{
-    score: number // 0-100
+    score: number
     factors: { name: string; weight: number; match: boolean }[]
   }> {
-  console.log(`[AI] Match requested: ${params.profileIdA} vs ${params.profileIdB}`)
-
-  // Fetch Gotra master data for both profiles
-  const { db } = await import('@/lib/db')
-  let gotraMatch = false
-  try {
-    const profiles = await db.profile.findMany({
-      where: { id: { in: [params.profileIdA, params.profileIdB] } },
-      select: { id: true, gotraId: true, gotraMaster: { select: { id: true, name: true } } },
-    })
-    const pA = profiles.find(p => p.id === params.profileIdA)
-    const pB = profiles.find(p => p.id === params.profileIdB)
-    // Same gotra = not a match (traditional rule)
-    if (pA?.gotraId && pB?.gotraId) {
-      gotraMatch = pA.gotraId !== pB.gotraId
-    }
-  } catch (_) {
-    // Foundation phase: non-blocking
-  }
-
+  const result = await matchProfiles({ profileIdA: params.profileIdA, profileIdB: params.profileIdB })
   return {
-    score: 0,
-    factors: [
-      { name: 'gotra', weight: 20, match: gotraMatch },
-      { name: 'location', weight: 15, match: false },
-      { name: 'education', weight: 15, match: false },
-      { name: 'occupation', weight: 10, match: false },
-      { name: 'age', weight: 10, match: false },
-      { name: 'preferences', weight: 30, match: false },
-    ],
+    score: result.overallScore,
+    factors: result.factors.map(f => ({ name: f.name, weight: f.weight, match: f.matched })),
   }
 }
 
 /**
- * AI Astrology: kundli matching and compatibility.
- * Integration: Vedic astrology API service.
+ * AI Astrology: kundli matching.
+ * Kept as deterministic fallback (Vedic astrology API not yet connected).
  */
 export async function aiAstrologyMatch(params: {
   profileIdA: string
@@ -62,11 +40,11 @@ export async function aiAstrologyMatch(params: {
   birthDetailsA?: { date: string; time: string; place: string }
   birthDetailsB?: { date: string; time: string; place: string }
 }): Promise<{
-  totalScore: number // 0-36 gunas
-  manglikCheck: boolean
-  details: { guna: string; score: number; maxScore: number }[]
-}> {
-  console.log(`[AI] Astrology match requested`)
+    totalScore: number
+    manglikCheck: boolean
+    details: { guna: string; score: number; maxScore: number }[]
+  }> {
+  console.log(`[AI] Astrology match requested — deterministic fallback`)
   return {
     totalScore: 0,
     manglikCheck: false,
@@ -84,78 +62,123 @@ export async function aiAstrologyMatch(params: {
 }
 
 /**
- * AI Photo Moderation: check image for inappropriate content.
- * Integration: Vision AI model (Google Vision, AWS Rekognition, etc.)
+ * AI Photo Moderation: delegates to Phase 4 moderation pipeline.
  */
 export async function aiModerateImage(params: {
   mediaId: string
   imageUrl: string
 }): Promise<{
-  approved: boolean
-  confidence: number
-  flags: string[]
-}> {
-  console.log(`[AI] Image moderation requested: ${params.mediaId}`)
+    approved: boolean
+    confidence: number
+    flags: string[]
+  }> {
+  const result = await moderateImage({ mediaId: params.mediaId, imageUrl: params.imageUrl })
   return {
-    approved: true, // Foundation phase: approve by default
-    confidence: 1.0,
-    flags: [],
+    approved: result.verdict === 'SAFE',
+    confidence: result.confidence,
+    flags: result.flags.map(f => f.category),
   }
 }
 
 /**
- * AI Recommendations: personalized content suggestions.
- * Integration: Collaborative filtering / content-based ML model.
+ * AI Recommendations: delegates to Phase 4 recommendation engine.
  */
 export async function aiGetRecommendations(params: {
   userId: string
   type: 'PROFILES' | 'BUSINESSES' | 'JOBS'
   limit?: number
 }): Promise<{
-  items: { id: string; score: number; reason: string }[]
-}> {
-  console.log(`[AI] Recommendations for ${params.userId}: ${params.type}`)
-  return { items: [] }
+    items: { id: string; score: number; reason: string }[]
+  }> {
+  const typeMap = { PROFILES: 'MATRIMONY' as const, BUSINESSES: 'BUSINESS' as const, JOBS: 'JOB' as const }
+  const result = await getRecommendations({
+    userId: params.userId,
+    type: typeMap[params.type],
+    limit: params.limit || 10,
+  })
+  return {
+    items: result.items.map(item => ({
+      id: item.id,
+      score: item.score,
+      reason: item.reason,
+    })),
+  }
 }
 
 /**
- * AI Assistant: conversational AI for user support.
- * Integration: LLM service (GPT/Claude/Gemini).
+ * AI Assistant: delegates to Phase 4 Bandhan AI Assistant.
  */
 export async function aiAssistantChat(params: {
   userId: string
   message: string
   context?: string[]
 }): Promise<{
-  response: string
-  sources?: string[]
-}> {
-  console.log(`[AI] Assistant chat from ${params.userId}`)
-  return {
-    response: 'AI Assistant is not yet configured. Please contact support for assistance.',
-  }
+    response: string
+    sources?: string[]
+  }> {
+  // Get user's locale and membership tier
+  const { db } = await import('@/lib/db')
+  const user = await db.user.findUnique({
+    where: { id: params.userId },
+    select: { membershipTier: true, profile: { select: { displayName: true } } },
+  })
+
+  const result = await aiAssistantChat({
+    context: {
+      userId: params.userId,
+      locale: 'en', // Default, could be detected
+      membershipTier: user?.membershipTier || 'FREE',
+      userName: user?.profile?.displayName || undefined,
+    },
+    message: params.message,
+  })
+
+  return { response: result.response }
 }
 
 /**
- * AI Auto-Approval: verify pending users after 2-hour wait.
- * Integration: Rule-based + ML verification pipeline.
+ * AI Auto-Approval: delegates to Phase 4 automation + risk detection.
  */
 export async function aiAutoApproval(params: {
   userId: string
 }): Promise<{
-  approved: boolean
-  confidence: number
-  checks: { name: string; passed: boolean; details: string }[]
-}> {
-  console.log(`[AI] Auto-approval check for ${params.userId}`)
+    approved: boolean
+    confidence: number
+    checks: { name: string; passed: boolean; details: string }[]
+  }> {
+  console.log(`[AI] Auto-approval check for ${params.userId} — Phase 4 automation`)
+
+  const { db } = await import('@/lib/db')
+  const user = await db.user.findUnique({
+    where: { id: params.userId },
+    select: { email: true, phone: true, ipAddress: true },
+  })
+
+  if (!user) {
+    return {
+      approved: false, confidence: 0,
+      checks: [{ name: 'user_not_found', passed: false, details: 'User not found' }],
+    }
+  }
+
+  // Run registration workflow
+  const workflow = await runRegistrationWorkflow({
+    userId: params.userId,
+    email: user.email || undefined,
+    phone: user.phone || undefined,
+    ipAddress: user.ipAddress || undefined,
+  })
+
+  const riskStep = workflow.steps.find(s => s.step === 'risk_analysis')
+  const isLowRisk = riskStep?.result?.includes('LOW') || false
+
   return {
-    approved: false, // Require manual review in foundation phase
-    confidence: 0,
-    checks: [
-      { name: 'email_domain', passed: true, details: 'Valid email domain' },
-      { name: 'phone_format', passed: true, details: 'Valid phone format' },
-      { name: 'duplicate_check', passed: true, details: 'No duplicates found' },
-      { name: 'risk_score', passed: false, details: 'Awaiting AI risk assessment' },
-    ],
+    approved: isLowRisk && !workflow.humanReviewRequired,
+ confidence: isLowRisk ? 0.8 : 0.3,
+    checks: workflow.steps.map(s => ({
+      name: s.step,
+      passed: s.status === 'COMPLETED',
+      details: s.result || 'Processed',
+    })),
   }
 }
