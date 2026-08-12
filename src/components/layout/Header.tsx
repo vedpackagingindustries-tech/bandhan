@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Heart, Briefcase, Search, Building2 } from 'lucide-react'
 import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
-import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 
@@ -70,10 +69,6 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          <div className="hidden lg:flex">
-            <LanguageSwitcher />
-          </div>
-
           {/* Mobile Toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -123,9 +118,6 @@ export function Header() {
                     {t.nav[key as keyof typeof t.nav]}
                   </motion.a>
                 ))}
-                <div className="mt-2 border-t border-border/30 px-4 pt-3">
-                  <LanguageSwitcher />
-                </div>
               </nav>
             </motion.div>
           </>

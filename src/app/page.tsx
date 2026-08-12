@@ -12,6 +12,7 @@ import { PremiumAdBanner } from '@/components/home/PremiumAdBanner'
 import { FeaturedCommunityContent } from '@/components/home/FeaturedCommunityContent'
 import { FooterAdvertisement } from '@/components/home/FooterAdvertisement'
 import { ModulePageView, type ModuleKey } from '@/components/modules/ModulePageView'
+import { SuperAdminPanel } from '@/components/admin/SuperAdminPanel'
 
 // Dynamic import for BrandIntro to avoid blocking initial render
 const BrandIntro = dynamic(
@@ -27,12 +28,25 @@ export default function Home() {
     const hash = window.location.hash.replace('#', '')
     return validModules.includes(hash as ModuleKey) ? (hash as ModuleKey) : null
   })
+  const [showAdmin, setShowAdmin] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.location.hash.replace('#', '') === 'admin'
+  })
 
   // Hash-based routing - subscribe to changes only
   useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.replace('#', '')
-      setActiveModule(validModules.includes(hash as ModuleKey) ? (hash as ModuleKey) : null)
+      if (hash === 'admin') {
+        setShowAdmin(true)
+        setActiveModule(null)
+      } else if (validModules.includes(hash as ModuleKey)) {
+        setActiveModule(hash as ModuleKey)
+        setShowAdmin(false)
+      } else {
+        setActiveModule(null)
+        setShowAdmin(false)
+      }
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
@@ -41,8 +55,14 @@ export default function Home() {
   const goHome = useCallback(() => {
     window.location.hash = ''
     setActiveModule(null)
+    setShowAdmin(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
+
+  // Super Admin Panel
+  if (showAdmin) {
+    return <SuperAdminPanel onBack={goHome} />
+  }
 
   // Module page view
   if (activeModule) {
