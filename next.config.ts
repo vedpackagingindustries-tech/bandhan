@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  allowedDevOrigins: [
+    "https://preview-chat-*.space-z.ai",
+    "https://preview-*.space-z.ai",
+  ],
   typescript: {
     ignoreBuildErrors: false,
   },
