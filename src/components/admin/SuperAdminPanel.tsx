@@ -201,7 +201,13 @@ function UsersTab({ sa, api, showToast }: { sa: Record<string, string>; api: (u:
     setLoading(false)
   }, [api, search])
 
-  useEffect(() => { fetchUsers() }, [fetchUsers])
+  useEffect(() => {
+    let active = true
+    api(`/api/v1/admin/ops/users?limit=50${search ? `&search=${encodeURIComponent(search)}` : ''}`)
+      .then(d => { if (active && d?.data?.users) setUsers(d.data.users) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [api, search])
 
   const toggleSel = (id: string) => setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
   const toggleAll = () => setSelected(users.length === selected.length ? [] : users.map((u: any) => u.id))
@@ -272,7 +278,21 @@ function AdsTab({ sa, api, showToast }: { sa: Record<string, string>; api: (u: s
     }
   }, [api])
 
-  useEffect(() => { fetchAds(); fetchRates() }, [fetchAds, fetchRates])
+  useEffect(() => {
+    let active = true
+    Promise.all([api('/api/v1/admin/ops/advertisements?limit=50'), api('/api/v1/admin/ops/settings?category=ADVERTISEMENT')])
+      .then(([adsRes, ratesRes]) => {
+        if (!active) return
+        if (adsRes?.data?.campaigns) setAds(adsRes.data.campaigns)
+        if (ratesRes?.data?.settings) {
+          const r: Record<string, string> = {}
+          ratesRes.data.settings.forEach((s: any) => { if (s.key.startsWith('AD_') && s.key.endsWith('_RATE')) r[s.key] = s.value })
+          if (Object.keys(r).length > 0) setRates(r)
+        }
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [api])
 
   const createAd = async () => {
     if (!form.name || !form.mediaUrl) return
@@ -355,7 +375,13 @@ function OffersTab({ sa, api, showToast }: { sa: Record<string, string>; api: (u
     const d = await api('/api/v1/admin/ops/offers?limit=50')
     if (d?.data?.offers) setOffers(d.data.offers)
   }, [api])
-  useEffect(() => { fetchOffers() }, [fetchOffers])
+  useEffect(() => {
+    let active = true
+    api('/api/v1/admin/ops/offers?limit=50')
+      .then(d => { if (active && d?.data?.offers) setOffers(d.data.offers) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [api])
 
   const saveOffer = async () => {
     if (!form.name || !form.discountType) return
@@ -435,7 +461,13 @@ function MembershipTab({ sa, api, showToast }: { sa: Record<string, string>; api
     const d = await api('/api/v1/admin/ops/membership')
     if (d?.data?.plans) setPlans(d.data.plans)
   }, [api])
-  useEffect(() => { fetchPlans() }, [fetchPlans])
+  useEffect(() => {
+    let active = true
+    api('/api/v1/admin/ops/membership')
+      .then(d => { if (active && d?.data?.plans) setPlans(d.data.plans) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [api])
 
   const savePlan = async () => {
     const body: any = { ...form, features: form.features ? form.features.split(',').map((f: string) => f.trim()).filter(Boolean) : [] }
@@ -503,7 +535,21 @@ function SettingsTab({ sa, api, token, showToast }: { sa: Record<string, string>
       if (Object.keys(s).length) setSecCfg(p => ({ ...p, ...s }))
     }
   }, [api])
-  useEffect(() => { fetchSettings() }, [fetchSettings])
+  useEffect(() => {
+    let active = true
+    api('/api/v1/admin/ops/settings')
+      .then(d => {
+        if (!active) return
+        if (d?.data?.settings) {
+          const g: Record<string, string> = {}, s: Record<string, string> = {}
+          d.data.settings.forEach((st: any) => { const target = st.category === 'GENERAL' ? g : st.category === 'SECURITY' ? s : null; if (target) target[st.key] = st.value })
+          if (Object.keys(g).length) setSiteCfg(p => ({ ...p, ...g }))
+          if (Object.keys(s).length) setSecCfg(p => ({ ...p, ...s }))
+        }
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [api])
 
   const changePassword = async () => {
     if (newPwd !== cfmPwd) { setPwdErr(sa.passwordMismatch); return }

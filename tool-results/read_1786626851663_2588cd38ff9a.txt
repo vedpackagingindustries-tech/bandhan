@@ -1,0 +1,597 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { motion, AnimatePresence } from 'framer-motion'
+     5→import {
+     6→  ArrowLeft, LogOut, RefreshCw, ShieldCheck, LayoutDashboard,
+     7→  Users, Megaphone, Gift, Crown, Settings, Search, Plus, Trash2, Edit3,
+     8→  Eye, EyeOff, Check, X, AlertTriangle, ChevronDown,
+     9→  Heart, Briefcase, FileText, IndianRupee, Brain, Lock, TreePine, BarChart3,
+    10→} from 'lucide-react'
+    11→import { BandhanLogo } from '@/components/shared/BandhanLogo'
+    12→import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
+    13→import { useTranslations } from '@/i18n'
+    14→
+    15→type TabId = 'dashboard' | 'users' | 'advertisements' | 'offers' | 'membership' | 'settings'
+    16→
+    17→const TABS: TabId[] = ['dashboard', 'users', 'advertisements', 'offers', 'membership', 'settings']
+    18→
+    19→interface TabDef { id: TabId; icon: typeof Users; labelKey: string }
+    20→
+    21→export function SuperAdminPanel({ onBack }: { onBack: () => void }) {
+    22→  const { t } = useTranslations()
+    23→  const sa = t.superAdmin
+    24→
+    25→  const [token, setToken] = useState<string | null>(() => {
+    26→    if (typeof window === 'undefined') return null
+    27→    try { const s = localStorage.getItem('bandhan-admin-session'); return s ? JSON.parse(s).token : null } catch { return null }
+    28→  })
+    29→  const [email, setEmail] = useState('')
+    30→  const [password, setPassword] = useState('')
+    31→  const [loading, setLoading] = useState(false)
+    32→  const [authError, setAuthError] = useState('')
+    33→  const [tab, setTab] = useState<TabId>('dashboard')
+    34→  const [dash, setDash] = useState<Record<string, Record<string, number>> | null>(null)
+    35→  const [dashLoading, setDashLoading] = useState(false)
+    36→  const [userName, setUserName] = useState('')
+    37→  const [toast, setToast] = useState('')
+    38→
+    39→  const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }, [])
+    40→
+    41→  const handleLogin = useCallback(async () => {
+    42→    if (!email || !password) { setAuthError('Email and password are required'); return }
+    43→    setLoading(true); setAuthError('')
+    44→    try {
+    45→      const r = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
+    46→      const d = await r.json()
+    47→      if (!r.ok) { setAuthError(d.error || d.message || sa.loginError); return }
+    48→      if (d.data?.user?.roleName !== 'SUPER_ADMIN') { setAuthError(sa.notSuperAdmin); return }
+    49→      setToken(d.data.token); setUserName(d.data.user?.profile?.displayName || d.data.user?.email || 'Admin')
+    50→      localStorage.setItem('bandhan-admin-session', JSON.stringify(d.data))
+    51→    } catch { setAuthError('Network error') } finally { setLoading(false) }
+    52→  }, [email, password, sa])
+    53→
+    54→  const api = useCallback(async (url: string, opts?: RequestInit) => {
+    55→    if (!token) return null
+    56→    const r = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts?.headers as Record<string, string>) } })
+    57→    const d = await r.json()
+    58→    if (r.status === 401 || r.status === 403) { setToken(null); localStorage.removeItem('bandhan-admin-session'); return null }
+    59→    return d
+    60→  }, [token])
+    61→
+    62→  const fetchDash = useCallback(async () => {
+    63→    if (!token) return
+    64→    setDashLoading(true)
+    65→    const d = await api('/api/v1/admin/ops/dashboard')
+    66→    if (d?.data) setDash(d.data)
+    67→    setDashLoading(false)
+    68→  }, [token, api])
+    69→
+    70→  useEffect(() => { if (token) fetchDash() }, [token, fetchDash])
+    71→  useEffect(() => { if (token && tab === 'dashboard') fetchDash() }, [tab, token, fetchDash])
+    72→
+    73→  const logout = () => { setToken(null); setDash(null); setUserName(''); localStorage.removeItem('bandhan-admin-session'); setTab('dashboard') }
+    74→  const switchTab = (t: TabId) => { setTab(t); setDash(null) }
+    75→
+    76→  const tabDefs: TabDef[] = [
+    77→    { id: 'dashboard', icon: LayoutDashboard, labelKey: sa.dashboard },
+    78→    { id: 'users', icon: Users, labelKey: sa.users },
+    79→    { id: 'advertisements', icon: Megaphone, labelKey: sa.advertisements },
+    80→    { id: 'offers', icon: Gift, labelKey: sa.offers },
+    81→    { id: 'membership', icon: Crown, labelKey: sa.membership },
+    82→    { id: 'settings', icon: Settings, labelKey: sa.settings },
+    83→  ]
+    84→
+    85→  // ─── LOGIN ───
+    86→  if (!token) return (
+    87→    <div className="flex min-h-screen flex-col bg-ivory">
+    88→      <header className="sticky top-0 z-40 border-b border-border/40 bg-white/90 backdrop-blur-xl">
+    89→        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 md:h-16">
+    90→          <button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-xl transition-all hover:bg-cream"><ArrowLeft className="h-5 w-5 text-foreground" /></button>
+    91→          <BandhanLogo /><SahuSamajFlag size="sm" className="hidden sm:inline-flex" />
+    92→        </div>
+    93→      </header>
+    94→      <main className="flex flex-1 items-center justify-center px-4 py-12">
+    95→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-sm rounded-2xl border border-border/40 bg-white p-6 shadow-sm sm:p-8">
+    96→          <div className="mb-6 flex justify-center"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-burgundy/10"><ShieldCheck className="h-6 w-6 text-burgundy" /></div></div>
+    97→          <h1 className="text-center text-xl font-bold text-foreground font-serif">{sa.loginTitle}</h1>
+    98→          <p className="mt-1 text-center text-xs text-muted-foreground">{sa.loginSubtitle}</p>
+    99→          {authError && <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">{authError}</div>}
+   100→          <div className="mt-5 space-y-3">
+   101→            <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.email}</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && !loading && handleLogin()} placeholder="admin@bandhan.com" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+   102→            <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.password}</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && !loading && handleLogin()} placeholder="............" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+   103→          </div>
+   104→          <button onClick={handleLogin} disabled={loading} className="btn-bandhan-primary mt-6 w-full text-sm disabled:opacity-50">{loading ? sa.loggingIn : sa.login}</button>
+   105→        </motion.div>
+   106→      </main>
+   107→    </div>
+   108→  )
+   109→
+   110→  // ─── ADMIN PANEL ───
+   111→  return (
+   112→    <div className="flex min-h-screen flex-col bg-ivory">
+   113→      {/* Header */}
+   114→      <header className="sticky top-0 z-40 border-b border-border/40 bg-white/90 backdrop-blur-xl">
+   115→        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 md:h-16">
+   116→          <div className="flex items-center gap-3">
+   117→            <button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-xl transition-all hover:bg-cream"><ArrowLeft className="h-5 w-5 text-foreground" /></button>
+   118→            <BandhanLogo />
+   119→          </div>
+   120→          <div className="flex items-center gap-2">
+   121→            <span className="hidden text-xs font-medium text-muted-foreground sm:inline">{userName}</span>
+   122→            <button onClick={logout} className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-red-500 transition-all hover:bg-red-50"><LogOut className="h-3.5 w-3.5" />{sa.logout}</button>
+   123→          </div>
+   124→        </div>
+   125→        {/* Tab bar */}
+   126→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   127→          <div className="flex gap-1 overflow-x-auto border-b border-border/20 pb-px -mb-px scrollbar-hide">
+   128→            {tabDefs.map(t => <button key={t.id} onClick={() => switchTab(t.id)} className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-xs font-medium transition-all ${tab === t.id ? 'border-burgundy text-burgundy' : 'border-transparent text-muted-foreground hover:text-foreground'}`}><t.icon className="h-3.5 w-3.5" />{t.labelKey}</button>)}
+   129→          </div>
+   130→        </div>
+   131→      </header>
+   132→
+   133→      <main className="flex-1 px-4 py-6 sm:px-6">
+   134→        <div className="mx-auto max-w-7xl">
+   135→          {tab === 'dashboard' && <DashboardTab sa={sa} dash={dash} dashLoading={dashLoading} fetchDash={fetchDash} />}
+   136→          {tab === 'users' && <UsersTab sa={sa} api={api} showToast={showToast} />}
+   137→          {tab === 'advertisements' && <AdsTab sa={sa} api={api} showToast={showToast} />}
+   138→          {tab === 'offers' && <OffersTab sa={sa} api={api} showToast={showToast} />}
+   139→          {tab === 'membership' && <MembershipTab sa={sa} api={api} showToast={showToast} />}
+   140→          {tab === 'settings' && <SettingsTab sa={sa} api={api} token={token} showToast={showToast} />}
+   141→        </div>
+   142→      </main>
+   143→
+   144→      {/* Toast */}
+   145→      <AnimatePresence>
+   146→        {toast && <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="fixed bottom-6 right-6 z-50 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-medium text-white shadow-lg">{toast}</motion.div>}
+   147→      </AnimatePresence>
+   148→    </div>
+   149→  )
+   150→}
+   151→
+   152→/* ═══════════ DASHBOARD TAB ═══════════ */
+   153→function DashboardTab({ sa, dash, dashLoading, fetchDash }: { sa: Record<string, string>; dash: Record<string, Record<string, number>> | null; dashLoading: boolean; fetchDash: () => void }) {
+   154→  const d = dash
+   155→  return (
+   156→    <div>
+   157→      <div className="mb-4 flex items-center justify-between">
+   158→        <div><h1 className="text-lg font-bold text-foreground font-serif">{sa.dashboard}</h1><p className="text-xs text-muted-foreground">Bandhan Operations Center</p></div>
+   159→        <button onClick={fetchDash} className="flex h-8 items-center gap-1.5 rounded-lg border border-border/40 px-3 text-xs font-medium text-foreground transition-all hover:bg-white"><RefreshCw className={`h-3.5 w-3.5 ${dashLoading ? 'animate-spin' : ''}`} />{sa.refresh}</button>
+   160→      </div>
+   161→      {dashLoading && !d && <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground"><RefreshCw className="h-4 w-4 animate-spin" />{sa.loading}</div>}
+   162→      {d && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+   163→        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+   164→          <SC icon={Users} label={sa.users} value={d.users?.total ?? 0} c="bg-burgundy/10" tc="text-burgundy" />
+   165→          <SC icon={Heart} label={sa.matrimony} value={d.matrimony?.totalProfiles ?? 0} c="bg-pink-50" tc="text-pink-600" />
+   166→          <SC icon={Briefcase} label={sa.business} value={d.business?.total ?? 0} c="bg-gold/10" tc="text-gold-dark" />
+   167→          <SC icon={FileText} label={sa.jobs} value={d.jobs?.total ?? 0} c="bg-teal/10" tc="text-teal" />
+   168→        </div>
+   169→        <Sec title={sa.users} icon={Users}><div className="grid grid-cols-2 gap-2 sm:grid-cols-4"><M l={sa.active} v={d.users?.active ?? 0} g /><M l={sa.pending} v={d.users?.pending ?? 0} w /><M l={sa.blocked} v={d.users?.blocked ?? 0} b /><M l={sa.premium} v={(d.users?.premium ?? 0) + (d.users?.elite ?? 0)} /></div></Sec>
+   170→        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+   171→          <Sec title={sa.matrimony} icon={Heart}><div className="space-y-1.5"><M l={sa.pending} v={d.matrimony?.pendingApproval ?? 0} w /><M l={sa.approved} v={d.matrimony?.approved ?? 0} g /><M l={sa.featured} v={d.matrimony?.featured ?? 0} /><div className="grid grid-cols-2 gap-2"><M l={sa.male} v={d.matrimony?.male ?? 0} /><M l={sa.female} v={d.matrimony?.female ?? 0} /></div></div></Sec>
+   172→          <Sec title={sa.business} icon={Briefcase}><div className="space-y-1.5"><M l={sa.active} v={d.business?.active ?? 0} g /><M l={sa.pending} v={d.business?.pending ?? 0} w /><M l={sa.verified} v={d.business?.verified ?? 0} /><M l={sa.featured} v={d.business?.featured ?? 0} /></div></Sec>
+   173→          <Sec title={sa.jobs} icon={FileText}><div className="space-y-1.5"><M l={sa.active} v={d.jobs?.active ?? 0} g /><M l={sa.pending} v={d.jobs?.pending ?? 0} w /><M l={sa.applications} v={d.jobs?.totalApplications ?? 0} /><M l={sa.employers} v={d.jobs?.employers ?? 0} /></div></Sec>
+   174→        </div>
+   175→        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+   176→          <Sec title={sa.revenue} icon={IndianRupee}><div className="space-y-1.5"><M l={sa.totalRevenue} v={fmtC(d.revenue?.totalRevenue ?? 0)} /><M l={sa.successPayments} v={d.revenue?.successPayments ?? 0} g /><M l={sa.pendingPayments} v={d.revenue?.pendingPayments ?? 0} w /></div></Sec>
+   177→          <Sec title={sa.ai} icon={Brain}><div className="space-y-1.5"><M l={sa.requests} v={d.ai?.totalRequests ?? 0} /><M l={sa.completed} v={d.ai?.completedRequests ?? 0} g /><M l={sa.failed} v={d.ai?.failedRequests ?? 0} b /><M l={sa.activeProviders} v={d.ai?.activeProviders ?? 0} /></div></Sec>
+   178→          <Sec title={sa.security} icon={Lock}><div className="space-y-1.5"><M l={sa.recentEvents} v={d.security?.recentSecurityEvents ?? 0} /><M l={sa.criticalEvents} v={d.security?.criticalEvents ?? 0} b /><M l={sa.lockedUsers} v={d.security?.lockedUsers ?? 0} w /></div></Sec>
+   179→        </div>
+   180→        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+   181→          <Sec title={sa.gotra} icon={TreePine}><div className="space-y-1.5"><M l={sa.total} v={d.gotra?.total ?? 0} /><M l={sa.active} v={d.gotra?.active ?? 0} g /></div></Sec>
+   182→          <Sec title={sa.ads} icon={Megaphone}><div className="space-y-1.5"><M l={sa.active} v={d.advertisements?.activeCampaigns ?? 0} g /><M l={sa.impressions} v={d.advertisements?.totalImpressions ?? 0} /><M l={sa.clicks} v={d.advertisements?.totalClicks ?? 0} /></div></Sec>
+   183→          <Sec title={sa.reports} icon={BarChart3}><div className="space-y-1.5"><M l={sa.reportsPending} v={d.reports?.pending ?? 0} w /><M l={sa.reportsResolved} v={d.reports?.resolved ?? 0} g /></div></Sec>
+   184→        </div>
+   185→      </motion.div>}
+   186→    </div>
+   187→  )
+   188→}
+   189→
+   190→/* ═══════════ USERS TAB ═══════════ */
+   191→function UsersTab({ sa, api, showToast }: { sa: Record<string, string>; api: (u: string, o?: RequestInit) => Promise<any>; showToast: (m: string) => void }) {
+   192→  const [search, setSearch] = useState('')
+   193→  const [users, setUsers] = useState<any[]>([])
+   194→  const [loading, setLoading] = useState(false)
+   195→  const [selected, setSelected] = useState<string[]>([])
+   196→
+   197→  const fetchUsers = useCallback(async () => {
+   198→    setLoading(true)
+   199→    const d = await api(`/api/v1/admin/ops/users?limit=50${search ? `&search=${encodeURIComponent(search)}` : ''}`)
+   200→    if (d?.data?.users) setUsers(d.data.users)
+   201→    setLoading(false)
+   202→  }, [api, search])
+   203→
+   204→  useEffect(() => { fetchUsers() }, [fetchUsers])
+   205→
+   206→  const toggleSel = (id: string) => setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
+   207→  const toggleAll = () => setSelected(users.length === selected.length ? [] : users.map((u: any) => u.id))
+   208→
+   209→  const bulkAction = async (action: string, extra?: Record<string, string>) => {
+   210→    if (!selected.length) return
+   211→    const d = await api('/api/v1/admin/ops/users', { method: 'POST', body: JSON.stringify({ action, userIds: selected, ...extra }) })
+   212→    if (d?.data) { showToast(`${action} done for ${d.data.processed} users`); setSelected([]); fetchUsers() }
+   213→    else if (d?.error) showToast(d.error)
+   214→  }
+   215→
+   216→  return (
+   217→    <div>
+   218→      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   219→        <h1 className="text-lg font-bold text-foreground font-serif">{sa.users}</h1>
+   220→        {selected.length > 0 && (
+   221→          <div className="flex items-center gap-2">
+   222→            <span className="text-xs text-muted-foreground">{selected.length} {sa.selected}</span>
+   223→            <button onClick={() => bulkAction('APPROVE')} className="btn-bandhan-primary py-1 px-3 text-xs">{sa.approve}</button>
+   224→            <button onClick={() => bulkAction('BLOCK')} className="rounded-lg bg-red-50 px-3 py-1 text-xs font-medium text-red-600">{sa.block}</button>
+   225→            <button onClick={() => bulkAction('UNBLOCK')} className="rounded-lg bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600">{sa.unblock}</button>
+   226→          </div>
+   227→        )}
+   228→      </div>
+   229→      <div className="relative mb-4"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder={sa.searchUsers} className="h-11 w-full rounded-xl border border-border/60 bg-white pl-10 pr-4 text-sm" /></div>
+   230→      {loading ? <div className="py-12 text-center text-sm text-muted-foreground">{sa.loading}</div> : users.length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{sa.noUsers}</p> : (
+   231→        <div className="overflow-x-auto rounded-xl border border-border/40 bg-white">
+   232→          <table className="w-full text-left text-xs">
+   233→            <thead className="border-b border-border/30 bg-ivory/60"><tr>
+   234→              <th className="p-3"><input type="checkbox" checked={users.length === selected.length && users.length > 0} onChange={toggleAll} /></th>
+   235→              <th className="p-3 font-medium text-muted-foreground">Email</th><th className="hidden p-3 font-medium text-muted-foreground sm:table-cell">Role</th><th className="p-3 font-medium text-muted-foreground">Status</th><th className="hidden p-3 font-medium text-muted-foreground md:table-cell">Tier</th><th className="hidden p-3 font-medium text-muted-foreground lg:table-cell">Joined</th>
+   236→            </tr></thead>
+   237→            <tbody>{users.map((u: any) => (
+   238→              <tr key={u.id} className={`border-b border-border/20 last:border-0 ${selected.includes(u.id) ? 'bg-burgundy/5' : ''}`} onClick={() => toggleSel(u.id)}>
+   239→                <td className="p-3"><input type="checkbox" checked={selected.includes(u.id)} readOnly /></td>
+   240→                <td className="p-3 font-medium text-foreground">{u.email || u.phone || '-'}</td>
+   241→                <td className="hidden p-3 text-muted-foreground sm:table-cell">{u.role?.name || '-'}</td>
+   242→                <td className="p-3"><span className={`inline-block rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${u.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : u.status === 'BLOCKED' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>{u.status}</span></td>
+   243→                <td className="hidden p-3 text-muted-foreground md:table-cell">{u.membershipTier || '-'}</td>
+   244→                <td className="hidden p-3 text-muted-foreground lg:table-cell">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
+   245→              </tr>
+   246→            ))}</tbody>
+   247→          </table>
+   248→        </div>
+   249→      )}
+   250→    </div>
+   251→  )
+   252→}
+   253→
+   254→/* ═══════════ ADS TAB ═══════════ */
+   255→function AdsTab({ sa, api, showToast }: { sa: Record<string, string>; api: (u: string, o?: RequestInit) => Promise<any>; showToast: (m: string) => void }) {
+   256→  const [ads, setAds] = useState<any[]>([])
+   257→  const [rates, setRates] = useState<Record<string, string>>({ AD_HERO_RATE: '5000', AD_MIDDLE_RATE: '3000', AD_BOTTOM_RATE: '2000' })
+   258→  const [showForm, setShowForm] = useState(false)
+   259→  const [form, setForm] = useState({ name: '', module: 'GENERAL', placement: 'HERO', mediaType: 'IMAGE', mediaUrl: '', linkUrl: '', ctaText: '', ctaTextHi: '', language: 'ALL', device: 'ALL', priority: 0, startDate: '', endDate: '' })
+   260→
+   261→  const fetchAds = useCallback(async () => {
+   262→    const d = await api('/api/v1/admin/ops/advertisements?limit=50')
+   263→    if (d?.data?.campaigns) setAds(d.data.campaigns)
+   264→  }, [api])
+   265→
+   266→  const fetchRates = useCallback(async () => {
+   267→    const d = await api('/api/v1/admin/ops/settings?category=ADVERTISEMENT')
+   268→    if (d?.data?.settings) {
+   269→      const r: Record<string, string> = {}
+   270→      d.data.settings.forEach((s: any) => { if (s.key.startsWith('AD_') && s.key.endsWith('_RATE')) r[s.key] = s.value })
+   271→      if (Object.keys(r).length > 0) setRates(r)
+   272→    }
+   273→  }, [api])
+   274→
+   275→  useEffect(() => { fetchAds(); fetchRates() }, [fetchAds, fetchRates])
+   276→
+   277→  const createAd = async () => {
+   278→    if (!form.name || !form.mediaUrl) return
+   279→    const d = await api('/api/v1/admin/ops/advertisements', { method: 'POST', body: JSON.stringify(form) })
+   280→    if (d?.data) { showToast(sa.create); setShowForm(false); setForm({ name: '', module: 'GENERAL', placement: 'HERO', mediaType: 'IMAGE', mediaUrl: '', linkUrl: '', ctaText: '', ctaTextHi: '', language: 'ALL', device: 'ALL', priority: 0, startDate: '', endDate: '' }); fetchAds() }
+   281→    else if (d?.error) showToast(d.error)
+   282→  }
+   283→
+   284→  const saveRates = async () => {
+   285→    const settings = Object.entries(rates).map(([key, value]) => ({ key, value, category: 'ADVERTISEMENT', description: key }))
+   286→    const d = await api('/api/v1/admin/ops/settings', { method: 'PUT', body: JSON.stringify({ settings }) })
+   287→    if (d?.data) showToast(sa.ratesSaved)
+   288→  }
+   289→
+   290→  const toggleStatus = async (id: string, status: string) => {
+   291→    const d = await api('/api/v1/admin/campaigns', { method: 'PUT', body: JSON.stringify({ id, status: status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' }) })
+   292→    if (d?.data) fetchAds()
+   293→  }
+   294→
+   295→  return (
+   296→    <div>
+   297→      <div className="mb-4 flex items-center justify-between">
+   298→        <h1 className="text-lg font-bold text-foreground font-serif">{sa.advertisements}</h1>
+   299→        <button onClick={() => setShowForm(!showForm)} className="btn-bandhan-primary py-1.5 px-3 text-xs"><Plus className="h-3.5 w-3.5" />{sa.createAd}</button>
+   300→      </div>
+   301→      {/* Ad Rates */}
+   302→      <div className="mb-4 rounded-xl border border-border/40 bg-white p-4">
+   303→        <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground"><IndianRupee className="h-4 w-4 text-burgundy" />{sa.adRates} (INR/month)</h3>
+   304→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+   305→          {[['AD_HERO_RATE', sa.heroRate], ['AD_MIDDLE_RATE', sa.middleRate], ['AD_BOTTOM_RATE', sa.bottomRate]].map(([key, label]) => (
+   306→            <div key={key}><label className="mb-1 block text-xs text-muted-foreground">{label}</label><input value={rates[key as keyof typeof rates] || ''} onChange={e => setRates(p => ({ ...p, [key]: e.target.value }))} className="h-10 w-full rounded-lg border border-border/60 px-3 text-sm" /></div>
+   307→          ))}
+   308→        </div>
+   309→        <button onClick={saveRates} className="btn-bandhan-primary mt-3 py-1.5 px-4 text-xs">{sa.saveRates}</button>
+   310→      </div>
+   311→      {/* Create Form */}
+   312→      <AnimatePresence>{showForm && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden rounded-xl border border-border/40 bg-white p-4">
+   313→        <h3 className="mb-3 text-sm font-bold text-foreground">{sa.createAd}</h3>
+   314→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   315→          <Inp label={sa.adName} value={form.name} onChange={v => setForm(p => ({ ...p, name: v }))} />
+   316→          <Sel label={sa.adModule} value={form.module} onChange={v => setForm(p => ({ ...p, module: v }))} opts={['GENERAL', 'MATRIMONY', 'BUSINESS', 'JOBS', 'DIRECTORY']} />
+   317→          <Sel label={sa.adPlacement} value={form.placement} onChange={v => setForm(p => ({ ...p, placement: v }))} opts={['HERO', 'MIDDLE', 'BOTTOM']} />
+   318→          <Sel label={sa.adMediaType} value={form.mediaType} onChange={v => setForm(p => ({ ...p, mediaType: v }))} opts={['IMAGE', 'VIDEO', 'LOTTIE']} />
+   319→          <Inp label={sa.adMediaUrl} value={form.mediaUrl} onChange={v => setForm(p => ({ ...p, mediaUrl: v }))} />
+   320→          <Inp label={sa.adLinkUrl} value={form.linkUrl} onChange={v => setForm(p => ({ ...p, linkUrl: v }))} />
+   321→          <Inp label={sa.adCtaText} value={form.ctaText} onChange={v => setForm(p => ({ ...p, ctaText: v }))} />
+   322→          <Inp label={sa.adCtaTextHi} value={form.ctaTextHi} onChange={v => setForm(p => ({ ...p, ctaTextHi: v }))} />
+   323→          <Sel label={sa.adLanguage} value={form.language} onChange={v => setForm(p => ({ ...p, language: v }))} opts={['ALL', 'EN', 'HI']} />
+   324→          <Sel label={sa.adDevice} value={form.device} onChange={v => setForm(p => ({ ...p, device: v }))} opts={['ALL', 'MOBILE', 'DESKTOP']} />
+   325→        </div>
+   326→        <div className="mt-3 flex gap-2">
+   327→          <button onClick={createAd} className="btn-bandhan-primary py-1.5 px-4 text-xs">{sa.create}</button>
+   328→          <button onClick={() => setShowForm(false)} className="rounded-lg border border-border/40 px-4 py-1.5 text-xs font-medium text-muted-foreground hover:bg-cream">{sa.cancel}</button>
+   329→        </div>
+   330→      </motion.div>}</AnimatePresence>
+   331→      {/* Ad List */}
+   332→      {ads.length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{sa.noAds}</p> : (
+   333→        <div className="space-y-2">{ads.map((ad: any) => (
+   334→          <div key={ad.id} className="flex flex-col gap-2 rounded-xl border border-border/40 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+   335→            <div className="flex-1"><p className="text-sm font-medium text-foreground">{ad.name}</p><p className="text-xs text-muted-foreground">{ad.module} / {ad.placement} / {ad.device}</p></div>
+   336→            <div className="flex items-center gap-3">
+   337→              <span className="text-xs text-muted-foreground">{ad.impressions} imp / {ad.clicks} clicks</span>
+   338→              <button onClick={() => toggleStatus(ad.id, ad.status)} className={`rounded-full px-3 py-1 text-[0.65rem] font-medium ${ad.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{ad.status}</button>
+   339→            </div>
+   340→          </div>
+   341→        ))}</div>
+   342→      )}
+   343→    </div>
+   344→  )
+   345→}
+   346→
+   347→/* ═══════════ OFFERS TAB ═══════════ */
+   348→function OffersTab({ sa, api, showToast }: { sa: Record<string, string>; api: (u: string, o?: RequestInit) => Promise<any>; showToast: (m: string) => void }) {
+   349→  const [offers, setOffers] = useState<any[]>([])
+   350→  const [showForm, setShowForm] = useState(false)
+   351→  const [editingId, setEditingId] = useState<string | null>(null)
+   352→  const [form, setForm] = useState({ name: '', nameHi: '', description: '', descriptionHi: '', discountType: 'PERCENTAGE', discountValue: 10, applicableTo: 'ALL', applicableTier: 'ALL', promoCode: '', maxUses: 0, minAmount: '', startDate: '', endDate: '' })
+   353→
+   354→  const fetchOffers = useCallback(async () => {
+   355→    const d = await api('/api/v1/admin/ops/offers?limit=50')
+   356→    if (d?.data?.offers) setOffers(d.data.offers)
+   357→  }, [api])
+   358→  useEffect(() => { fetchOffers() }, [fetchOffers])
+   359→
+   360→  const saveOffer = async () => {
+   361→    if (!form.name || !form.discountType) return
+   362→    if (editingId) {
+   363→      const d = await api('/api/v1/admin/ops/offers', { method: 'PUT', body: JSON.stringify({ id: editingId, ...form }) })
+   364→      if (d?.data) { showToast(sa.offerUpdated); resetForm(); fetchOffers() }
+   365→      else if (d?.error) showToast(d.error)
+   366→    } else {
+   367→      const d = await api('/api/v1/admin/ops/offers', { method: 'POST', body: JSON.stringify(form) })
+   368→      if (d?.data) { showToast(sa.offerCreated); resetForm(); fetchOffers() }
+   369→      else if (d?.error) showToast(d.error)
+   370→    }
+   371→  }
+   372→
+   373→  const deleteOffer = async (id: string) => {
+   374→    const d = await api(`/api/v1/admin/ops/offers?id=${id}`, { method: 'DELETE' })
+   375→    if (d?.data) { showToast(sa.offerDeleted); fetchOffers() }
+   376→  }
+   377→
+   378→  const resetForm = () => { setShowForm(false); setEditingId(null); setForm({ name: '', nameHi: '', description: '', descriptionHi: '', discountType: 'PERCENTAGE', discountValue: 10, applicableTo: 'ALL', applicableTier: 'ALL', promoCode: '', maxUses: 0, minAmount: '', startDate: '', endDate: '' }) }
+   379→
+   380→  const editOffer = (o: any) => { setEditingId(o.id); setForm({ name: o.name, nameHi: o.nameHi || '', description: o.description || '', descriptionHi: o.descriptionHi || '', discountType: o.discountType, discountValue: o.discountValue, applicableTo: o.applicableTo, applicableTier: o.applicableTier, promoCode: o.promoCode || '', maxUses: o.maxUses, minAmount: o.minAmount?.toString() || '', startDate: o.startDate?.split('T')[0] || '', endDate: o.endDate?.split('T')[0] || '' }); setShowForm(true) }
+   381→
+   382→  return (
+   383→    <div>
+   384→      <div className="mb-4 flex items-center justify-between">
+   385→        <h1 className="text-lg font-bold text-foreground font-serif">{sa.offers}</h1>
+   386→        <button onClick={() => { resetForm(); setShowForm(true) }} className="btn-bandhan-primary py-1.5 px-3 text-xs"><Plus className="h-3.5 w-3.5" />{sa.createOffer}</button>
+   387→      </div>
+   388→      <AnimatePresence>{showForm && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden rounded-xl border border-border/40 bg-white p-4">
+   389→        <h3 className="mb-3 text-sm font-bold text-foreground">{editingId ? sa.edit : sa.createOffer}</h3>
+   390→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   391→          <Inp label={sa.offerName} value={form.name} onChange={v => setForm(p => ({ ...p, name: v }))} />
+   392→          <Inp label={sa.offerNameHi} value={form.nameHi} onChange={v => setForm(p => ({ ...p, nameHi: v }))} />
+   393→          <Sel label={sa.discountType} value={form.discountType} onChange={v => setForm(p => ({ ...p, discountType: v }))} opts={['PERCENTAGE', 'FLAT', 'FREE_TRIAL']} />
+   394→          {form.discountType !== 'FREE_TRIAL' && <Inp label={sa.discountValue} value={String(form.discountValue)} onChange={v => setForm(p => ({ ...p, discountValue: parseFloat(v) || 0 }))} type="number" />}
+   395→          <Sel label={sa.applicableTo} value={form.applicableTo} onChange={v => setForm(p => ({ ...p, applicableTo: v }))} opts={['ALL', 'MEMBERSHIP', 'ADVERTISEMENT']} />
+   396→          <Sel label={sa.applicableTier} value={form.applicableTier} onChange={v => setForm(p => ({ ...p, applicableTier: v }))} opts={['ALL', 'FREE', 'PREMIUM', 'ELITE']} />
+   397→          <Inp label={sa.promoCode} value={form.promoCode} onChange={v => setForm(p => ({ ...p, promoCode: v.toUpperCase() }))} />
+   398→          <Inp label={sa.maxUses} value={form.maxUses} onChange={v => setForm(p => ({ ...p, maxUses: parseInt(v) || 0 }))} type="number" />
+   399→          <Inp label={sa.minAmount} value={form.minAmount} onChange={v => setForm(p => ({ ...p, minAmount: v }))} type="number" />
+   400→          <Inp label={sa.adStartDate} value={form.startDate} onChange={v => setForm(p => ({ ...p, startDate: v }))} type="date" />
+   401→          <Inp label={sa.adEndDate} value={form.endDate} onChange={v => setForm(p => ({ ...p, endDate: v }))} type="date" />
+   402→        </div>
+   403→        <Inp label={sa.offerDesc} value={form.description} onChange={v => setForm(p => ({ ...p, description: v }))} />
+   404→        <div className="mt-3 flex gap-2">
+   405→          <button onClick={saveOffer} className="btn-bandhan-primary py-1.5 px-4 text-xs">{editingId ? sa.update : sa.create}</button>
+   406→          <button onClick={resetForm} className="rounded-lg border border-border/40 px-4 py-1.5 text-xs font-medium text-muted-foreground hover:bg-cream">{sa.cancel}</button>
+   407→        </div>
+   408→      </motion.div>}</AnimatePresence>
+   409→      {offers.length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{sa.noOffers}</p> : (
+   410→        <div className="space-y-2">{offers.map((o: any) => (
+   411→          <div key={o.id} className="flex flex-col gap-2 rounded-xl border border-border/40 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+   412→            <div className="flex-1">
+   413→              <p className="text-sm font-medium text-foreground">{o.name}</p>
+   414→              <p className="text-xs text-muted-foreground">{o.discountType === 'PERCENTAGE' ? `${o.discountValue}%` : o.discountType === 'FLAT' ? `\u20b9${o.discountValue}` : sa.freeTrial} {o.applicableTo === 'ALL' ? '' : `| ${o.applicableTo}`} {o.promoCode ? `| Code: ${o.promoCode}` : ''}</p>
+   415→            </div>
+   416→            <div className="flex items-center gap-2">
+   417→              <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${o.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : o.status === 'EXPIRED' ? 'bg-gray-100 text-gray-500' : 'bg-amber-50 text-amber-600'}`}>{o.status}</span>
+   418→              <button onClick={() => editOffer(o)} className="rounded-lg p-1.5 text-muted-foreground hover:bg-cream"><Edit3 className="h-3.5 w-3.5" /></button>
+   419→              <button onClick={() => deleteOffer(o.id)} className="rounded-lg p-1.5 text-red-400 hover:bg-red-50"><Trash2 className="h-3.5 w-3.5" /></button>
+   420→            </div>
+   421→          </div>
+   422→        ))}</div>
+   423→      )}
+   424→    </div>
+   425→  )
+   426→}
+   427→
+   428→/* ═══════════ MEMBERSHIP TAB ═══════════ */
+   429→function MembershipTab({ sa, api, showToast }: { sa: Record<string, string>; api: (u: string, o?: RequestInit) => Promise<any>; showToast: (m: string) => void }) {
+   430→  const [plans, setPlans] = useState<any[]>([])
+   431→  const [editing, setEditing] = useState<string | null>(null)
+   432→  const [form, setForm] = useState({ name: '', displayName: '', price: 0, durationDays: 30, maxContacts: 10, maxPhotos: 5, priorityListing: false, features: '', status: 'ACTIVE', sortOrder: 0 })
+   433→
+   434→  const fetchPlans = useCallback(async () => {
+   435→    const d = await api('/api/v1/admin/ops/membership')
+   436→    if (d?.data?.plans) setPlans(d.data.plans)
+   437→  }, [api])
+   438→  useEffect(() => { fetchPlans() }, [fetchPlans])
+   439→
+   440→  const savePlan = async () => {
+   441→    const body: any = { ...form, features: form.features ? form.features.split(',').map((f: string) => f.trim()).filter(Boolean) : [] }
+   442→    if (editing) body.id = editing
+   443→    const d = await api('/api/v1/admin/ops/membership', { method: 'POST', body: JSON.stringify(body) })
+   444→    if (d?.data) { showToast(sa.planSaved); setEditing(null); setForm({ name: '', displayName: '', price: 0, durationDays: 30, maxContacts: 10, maxPhotos: 5, priorityListing: false, features: '', status: 'ACTIVE', sortOrder: 0 }); fetchPlans() }
+   445→    else if (d?.error) showToast(d.error)
+   446→  }
+   447→
+   448→  const editPlan = (p: any) => {
+   449→    setEditing(p.id); setForm({ name: p.name, displayName: p.displayName, price: p.price, durationDays: p.durationDays, maxContacts: p.maxContacts, maxPhotos: p.maxPhotos, priorityListing: p.priorityListing, features: Array.isArray(p.features) ? p.features.join(', ') : (typeof p.features === 'string' ? p.features : ''), status: p.status, sortOrder: p.sortOrder })
+   450→  }
+   451→
+   452→  return (
+   453→    <div>
+   454→      <div className="mb-4 flex items-center justify-between">
+   455→        <h1 className="text-lg font-bold text-foreground font-serif">{sa.membership}</h1>
+   456→        <button onClick={() => { setEditing(null); setForm({ name: '', displayName: '', price: 0, durationDays: 30, maxContacts: 10, maxPhotos: 5, priorityListing: false, features: '', status: 'ACTIVE', sortOrder: 0 }) }} className="btn-bandhan-primary py-1.5 px-3 text-xs"><Plus className="h-3.5 w-3.5" />{sa.create}</button>
+   457→      </div>
+   458→      <div className="mb-4 rounded-xl border border-border/40 bg-white p-4">
+   459→        <h3 className="mb-3 text-sm font-bold text-foreground">{editing ? sa.edit : sa.create}</h3>
+   460→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   461→          <Inp label={sa.planName} value={form.name} onChange={v => setForm(p => ({ ...p, name: v }))} />
+   462→          <Inp label={sa.displayName} value={form.displayName} onChange={v => setForm(p => ({ ...p, displayName: v }))} />
+   463→          <Inp label={sa.price} value={form.price} onChange={v => setForm(p => ({ ...p, price: parseFloat(v) || 0 }))} type="number" />
+   464→          <Inp label={sa.durationDays} value={form.durationDays} onChange={v => setForm(p => ({ ...p, durationDays: parseInt(v) || 30 }))} type="number" />
+   465→          <Inp label={sa.maxContacts} value={form.maxContacts} onChange={v => setForm(p => ({ ...p, maxContacts: parseInt(v) || 0 }))} type="number" />
+   466→          <Inp label={sa.maxPhotos} value={form.maxPhotos} onChange={v => setForm(p => ({ ...p, maxPhotos: parseInt(v) || 0 }))} type="number" />
+   467→          <Inp label={sa.features} value={form.features} onChange={v => setForm(p => ({ ...p, features: v }))} />
+   468→        </div>
+   469→        <div className="mt-3 flex items-center gap-3">
+   470→          <label className="flex items-center gap-2 text-xs text-foreground"><input type="checkbox" checked={form.priorityListing} onChange={e => setForm(p => ({ ...p, priorityListing: e.target.checked }))} />{sa.priorityListing}</label>
+   471→          <button onClick={savePlan} className="btn-bandhan-primary py-1.5 px-4 text-xs">{sa.save}</button>
+   472→          {editing && <button onClick={() => setEditing(null)} className="rounded-lg border border-border/40 px-4 py-1.5 text-xs font-medium text-muted-foreground hover:bg-cream">{sa.cancel}</button>}
+   473→        </div>
+   474→      </div>
+   475→      <div className="space-y-2">{plans.map((p: any) => (
+   476→        <div key={p.id} onClick={() => editPlan(p)} className="flex flex-col gap-1 rounded-xl border border-border/40 bg-white p-4 transition-all hover:shadow-sm sm:flex-row sm:items-center sm:justify-between cursor-pointer">
+   477→          <div className="flex-1"><p className="text-sm font-bold text-foreground">{p.displayName}</p><p className="text-xs text-muted-foreground">{p.durationDays} days | {p.maxContacts} contacts | {p.maxPhotos} photos</p></div>
+   478→          <div className="flex items-center gap-3"><p className="text-lg font-bold text-burgundy">\u20b9{p.price}</p><button onClick={e => { e.stopPropagation(); editPlan(p) }} className="rounded-lg p-1.5 text-muted-foreground hover:bg-cream"><Edit3 className="h-3.5 w-3.5" /></button></div>
+   479→        </div>
+   480→      ))}</div>
+   481→    </div>
+   482→  )
+   483→}
+   484→
+   485→/* ═══════════ SETTINGS TAB ═══════════ */
+   486→function SettingsTab({ sa, api, token, showToast }: { sa: Record<string, string>; api: (u: string, o?: RequestInit) => Promise<any>; token: string; showToast: (m: string) => void }) {
+   487→  const [section, setSection] = useState('password' as string)
+   488→  const [curPwd, setCurPwd] = useState('')
+   489→  const [newPwd, setNewPwd] = useState('')
+   490→  const [cfmPwd, setCfmPwd] = useState('')
+   491→  const [pwdLoading, setPwdLoading] = useState(false)
+   492→  const [pwdErr, setPwdErr] = useState('')
+   493→  const [siteCfg, setSiteCfg] = useState({ SITE_NAME: 'Bandhan', SITE_DESCRIPTION: 'Sahu Samaj Connects', CONTACT_EMAIL: '', CONTACT_PHONE: '', MAINTENANCE_MODE: 'false' })
+   494→  const [secCfg, setSecCfg] = useState({ MAX_LOGIN_ATTEMPTS: '5', SESSION_DURATION_DAYS: '30' })
+   495→  const [settingsLoading, setSettingsLoading] = useState(false)
+   496→
+   497→  const fetchSettings = useCallback(async () => {
+   498→    const d = await api('/api/v1/admin/ops/settings')
+   499→    if (d?.data?.settings) {
+   500→      const g: Record<string, string> = {}, s: Record<string, string> = {}
+   501→      d.data.settings.forEach((st: any) => { const target = st.category === 'GENERAL' ? g : st.category === 'SECURITY' ? s : null; if (target) target[st.key] = st.value })
+   502→      if (Object.keys(g).length) setSiteCfg(p => ({ ...p, ...g }))
+   503→      if (Object.keys(s).length) setSecCfg(p => ({ ...p, ...s }))
+   504→    }
+   505→  }, [api])
+   506→  useEffect(() => { fetchSettings() }, [fetchSettings])
+   507→
+   508→  const changePassword = async () => {
+   509→    if (newPwd !== cfmPwd) { setPwdErr(sa.passwordMismatch); return }
+   510→    if (newPwd.length < 8 || !/[A-Z]/.test(newPwd) || !/[0-9]/.test(newPwd)) { setPwdErr(sa.passwordError); return }
+   511→    setPwdErr(''); setPwdLoading(true)
+   512→    const r = await fetch('/api/v1/auth/password', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ currentPassword: curPwd, newPassword: newPwd }) })
+   513→    const d = await r.json()
+   514→    if (d.success) { showToast(sa.passwordChanged); setCurPwd(''); setNewPwd(''); setCfmPwd('') }
+   515→    else setPwdErr(d.error || 'Failed')
+   516→    setPwdLoading(false)
+   517→  }
+   518→
+   519→  const saveSiteSettings = async () => {
+   520→    setSettingsLoading(true)
+   521→    const settings = Object.entries(siteCfg).map(([key, value]) => ({ key, value, category: 'GENERAL', description: key, isPublic: true }))
+   522→    const d = await api('/api/v1/admin/settings', { method: 'PUT', body: JSON.stringify({ settings }) })
+   523→    if (d?.data) showToast(sa.settingsSaved)
+   524→    setSettingsLoading(false)
+   525→  }
+   526→
+   527→  const saveSecSettings = async () => {
+   528→    setSettingsLoading(true)
+   529→    const settings = Object.entries(secCfg).map(([key, value]) => ({ key, value, category: 'SECURITY', description: key }))
+   530→    const d = await api('/api/v1/admin/ops/settings', { method: 'PUT', body: JSON.stringify({ settings }) })
+   531→    if (d?.data) showToast(sa.settingsSaved)
+   532→    setSettingsLoading(false)
+   533→  }
+   534→
+   535→  return (
+   536→    <div>
+   537→      <div className="mb-4 flex gap-2">
+   538→        {[['password', sa.changePassword], ['general', sa.siteSettings], ['secSettings', sa.secSettings]].map(([k, l]) => <button key={k} onClick={() => setSection(k)} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${section === k ? 'bg-burgundy text-white' : 'border border-border/40 text-muted-foreground hover:bg-cream'}`}>{l}</button>)}
+   539→      </div>
+   540→      {section === 'password' && (
+   541→        <div className="mx-auto max-w-sm rounded-xl border border-border/40 bg-white p-5">
+   542→          {pwdErr && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">{pwdErr}</div>}
+   543→          <div className="space-y-3">
+   544→            <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.currentPassword}</label><input type="password" value={curPwd} onChange={e => setCurPwd(e.target.value)} className="h-11 w-full rounded-xl border border-border/60 px-4 text-sm" /></div>
+   545→            <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.newPassword}</label><input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} className="h-11 w-full rounded-xl border border-border/60 px-4 text-sm" /></div>
+   546→            <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.confirmPassword}</label><input type="password" value={cfmPwd} onChange={e => setCfmPwd(e.target.value)} onKeyDown={e => e.key === 'Enter' && changePassword()} className="h-11 w-full rounded-xl border border-border/60 px-4 text-sm" /></div>
+   547→          </div>
+   548→          <button onClick={changePassword} disabled={pwdLoading} className="btn-bandhan-primary mt-4 w-full py-2 text-sm disabled:opacity-50">{pwdLoading ? sa.saving : sa.save}</button>
+   549→        </div>
+   550→      )}
+   551→      {section === 'general' && (
+   552→        <div className="rounded-xl border border-border/40 bg-white p-5">
+   553→          <h3 className="mb-3 text-sm font-bold text-foreground">{sa.siteSettings}</h3>
+   554→          <div className="space-y-3">
+   555→            <Inp label={sa.siteName} value={siteCfg.SITE_NAME || ''} onChange={v => setSiteCfg(p => ({ ...p, SITE_NAME: v }))} />
+   556→            <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.siteDescription}</label><textarea value={siteCfg.SITE_DESCRIPTION || ''} onChange={e => setSiteCfg(p => ({ ...p, SITE_DESCRIPTION: e.target.value }))} rows={2} className="w-full rounded-xl border border-border/60 px-4 py-2 text-sm" /></div>
+   557→            <Inp label={sa.contactEmail} value={siteCfg.CONTACT_EMAIL || ''} onChange={v => setSiteCfg(p => ({ ...p, CONTACT_EMAIL: v }))} />
+   558→            <Inp label={sa.contactPhone} value={siteCfg.CONTACT_PHONE || ''} onChange={v => setSiteCfg(p => ({ ...p, CONTACT_PHONE: v }))} />
+   559→          </div>
+   560→          <button onClick={saveSiteSettings} disabled={settingsLoading} className="btn-bandhan-primary mt-4 py-2 px-6 text-sm disabled:opacity-50">{settingsLoading ? sa.saving : sa.save}</button>
+   561→        </div>
+   562→      )}
+   563→      {section === 'secSettings' && (
+   564→        <div className="rounded-xl border border-border/40 bg-white p-5">
+   565→          <h3 className="mb-3 text-sm font-bold text-foreground">{sa.security}</h3>
+   566→          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   567→            <Inp label={sa.maxLoginAttempts} value={secCfg.MAX_LOGIN_ATTEMPTS || ''} onChange={v => setSecCfg(p => ({ ...p, MAX_LOGIN_ATTEMPTS: v }))} />
+   568→            <Inp label={sa.sessionDuration} value={secCfg.SESSION_DURATION_DAYS || ''} onChange={v => setSecCfg(p => ({ ...p, SESSION_DURATION_DAYS: v }))} />
+   569→          </div>
+   570→          <button onClick={saveSecSettings} disabled={settingsLoading} className="btn-bandhan-primary mt-4 py-2 px-6 text-sm disabled:opacity-50">{settingsLoading ? sa.saving : sa.save}</button>
+   571→        </div>
+   572→      )}
+   573→    </div>
+   574→  )
+   575→}
+   576→
+   577→/* ═══════════ SHARED COMPONENTS ═══════════ */
+   578→const icons = { Heart, Briefcase, FileText, IndianRupee, Brain, Lock, TreePine, Megaphone, BarChart3, Users }
+   579→function SC({ icon, label, value, c, tc }: { icon: any; label: string; value: number | string; c: string; tc: string }) {
+   580→  const I = icons[icon as keyof typeof icons] || Users
+   581→  return <div className="rounded-xl border border-border/40 bg-white p-3.5 transition-all hover:shadow-sm"><div className="flex items-center gap-2.5"><div className={`flex h-9 w-9 items-center justify-center rounded-lg ${c}`}><I className={`h-4 w-4 ${tc}`} /></div><div><p className={`text-lg font-bold ${tc}`}>{typeof value === 'number' ? value.toLocaleString() : value}</p><p className="text-[0.65rem] text-muted-foreground">{label}</p></div></div></div>
+   582→}
+   583→function Sec({ title, icon, children }: { title: string; icon: any; children: React.ReactNode }) {
+   584→  const I = icons[icon as keyof typeof icons] || Users
+   585→  return <div className="rounded-xl border border-border/40 bg-white p-4"><div className="mb-3 flex items-center gap-2"><I className="h-4 w-4 text-burgundy" /><h3 className="text-sm font-bold text-foreground">{title}</h3></div>{children}</div>
+   586→}
+   587→function M({ l, v, g, w, b }: { l: string; v: number | string; g?: boolean; w?: boolean; b?: boolean }) {
+   588→  const c = g ? 'text-emerald-600' : w ? 'text-amber-600' : b ? 'text-red-500' : 'text-foreground'
+   589→  return <div className="flex items-center justify-between rounded-lg bg-ivory/60 px-3 py-2"><span className="text-xs text-muted-foreground">{l}</span><span className={`text-sm font-semibold ${c}`}>{typeof v === 'number' ? v.toLocaleString() : v}</span></div>
+   590→}
+   591→function Inp({ label, value, onChange, type = 'text' }: { label: string; value: string | number; onChange: (v: string) => void; type?: string }) {
+   592→  return <div><label className="mb-1 block text-xs font-medium text-foreground">{label}</label><input type={type} value={value} onChange={e => onChange(e.target.value)} className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+   593→}
+   594→function Sel({ label, value, onChange, opts }: { label: string; value: string; onChange: (v: string) => void; opts: string[] }) {
+   595→  return <div><label className="mb-1 block text-xs font-medium text-foreground">{label}</label><select value={value} onChange={e => onChange(e.target.value)} className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10">{opts.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+   596→}
+   597→function fmtC(a: number): string { if (a >= 100000) return `\u20b9${(a / 100000).toFixed(1)}L`; if (a >= 1000) return `\u20b9${(a / 1000).toFixed(1)}K`; return `\u20b9${a}` }
