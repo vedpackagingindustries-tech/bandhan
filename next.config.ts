@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  serverExternalPackages: ['@prisma/client', '@prisma/client/default'],
   reactStrictMode: false,
   images: {
     unoptimized: true,
