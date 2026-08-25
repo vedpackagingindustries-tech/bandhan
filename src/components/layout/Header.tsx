@@ -7,6 +7,7 @@ import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
 import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
+import { HeaderSearch } from './HeaderSearch'
 
 const navItems = [
   { key: 'home' as const, icon: null },
@@ -69,6 +70,7 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          <HeaderSearch />
           {/* Mobile Toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}

@@ -11,6 +11,8 @@ import { ModuleGrid } from '@/components/home/ModuleGrid'
 import { PremiumAdBanner } from '@/components/home/PremiumAdBanner'
 import { FeaturedCommunityContent } from '@/components/home/FeaturedCommunityContent'
 import { FooterAdvertisement } from '@/components/home/FooterAdvertisement'
+import { PremiumStats } from '@/components/home/PremiumStats'
+import { FeaturedProfiles } from '@/components/home/FeaturedProfiles'
 import { ModulePageView, type ModuleKey } from '@/components/modules/ModulePageView'
 import { SuperAdminPanel } from '@/components/admin/SuperAdminPanel'
 
@@ -99,7 +101,13 @@ export default function Home() {
         {/* 5. Featured Community Content (Mata Karma + Flag) */}
         <FeaturedCommunityContent />
 
-        {/* 6. Large Spacious Footer Advertisement */}
+        {/* 6. Real Community Stats */}
+        <PremiumStats />
+
+        {/* 7. Featured Profiles from Database */}
+        <FeaturedProfiles />
+
+        {/* 8. Large Spacious Footer Advertisement */}
         <FooterAdvertisement />
       </main>
 

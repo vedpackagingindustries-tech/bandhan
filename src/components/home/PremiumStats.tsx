@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Users, Heart, Briefcase, Building2, Clock } from 'lucide-react'
 import { useTranslations } from '@/i18n'
@@ -8,50 +8,71 @@ import { useTranslations } from '@/i18n'
 interface StatItem {
   icon: typeof Users
   label: string
-  value: number
+  realKey: string
   suffix: string
   color: string
   bgColor: string
+  fallbackValue: number
 }
 
 export function PremiumStats() {
   const { t } = useTranslations()
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
+  const [realStats, setRealStats] = useState<Record<string, number>>({})
   const [counts, setCounts] = useState<Record<string, number>>({})
+  const [statsLoaded, setStatsLoaded] = useState(false)
 
   const stats: StatItem[] = [
-    { icon: Users, label: t.stats.members, value: 250000, suffix: '+', color: 'text-burgundy', bgColor: 'bg-burgundy/8' },
-    { icon: Heart, label: t.stats.marriages, value: 8500, suffix: '+', color: 'text-gold-dark', bgColor: 'bg-gold/10' },
-    { icon: Briefcase, label: t.stats.businesses, value: 15000, suffix: '+', color: 'text-teal', bgColor: 'bg-teal/8' },
-    { icon: Building2, label: t.stats.organizations, value: 1200, suffix: '+', color: 'text-burgundy-light', bgColor: 'bg-burgundy-light/8' },
-    { icon: Clock, label: t.stats.jobs, value: 7500, suffix: '+', color: 'text-rose-gold', bgColor: 'bg-rose-gold/8' },
+    { icon: Users, label: t.stats.members, realKey: 'totalMembers', suffix: '+', color: 'text-burgundy', bgColor: 'bg-burgundy/8', fallbackValue: 0 },
+    { icon: Heart, label: t.stats.marriages, realKey: 'matrimonyProfiles', suffix: '+', color: 'text-gold-dark', bgColor: 'bg-gold/10', fallbackValue: 0 },
+    { icon: Briefcase, label: t.stats.businesses, realKey: 'activeBusiness', suffix: '+', color: 'text-teal', bgColor: 'bg-teal/8', fallbackValue: 0 },
+    { icon: Building2, label: t.stats.organizations, realKey: 'activeDirectory', suffix: '+', color: 'text-burgundy-light', bgColor: 'bg-burgundy-light/8', fallbackValue: 0 },
+    { icon: Clock, label: t.stats.jobs, realKey: 'activeJobs', suffix: '+', color: 'text-rose-gold', bgColor: 'bg-rose-gold/8', fallbackValue: 0 },
   ]
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/stats/public')
+      if (res.ok) {
+        const json = await res.json()
+        if (json.data) {
+          setRealStats(json.data)
+          setStatsLoaded(true)
+        }
+      }
+    } catch {
+      // Silently fail - counters will show 0
+    }
+  }, [])
 
   useEffect(() => {
     if (!inView) return
+    const timer = setTimeout(fetchStats, 100)
+    return () => clearTimeout(timer)
+  }, [inView, fetchStats])
 
+  useEffect(() => {
+    if (!inView || !statsLoaded) return
     const duration = 2200
     const steps = 70
     const interval = duration / steps
     let step = 0
-
     const timer = setInterval(() => {
       step++
       const progress = step / steps
-      const eased = 1 - Math.pow(1 - progress, 4)
-
+    
+    const eased = 1 - Math.pow(1 - progress, 4)
       const newCounts: Record<string, number> = {}
-      stats.forEach((stat, idx) => {
-        newCounts[idx] = Math.floor(stat.value * eased)
+      stats.forEach((stat) => {
+        const target = realStats[stat.realKey] || stat.fallbackValue
+        newCounts[stat.realKey] = Math.floor(target * eased)
       })
       setCounts(newCounts)
-
       if (step >= steps) clearInterval(timer)
     }, interval)
-
     return () => clearInterval(timer)
-  }, [inView])
+  }, [inView, statsLoaded, realStats])
 
   const formatNumber = (num: number) => num.toLocaleString('en-IN')
 
@@ -60,9 +81,7 @@ export function PremiumStats() {
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-burgundy/[0.015] blur-3xl" />
       </div>
-
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -70,15 +89,9 @@ export function PremiumStats() {
           transition={{ duration: 0.6 }}
           className="mb-10 text-center md:mb-14"
         >
-          <span className="inline-block rounded-full bg-gold/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-gold-dark">
-            {t.stats.sectionTitle}
-          </span>
-          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-serif">
-            {t.stats.sectionSubtitle}
-          </h2>
+          <span className="inline-block rounded-full bg-gold/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-gold-dark">{t.stats.sectionTitle}</span>
+          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-serif">{t.stats.sectionSubtitle}</h2>
         </motion.div>
-
-        {/* Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -101,12 +114,10 @@ export function PremiumStats() {
                   <Icon className={`h-6 w-6 ${stat.color}`} strokeWidth={1.4} />
                 </div>
                 <div className={`text-2xl font-bold tracking-tight sm:text-3xl ${stat.color} font-serif`}>
-                  {formatNumber(counts[idx] ?? 0)}
+                  {formatNumber(counts[stat.realKey] ?? 0)}
                   <span className="text-lg">{stat.suffix}</span>
                 </div>
-                <div className="mt-1.5 text-xs font-medium text-muted-foreground sm:text-sm">
-                  {stat.label}
-                </div>
+                <div className="mt-1.5 text-xs font-medium text-muted-foreground sm:text-sm">{stat.label}</div>
               </motion.div>
             )
           })}
