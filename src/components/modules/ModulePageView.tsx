@@ -184,7 +184,7 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
                   <p className="text-sm text-red-500">{detailError}</p>
                 </div>
               ) : detailData ? (
-                <DetailView module={module as DetailModuleKey} data={detailData} onBack={closeDetail} onAuthRequired={() => setAuthMode('login')} />
+                <DetailView module={module as DetailModuleKey} data={detailData} detailId={detailId} onBack={closeDetail} onAuthRequired={() => setAuthMode('login')} />
               ) : null}
             </div>
           </div>

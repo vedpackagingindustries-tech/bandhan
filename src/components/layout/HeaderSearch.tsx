@@ -2,10 +2,12 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Search, X, ArrowRight, MapPin, Heart, Briefcase, Building2, FileText, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/hooks/use-session'
 import { apiGet } from '@/lib/api'
+import { useTranslations } from '@/i18n'
 
 interface SearchResult {
   id: string
@@ -98,9 +100,9 @@ export function HeaderSearch() {
     setShowDropdown(false)
     setOpen(false)
     setQuery('')
-    const module = item.registrationCategory?.toLowerCase() || item.module?.toLowerCase()
-    if (module && ['matrimony', 'business', 'jobs', 'directory'].includes(module)) {
-      window.location.hash = `#${module}`
+    const mod = item.registrationCategory?.toLowerCase() || item.module?.toLowerCase()
+    if (mod && ['matrimony', 'business', 'jobs', 'directory'].includes(mod)) {
+      window.location.hash = `#${mod}`
     }
   }, [])
 
@@ -115,7 +117,7 @@ export function HeaderSearch() {
     if (e.key === 'ArrowUp') {
     e.preventDefault()
     setSelectedIndex(i => Math.max(i - 1, 0))
-    }
+  }
     if (e.key === 'Escape') {
     setShowDropdown(false)
     setOpen(false)
@@ -141,7 +143,7 @@ export function HeaderSearch() {
     const md = now.getMonth() - birth.getMonth()
     if (md < 0 || (md === 0 && now.getDate() < birth.getDate())) age--
     return age.toString()
-   </>
+  }
 
   return (
     <>
@@ -154,102 +156,106 @@ export function HeaderSearch() {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={() => { setOpen(false); setShowDropdown(false) }} />
-        <motion.div
-          initial={{ opacity: 0, y: -8, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.98 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-x-0 top-0 z-50"
-        >
-          <div className="mx-auto max-w-2xl px-4 pt-16">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Search members, businesses, jobs..."
-                className="w-full h-12 rounded-2xl border border-border/60 bg-white pl-12 pr-10 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-burgundy/20"
-                autoFocus
-              />
-              {query && (
-                <button onClick={() => { setQuery(''); setShowDropdown(false); setOpen(false) }} className="absolute right-4 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-lg hover:bg-muted/50 transition-all">
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-              )}
-            </div>
-
-            {/* Results Dropdown */
-            {showDropdown && (
-              <div ref={dropdownRef} className="mt-2 max-h-[60vh] overflow-y-auto rounded-2xl border border-border/30 bg-white shadow-2xl">
-                {loading && (
-                  <div className="flex items-center justify-center gap-2 p-8">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Searching...</span>
-                  </div>
-                )}
-                {error && (
-                  <div className="flex items-center justify-center gap-2 p-6 text-center">
-                    <p className="text-xs text-red-500">{error}</p>
-                    <button onClick={doSearch} className="text-xs font-medium text-burgundy hover:underline">Retry</button>
-                  </div>
-                )}
-                {!loading && !error && results.length === 0 && query.trim() && (
-                  <div className="p-6 text-center">
-                    <p className="text-sm text-muted-foreground">No results for &quot;{query}&quot;</p>
-                  </div>
-                )}
-                {!loading && !error && results.length > 0 && (
-                  <div className="p-1">
-                    <p className="px-3 text-[0.65rem] font-medium uppercase tracking-wider text-muted-foreground">
-                      {results.length} result{results.length !== 1 ? 's' : ''} found
-                    </p>
-                  </div>
-                  <div className="pb-2">
-                    {results.map((item, idx) => {
-                      const config = moduleConfig[item.registrationCategory?.toLowerCase() || 'directory']
-                      const Icon = config?.icon || Building2
-                      const p = item.profile
-                      const name = displayName(item)
-                      const age = getAge(item)
-                      const loc = p?.city || ''
-                      const occ = p?.occupation || ''
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => navigateToResult(item)}
-                          onMouseEnter={() => setSelectedIndex(idx)}
-                          className={cn(
-                            'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors duration-100',
-                            idx === selectedIndex ? 'bg-burgundy/5 text-burgundy' : 'hover:bg-muted/50',
-                          )}
-                        >
-                          <div className={cn('flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg', config?.bgColor)}>
-                            <Icon className={cn('h-4.5 w-4.5', config?.color)} strokeWidth={1.3} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-sm font-medium text-foreground truncate">{name}</span>
-                              {age && <span className="text-xs text-muted-foreground">, {age}y</span>}
-                            </div>
-                            <div className="flex items-center gap-2 text-[0.65rem] text-muted-foreground">
-                              {loc && <span className="flex items-center gap-0.5"><MapPin className="h-3 w-3" />{loc}</span>}
-                              {occ && <span className="flex items-center gap-0.5"><Briefcase className="h-3 w-3" />{occ}</span>}
-                            </div>
-                          </div>
-                          <ArrowRight className={cn('h-4 w-4 flex-shrink-0 opacity-30', idx === selectedIndex && 'opacity-100 text-burgundy')} />
-                        </button>
-                      )
-                    })}
-                  </div>
+        <>
+          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={() => { setOpen(false); setShowDropdown(false) }} />
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-x-0 top-0 z-50"
+          >
+            <div className="mx-auto max-w-2xl px-4 pt-16">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Search members, businesses, jobs..."
+                  className="w-full h-12 rounded-2xl border border-border/60 bg-white pl-12 pr-10 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-burgundy/20"
+                  autoFocus
+                />
+                {query && (
+                  <button onClick={() => { setQuery(''); setShowDropdown(false); setOpen(false) }} className="absolute right-4 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-lg hover:bg-muted/50 transition-all">
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </button>
                 )}
               </div>
+
+              {/* Results Dropdown */}
+              {showDropdown && (
+                <div ref={dropdownRef} className="mt-2 max-h-[60vh] overflow-y-auto rounded-2xl border border-border/30 bg-white shadow-2xl">
+                  {loading && (
+                    <div className="flex items-center justify-center gap-2 p-8">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Searching...</span>
+                    </div>
+                  )}
+                  {error && (
+                    <div className="flex items-center justify-center gap-2 p-6 text-center">
+                      <p className="text-xs text-red-500">{error}</p>
+                      <button onClick={doSearch} className="text-xs font-medium text-burgundy hover:underline">Retry</button>
+                    </div>
+                  )}
+                  {!loading && !error && results.length === 0 && query.trim() && (
+                    <div className="p-6 text-center">
+                      <p className="text-sm text-muted-foreground">No results for &quot;{query}&quot;</p>
+                    </div>
+                  )}
+                  {!loading && !error && results.length > 0 && (
+                    <>
+                      <div className="p-1">
+                        <p className="px-3 text-[0.65rem] font-medium uppercase tracking-wider text-muted-foreground">
+                          {results.length} result{results.length !== 1 ? 's' : ''} found
+                        </p>
+                      </div>
+                      <div className="pb-2">
+                        {results.map((item, idx) => {
+                          const config = moduleConfig[item.registrationCategory?.toLowerCase() || 'directory']
+                          const Icon = config?.icon || Building2
+                          const p = item.profile
+                          const name = displayName(item)
+                          const age = getAge(item)
+                          const loc = p?.city || ''
+                          const occ = p?.occupation || ''
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => navigateToResult(item)}
+                              onMouseEnter={() => setSelectedIndex(idx)}
+                              className={cn(
+                                'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors duration-100',
+                                idx === selectedIndex ? 'bg-burgundy/5 text-burgundy' : 'hover:bg-muted/50',
+                              )}
+                            >
+                              <div className={cn('flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg', config?.bgColor)}>
+                                <Icon className={cn('h-4.5 w-4.5', config?.color)} strokeWidth={1.3} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-sm font-medium text-foreground truncate">{name}</span>
+                                  {age && <span className="text-xs text-muted-foreground">, {age}y</span>}
+                                </div>
+                                <div className="flex items-center gap-2 text-[0.65rem] text-muted-foreground">
+                                  {loc && <span className="flex items-center gap-0.5"><MapPin className="h-3 w-3" />{loc}</span>}
+                                  {occ && <span className="flex items-center gap-0.5"><Briefcase className="h-3 w-3" />{occ}</span>}
+                                </div>
+                              </div>
+                              <ArrowRight className={cn('h-4 w-4 flex-shrink-0 opacity-30', idx === selectedIndex && 'opacity-100 text-burgundy')} />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </>
       )}
     </>
   )

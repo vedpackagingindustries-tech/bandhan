@@ -34,3 +34,27 @@ Stage Summary:
 - Critical Issues: 0
 - Deployment: Z.ai Preview via Caddy reverse proxy (port 81)
 - Note: Process persistence is subject to Z.ai sandbox lifecycle management
+---
+Task ID: 1
+Agent: Main Agent
+Task: Audit & fix 4 public modules (Matrimony/Business/Jobs/Directory) for real API connectivity
+
+Work Log:
+- Read all 21 API route files (matrimony, business, jobs, directory, search, gotras, user/profile)
+- Read all 19 frontend component files to audit for hardcoded demo data
+- Found: NO hardcoded demo data exists — all 4 modules already use apiGet/apiPost calls
+- Found 3 bugs in HeaderSearch.tsx: missing useTranslations import, missing motion import, stray </> closing tag, JSX structure error (missing Fragment wrapper)
+- Found bug in DetailView.tsx: MatrimonyDetail reads data.profile.profile but fetchDetail returns raw API response (which wraps in data.profile for matrimony)
+- Found bug in MatrimonyContent.tsx: search input was not controlled (no value/onChange), no debounced search, search box not connected to API
+- Found TypeScript errors: Record<string,unknown> && JSX returns unknown (not ReactNode), missing i18n keys
+- Fixed HeaderSearch.tsx: added imports for useTranslations, motion, AnimatePresence; fixed JSX structure with Fragment wrapper
+- Fixed DetailView.tsx: added data+detailId props, self-fetching with useEffect, proper matrimony response unwrapping (data.profile → matrimonyData, data.profile.profile → profileData), hasApplied state management after apply
+- Fixed MatrimonyContent.tsx: connected search input with debounced search, added searchQuery/debouncedSearch state, gender switch clears search, fixed Gotra type annotation
+- Fixed ModulePageView.tsx: passes detailId prop to DetailView
+- Fixed all TypeScript strict mode errors: !!data.xxx patterns, Record<string, string|undefined> for filters
+- npm run build: PASSED (109 pages, 0 errors)
+
+Stage Summary:
+- All 4 public modules were already API-driven (no hardcoded data migration needed)
+- 5 files fixed: HeaderSearch.tsx, DetailView.tsx, MatrimonyContent.tsx, ModulePageView.tsx, api.ts types unchanged
+- Production build passes cleanly

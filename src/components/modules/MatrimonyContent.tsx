@@ -28,14 +28,21 @@ export function MatrimonyContent({ onOpenDetail, onAuthRequired, showAdvanced, s
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [advFilters, setAdvFilters] = useState<Record<string, string>>({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [advFilters, setAdvFilters] = useState<Record<string, string | undefined>>({})
   const [gotras, setGotras] = useState<GotraItem[]>([])
   const [districts, setDistricts] = useState<LocationItem[]>([])
 
   useEffect(() => {
-    apiGet<{ gotras: GotraItem[] }>('/gotras').then(r => { if (r.ok) setGotras(r.data.gotras) })
+    apiGet<{ gotras: GotraItem[]; total: number }>('/gotras').then(r => { if (r.ok) setGotras(r.data.gotras) })
     apiGet<{ locations: LocationItem[] }>('/locations', { level: 'DISTRICT' }).then(r => { if (r.ok) setDistricts(r.data.locations) })
   }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const fetchProfiles = useCallback(async () => {
     if (!isLoggedIn) return
@@ -45,6 +52,7 @@ export function MatrimonyContent({ onOpenDetail, onAuthRequired, showAdvanced, s
       gender: activeGender,
       page,
       limit: 12,
+      ...(debouncedSearch ? { occupation: debouncedSearch } : {}),
       ...(advFilters.minAge ? { minAge: parseInt(advFilters.minAge) } : {}),
       ...(advFilters.maxAge ? { maxAge: parseInt(advFilters.maxAge) } : {}),
       ...(advFilters.districtId ? { districtId: advFilters.districtId } : {}),
@@ -62,16 +70,17 @@ export function MatrimonyContent({ onOpenDetail, onAuthRequired, showAdvanced, s
       setError(result.error)
     }
     setLoading(false)
-  }, [isLoggedIn, activeGender, page, advFilters])
+  }, [isLoggedIn, activeGender, page, advFilters, debouncedSearch])
 
   useEffect(() => { fetchProfiles() }, [fetchProfiles])
 
   const handleGenderSwitch = (g: 'FEMALE' | 'MALE') => {
     setActiveGender(g)
     setPage(1)
+    setSearchQuery('')
   }
 
-  const applyAdvancedFilters = (filters: Record<string, string>) => {
+  const applyAdvancedFilters = (filters: Record<string, string | undefined>) => {
     setAdvFilters(filters)
     setShowAdvanced(false)
     setPage(1)
@@ -98,7 +107,13 @@ export function MatrimonyContent({ onOpenDetail, onAuthRequired, showAdvanced, s
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-            <input type="text" placeholder={mp.searchPlaceholder} className="h-11 w-full rounded-xl border border-border/60 bg-white pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+            <input
+              type="text"
+              placeholder={mp.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
+              className="h-11 w-full rounded-xl border border-border/60 bg-white pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10"
+            />
           </div>
           <button
             onClick={() => setShowAdvanced(true)}
@@ -220,13 +235,13 @@ function MatrimonyCard({ item, onClick, t }: { item: MatrimonySearchItem; onClic
 function MatrimonyAdvancedSearch({ gotras, districts, currentFilters, onApply, onClose, t }: {
   gotras: GotraItem[]
   districts: LocationItem[]
-  currentFilters: Record<string, string>
-  onApply: (filters: Record<string, string>) => void
+  currentFilters: Record<string, string | undefined>
+  onApply: (filters: Record<string, string | undefined>) => void
   onClose: () => void
   t: ReturnType<typeof useTranslations>['t']
 }) {
   const mp = t.modulePage
-  const [filters, setFilters] = useState<Record<string, string>>(currentFilters)
+  const [filters, setFilters] = useState<Record<string, string | undefined>>(currentFilters)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -244,14 +259,14 @@ function MatrimonyAdvancedSearch({ gotras, districts, currentFilters, onApply, o
         </div>
         <div className="max-h-[70vh] overflow-y-auto p-5 space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">{mp.district || 'District'}</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">{'District'}</label>
             <select value={filters.districtId || ''} onChange={(e) => setFilters(f => ({ ...f, districtId: e.target.value || undefined }))} className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground">
               <option value="">All Districts</option>
               {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">{t.matrimony.gotra || 'Gotra'}</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">{'Gotra'}</label>
             <select value={filters.gotraId || ''} onChange={(e) => setFilters(f => ({ ...f, gotraId: e.target.value || undefined }))} className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground">
               <option value="">All Gotras</option>
               {gotras.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -259,24 +274,24 @@ function MatrimonyAdvancedSearch({ gotras, districts, currentFilters, onApply, o
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground">{mp.ageFrom || 'Age From'}</label>
+              <label className="mb-1.5 block text-xs font-medium text-foreground">{'Age From'}</label>
               <input type="number" min={18} max={60} value={filters.minAge || ''} onChange={(e) => setFilters(f => ({ ...f, minAge: e.target.value }))} placeholder="18" className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground" />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground">{mp.ageTo || 'Age To'}</label>
+              <label className="mb-1.5 block text-xs font-medium text-foreground">{'Age To'}</label>
               <input type="number" min={18} max={60} value={filters.maxAge || ''} onChange={(e) => setFilters(f => ({ ...f, maxAge: e.target.value }))} placeholder="50" className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground" />
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">{t.matrimony.education || 'Education'}</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">{'Education'}</label>
             <input type="text" value={filters.education || ''} onChange={(e) => setFilters(f => ({ ...f, education: e.target.value }))} placeholder="e.g. B.Tech, MBA" className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">{t.matrimony.occupation || 'Occupation'}</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">{'Occupation'}</label>
             <input type="text" value={filters.occupation || ''} onChange={(e) => setFilters(f => ({ ...f, occupation: e.target.value }))} placeholder="e.g. Doctor, Engineer" className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">{t.matrimony.maritalStatus || 'Marital Status'}</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">{'Marital Status'}</label>
             <select value={filters.maritalStatus || ''} onChange={(e) => setFilters(f => ({ ...f, maritalStatus: e.target.value || undefined }))} className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-foreground">
               <option value="">Any</option>
               <option value="NEVER_MARRIED">Never Married</option>
