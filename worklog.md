@@ -58,3 +58,21 @@ Stage Summary:
 - All 4 public modules were already API-driven (no hardcoded data migration needed)
 - 5 files fixed: HeaderSearch.tsx, DetailView.tsx, MatrimonyContent.tsx, ModulePageView.tsx, api.ts types unchanged
 - Production build passes cleanly
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix preview not showing - restart server with PM2
+
+Work Log:
+- Found dev server crashing repeatedly due to Turbopack+Prisma module resolution issues
+- Switched to production mode (npm run build → standalone server)
+- Simple background processes kept dying on Z.ai platform
+- Installed PM2 process manager to keep server alive as daemon
+- Started with: pm2 start .next/standalone/server.js --name bandhan
+- Verified: Homepage HTTP 200, Gotras 93, Locations 33 districts, Stats 4 members
+- Caddy port 81 reverse proxy also working
+
+Stage Summary:
+- Production server running via PM2 (PID 2322, stable 55s+ uptime)
+- All public APIs responding correctly
+- Preview should now be visible at Z.ai preview panel
