@@ -38,18 +38,42 @@ export function SuperAdminPanel({ onBack }: { onBack: () => void }) {
 
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }, [])
 
+  const [mustChangePwd, setMustChangePwd] = useState(false)
+  const [newPwdOnLogin, setNewPwdOnLogin] = useState('')
+  const [cfmPwdOnLogin, setCfmPwdOnLogin] = useState('')
+
   const handleLogin = useCallback(async () => {
     if (!email || !password) { setAuthError('Email and password are required'); return }
     setLoading(true); setAuthError('')
     try {
-      const r = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
+      const r = await fetch('/api/v1/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
       const d = await r.json()
       if (!r.ok) { setAuthError(d.error || d.message || sa.loginError); return }
       if (d.data?.user?.roleName !== 'SUPER_ADMIN') { setAuthError(sa.notSuperAdmin); return }
+      // If must change password, show password change form instead of logging in
+      if (d.data.user?.mustChangePassword) {
+        setToken(d.data.token)
+        setMustChangePwd(true)
+        return
+      }
       setToken(d.data.token); setUserName(d.data.user?.profile?.displayName || d.data.user?.email || 'Admin')
       localStorage.setItem('bandhan-admin-session', JSON.stringify(d.data))
     } catch { setAuthError('Network error') } finally { setLoading(false) }
   }, [email, password, sa])
+
+  const handleMustChangePwd = useCallback(async () => {
+    if (!newPwdOnLogin || newPwdOnLogin.length < 8) { setAuthError('Password must be at least 8 characters with 1 uppercase and 1 digit'); return }
+    if (newPwdOnLogin !== cfmPwdOnLogin) { setAuthError('Passwords do not match'); return }
+    setLoading(true); setAuthError('')
+    try {
+      const r = await fetch('/api/v1/auth/password', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ currentPassword: password, newPassword: newPwdOnLogin }) })
+      const d = await r.json()
+      if (!r.ok) { setAuthError(d.error || d.message || 'Failed to change password'); return }
+      setMustChangePwd(false)
+      setUserName('Admin')
+      localStorage.setItem('bandhan-admin-session', JSON.stringify({ token }))
+    } catch { setAuthError('Network error') } finally { setLoading(false) }
+  }, [token, password, newPwdOnLogin, cfmPwdOnLogin])
 
   const api = useCallback(async (url: string, opts?: RequestInit) => {
     if (!token) return null
@@ -81,6 +105,30 @@ export function SuperAdminPanel({ onBack }: { onBack: () => void }) {
     { id: 'membership', icon: Crown, labelKey: sa.membership },
     { id: 'settings', icon: Settings, labelKey: sa.settings },
   ]
+
+  // ─── MUST CHANGE PASSWORD ───
+  if (mustChangePwd && token) return (
+    <div className="flex min-h-screen flex-col bg-ivory">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 md:h-16">
+          <BandhanLogo /><SahuSamajFlag size="sm" className="hidden sm:inline-flex" />
+        </div>
+      </header>
+      <main className="flex flex-1 items-center justify-center px-4 py-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-sm rounded-2xl border border-border/40 bg-white p-6 shadow-sm sm:p-8">
+          <div className="mb-6 flex justify-center"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50"><ShieldCheck className="h-6 w-6 text-amber-600" /></div></div>
+          <h1 className="text-center text-xl font-bold text-foreground font-serif">Change Your Password</h1>
+          <p className="mt-1 text-center text-xs text-muted-foreground">You must set a new password before continuing. This is a one-time security requirement.</p>
+          {authError && <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">{authError}</div>}
+          <div className="mt-5 space-y-3">
+            <div><label className="mb-1 block text-xs font-medium text-foreground">New Password</label><input type="password" value={newPwdOnLogin} onChange={e => setNewPwdOnLogin(e.target.value)} placeholder="Min 8 chars, 1 uppercase, 1 digit" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+            <div><label className="mb-1 block text-xs font-medium text-foreground">Confirm New Password</label><input type="password" value={cfmPwdOnLogin} onChange={e => setCfmPwdOnLogin(e.target.value)} onKeyDown={e => e.key === 'Enter' && !loading && handleMustChangePwd()} placeholder="Re-enter new password" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+          </div>
+          <button onClick={handleMustChangePwd} disabled={loading} className="btn-bandhan-primary mt-6 w-full text-sm disabled:opacity-50">{loading ? 'Saving...' : 'Set New Password'}</button>
+        </motion.div>
+      </main>
+    </div>
+  )
 
   // ─── LOGIN ───
   if (!token) return (

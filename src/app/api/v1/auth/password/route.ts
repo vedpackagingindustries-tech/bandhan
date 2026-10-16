@@ -131,7 +131,9 @@ export async function POST(request: NextRequest) {
       return error('Account is not active. Please contact support.', 403)
     }
 
+    const validMethods = ['EMAIL', 'SMS', 'WHATSAPP', 'BOTH']
     const deliveryMethod = method || (identifier.includes('@') ? 'EMAIL' : 'SMS')
+    if (!validMethods.includes(deliveryMethod)) return error('Invalid delivery method. Use EMAIL, SMS, WHATSAPP, or BOTH.')
 
     await sendOTP({
       userId: user.id,

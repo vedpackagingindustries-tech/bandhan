@@ -31,7 +31,10 @@ export function generateOTP(length = 6): string {
 
 /** Hash OTP for secure storage — returns HMAC-SHA256 hex digest */
 export function hashOTP(otp: string): string {
-  const secret = process.env.OTP_HASH_SECRET || 'bandhan-otp-hmac-default-change-in-prod'
+  const secret = process.env.OTP_HASH_SECRET
+  if (!secret) {
+    throw new Error('OTP_HASH_SECRET env var is required. Set it in .env for security.')
+  }
   return createHmac('sha256', secret).update(otp).digest('hex')
 }
 

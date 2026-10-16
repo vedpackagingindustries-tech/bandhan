@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword, generateToken } from '@/lib/auth'
+import { randomBytes } from 'crypto'
 
 const ROLES = [
   { name: 'SUPER_ADMIN', displayName: 'Super Admin', level: 6, description: 'Full system access' },
@@ -134,7 +135,10 @@ export async function seedDatabase() {
   })
 
   if (!existingAdmin && superAdminRole) {
-    const passwordHash = await hashPassword('Admin@123')
+    // Generate a secure random password — NOT hardcoded
+    // The admin must change this on first login (mustChangePassword = true)
+    const tempPassword = randomBytes(12).toString('base64url').slice(0, 16) + '@A1'
+    const passwordHash = await hashPassword(tempPassword)
     const admin = await db.user.create({
       data: {
         email: 'admin@bandhan.com',
@@ -147,6 +151,7 @@ export async function seedDatabase() {
         registrationCategory: 'GENERAL',
         roleId: superAdminRole.id,
         acceptedTerms: true,
+        mustChangePassword: true, // Force password change on first login
       },
     })
 
@@ -160,7 +165,14 @@ export async function seedDatabase() {
       },
     })
 
-    console.log('  Super Admin created: admin@bandhan.com / Admin@123')
+    // Print temp credentials ONCE — admin must change immediately
+    console.log('  ╔══════════════════════════════════════════════════════╗')
+    console.log('  ║  SUPER ADMIN CREATED — CHANGE PASSWORD IMMEDIATELY   ║')
+    console.log('  ╠══════════════════════════════════════════════════════╣')
+    console.log(`  ║  Email:    admin@bandhan.com                          ║`)
+    console.log(`  ║  Password: ${tempPassword.padEnd(43)}║`)
+    console.log('  ║  ⚠️  This password is shown ONCE. Change it now!      ║')
+    console.log('  ╚══════════════════════════════════════════════════════╝')
   } else {
     console.log('  Super Admin already exists')
   }

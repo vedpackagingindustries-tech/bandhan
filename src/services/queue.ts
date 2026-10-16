@@ -157,6 +157,7 @@ registerJobHandler('SMS_SEND', async (payload) => {
   await sendSms({
     to: payload.to as string,
     message: (payload.message as string) || '',
+    isWhatsApp: (payload.isWhatsApp as boolean) || false,
   })
 })
 

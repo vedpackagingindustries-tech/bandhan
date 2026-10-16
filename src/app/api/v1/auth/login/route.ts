@@ -153,6 +153,7 @@ export async function POST(request: NextRequest) {
         roleName: user.role?.name,
         membershipTier: user.membershipTier,
         registrationCategory: user.registrationCategory,
+        mustChangePassword: user.mustChangePassword,
         profile: user.profile ? {
           firstName: user.profile.firstName,
           lastName: user.profile.lastName,
