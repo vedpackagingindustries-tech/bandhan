@@ -33,8 +33,12 @@ def api(path, data=None, headers=None, method=None):
 
 # ─── 1. Homepage ───
 def t_homepage():
-    code, _ = api("/")
-    return code == 200, f"HTTP {code}"
+    url = f"{BASE}/"
+    req = urllib.request.Request(url)
+    with urllib.request.urlopen(req, timeout=15) as r:
+        ct = r.headers.get("Content-Type", "")
+        size = len(r.read())
+    return r.status == 200 and "text/html" in ct, f"HTTP {r.status} {ct[:30]} {size}B"
 test("Homepage", t_homepage)
 
 # ─── 2. Health API ───
