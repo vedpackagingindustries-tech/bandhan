@@ -70,10 +70,11 @@ export async function PUT(request: NextRequest) {
     })
 
     // Invalidate ALL sessions except current for security
+    const currentToken = request.headers.get('authorization')?.replace('Bearer ', '')
     await db.userSession.deleteMany({
       where: {
         userId: auth.userId,
-        token: { not: auth.sessionToken || '' },
+        token: { not: currentToken || '' },
       },
     })
 
