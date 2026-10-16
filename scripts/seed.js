@@ -89,12 +89,23 @@ async function seed() {
   var saRole = await db.role.findUnique({where:{name:'SUPER_ADMIN'}});
   var existing = await db.user.findFirst({where:{role:{name:'SUPER_ADMIN'}}});
   if (!existing && saRole) {
-    var hash = await hashPassword('Admin@123');
+    // ✅ SECURE: Generate random password — NO hardcoded credentials
+    var tempPassword = randomBytes(12).toString('base64url').slice(0, 16) + '@A1';
+    var hash = await hashPassword(tempPassword);
     var admin = await db.user.create({
-      data: { email:'admin@bandhan.com', phone:'+919999999999', passwordHash:hash, status:'ACTIVE', emailVerified:true, phoneVerified:true, membershipTier:'ELITE', registrationCategory:'GENERAL', roleId:saRole.id, acceptedTerms:true }
+      data: { email:'admin@bandhan.com', phone:'+919999999999', passwordHash:hash, status:'ACTIVE', emailVerified:true, phoneVerified:true, membershipTier:'ELITE', registrationCategory:'GENERAL', roleId:saRole.id, acceptedTerms:true, mustChangePassword:true }
     });
     await db.profile.create({ data:{ userId:admin.id, firstName:'Super', lastName:'Admin', displayName:'Super Admin', gender:'MALE' } });
-    console.log('Super Admin: admin@bandhan.com / Admin@123');
+    // Print credentials ONCE — admin must change immediately
+    console.log('');
+    console.log('  ╔══════════════════════════════════════════════════════╗');
+    console.log('  ║  SUPER ADMIN CREATED — CHANGE PASSWORD IMMEDIATELY   ║');
+    console.log('  ╠══════════════════════════════════════════════════════╣');
+    console.log('  ║  Email:    admin@bandhan.com                          ║');
+    console.log('  ║  Password: ' + tempPassword.padEnd(43) + '║');
+    console.log('  ║  ⚠️  This password is shown ONCE. Change it now!      ║');
+    console.log('  ╚══════════════════════════════════════════════════════╝');
+    console.log('');
   } else {
     console.log('Super Admin already exists');
   }

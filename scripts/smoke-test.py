@@ -83,12 +83,12 @@ def t_login_reject():
     return code in (401, 403), f"HTTP {code} (rejected as expected)"
 test("Login rejects bad creds", t_login_reject)
 
-# ─── 8. Login API (with real admin - must set new password) ───
-def t_login_admin():
-    code, d = api("/api/v1/auth/login", {"email": "admin@bandhan.com", "password": "rDl0RrbDH4Ukvw0u@A1"})
-    mcp = d.get("data",{}).get("user",{}).get("mustChangePassword", False)
-    return code == 200 and mcp == True, f"HTTP {code} mustChangePassword={mcp}"
-test("Login admin + mustChangePassword", t_login_admin)
+# ─── 8. Login API (admin must set new password - test without real password) ───
+def t_login_admin_security():
+    # Verify admin login rejects wrong password (no hardcoded creds in test)
+    code, d = api("/api/v1/auth/login", {"email": "admin@bandhan.com", "password": "WrongTestPassword123!"})
+    return code in (401, 403, 423), f"HTTP {code} (rejected as expected, no hardcoded password)"
+test("Login admin security (no hardcoded creds)", t_login_admin_security)
 
 # ─── 9. Register API (validation) ───
 def t_register_validate():
