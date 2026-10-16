@@ -113,6 +113,12 @@ model User {
   jobApplications   JobApplication[] @relation("CandidateApplications")
   businesses        Business[]  @relation("OwnerBusinesses")
   directories       Directory[] @relation("OwnerDirectories")
+
+  @@index([email])
+  @@index([phone])
+  @@index([status])
+  @@index([roleId])
+  @@index([membershipTier])
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -249,6 +255,11 @@ model OtpVerification {
   createdAt   DateTime @default(now())
 
   user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([identifier])
+  @@index([verified])
+  @@index([expiresAt])
+  @@index([type, verified])
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -333,6 +344,10 @@ model Notification {
   createdAt   DateTime @default(now())
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+  @@index([channel])
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -370,6 +385,11 @@ model AuditLog {
   createdAt   DateTime @default(now())
 
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([entity, entityId])
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -388,6 +408,11 @@ model SecurityEvent {
   createdAt   DateTime @default(now())
 
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([severity, createdAt])
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -422,6 +447,10 @@ model UserSession {
   createdAt   DateTime @default(now())
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([userId, expiresAt])
 }
 
 // ═══════════════════════════════════════════════════════════

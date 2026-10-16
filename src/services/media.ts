@@ -146,18 +146,22 @@ export async function deleteMedia(mediaId: string, userId: string, ipAddress?: s
   const media = await db.media.findFirst({ where: { id: mediaId, userId } })
   if (!media) return false
 
-  // Delete the actual file from disk
+  // Delete the actual file from disk (path-traversal safe)
   try {
-    const filePath = join(process.cwd(), media.url)
-    if (existsSync(filePath)) {
-      unlinkSync(filePath)
+    // Normalize and validate path to prevent directory traversal
+    const uploadsDir = join(process.cwd(), 'uploads')
+    const resolvedPath = join(process.cwd(), media.url)
+    // Only delete files within the uploads directory
+    if (resolvedPath.startsWith(uploadsDir) && existsSync(resolvedPath)) {
+      unlinkSync(resolvedPath)
     }
 
     // Delete thumbnail variant if it exists
     if (media.thumbnailUrl) {
-      const thumbPath = join(process.cwd(), media.thumbnailUrl.replace('?w=300&h=300&fit=crop', ''))
-      if (existsSync(thumbPath)) {
-        unlinkSync(thumbPath)
+      const thumbClean = media.thumbnailUrl.replace('?w=300&h=300&fit=crop', '')
+      const thumbResolved = join(process.cwd(), thumbClean)
+      if (thumbResolved.startsWith(uploadsDir) && existsSync(thumbResolved)) {
+        unlinkSync(thumbResolved)
       }
     }
   } catch (err) {
