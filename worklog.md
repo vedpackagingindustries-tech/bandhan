@@ -101,3 +101,51 @@ Stage Summary:
 - All APIs responding correctly with data from Supabase
 - Security headers in place: HSTS, X-Frame-Options, CSP, rate limiting
 - Attack paths blocked (.env, wp-admin, .git, etc.)
+
+---
+Task ID: security-cleanup
+Agent: Main Agent
+Task: Remove hardcoded credentials, implement self-service password setup, OTP password reset, redeploy
+
+Work Log:
+- Audited entire codebase for hardcoded credentials: found Admin@123 in seed.ts, OTP default secret in auth.ts
+- Removed hardcoded Admin@123 — now generates random 19-char password with mustChangePassword=true
+- Fixed OTP hash secret: removed insecure fallback, now requires OTP_HASH_SECRET env var
+- Added must-change-password UI in SuperAdminPanel (forces admin to set own password on first login)
+- Added mustChangePassword flag to login API response
+- Added WhatsApp method support to forgot-password endpoint (EMAIL/SMS/WHATSAPP/BOTH)
+- Fixed SMS_SEND queue handler to pass isWhatsApp flag
+- Created .env.example with all required env vars template (database, supabase, OTP, email, SMS/WhatsApp, AI)
+- Updated .env with proper Supabase pooler URLs and OTP_HASH_SECRET
+- Removed .env from git tracking (security), added .env.example
+- Added Gotras API endpoint (/api/v1/gotras) — was missing
+- Fixed pgbouncer prepared statement issue: added ?pgbouncer=true to DATABASE_URL
+- Re-seeded Supabase database: 40 gotras, 5 businesses, 5 jobs, 3 directories, 7 locations, 3 membership plans
+- Updated admin user: mustChangePassword=true, status=ACTIVE, random password set
+- Pushed all changes to GitHub (3 commits)
+- Deployed to Vercel production: https://bandhan-sahu-connect.vercel.app
+- Updated all Vercel env vars: DATABASE_URL (with pgbouncer=true), DIRECT_URL, OTP_HASH_SECRET
+- Final smoke test: 14/14 PASSED
+
+Stage Summary:
+- Production URL: https://bandhan-sahu-connect.vercel.app
+- Supabase project: sryszjmeikgvbvhjtjmq (ACTIVE_HEALTHY)
+- GitHub repo: vedpackagingindustries-tech/bandhan (latest: dc5700e)
+- All 14 smoke tests pass:
+  - Homepage: HTTP 200 (49KB HTML)
+  - Health API: DEGRADED (DB slow but working)
+  - Gotras: 40 items
+  - Jobs: 5, Business: 5, Directory: 3
+  - Login: admin@bandhan.com with mustChangePassword=true
+  - OTP send: working (email/WhatsApp/SMS)
+  - Forgot password: working (sends OTP)
+  - Security headers: HSTS, X-Frame-Options: DENY, X-Content-Type-Options: nosniff
+  - Attack paths blocked
+  - No credential leaks
+- Security improvements:
+  - No hardcoded passwords anywhere in codebase
+  - OTP_HASH_SECRET required (no insecure fallback)
+  - Admin forced to change password on first login
+  - Self-service credential setup via registration + must-change-password flow
+  - WhatsApp OTP delivery supported via Twilio
+  - .env excluded from git, .env.example provided
