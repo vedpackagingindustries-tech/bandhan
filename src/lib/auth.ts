@@ -1,4 +1,4 @@
-import { scrypt, randomBytes, timingSafeEqual } from 'crypto'
+import { scrypt, randomBytes, randomInt, timingSafeEqual, createHmac } from 'crypto'
 import { promisify } from 'util'
 
 const scryptAsync = promisify(scrypt)
@@ -20,13 +20,28 @@ export function generateToken(length = 32): string {
   return randomBytes(length).toString('hex')
 }
 
+/** Cryptographically secure OTP using crypto.randomInt */
 export function generateOTP(length = 6): string {
-  const digits = '0123456789'
   let otp = ''
   for (let i = 0; i < length; i++) {
-    otp += digits[Math.floor(Math.random() * digits.length)]
+    otp += randomInt(0, 10).toString()
   }
   return otp
+}
+
+/** Hash OTP for secure storage — returns HMAC-SHA256 hex digest */
+export function hashOTP(otp: string): string {
+  const secret = process.env.OTP_HASH_SECRET || 'bandhan-otp-hmac-default-change-in-prod'
+  return createHmac('sha256', secret).update(otp).digest('hex')
+}
+
+/** Timing-safe OTP comparison */
+export function verifyOTPCode(inputOtp: string, storedHash: string): boolean {
+  const inputHash = hashOTP(inputOtp)
+  const a = Buffer.from(inputHash, 'utf8')
+  const b = Buffer.from(storedHash, 'utf8')
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
 }
 
 export function generateSessionToken(): string {

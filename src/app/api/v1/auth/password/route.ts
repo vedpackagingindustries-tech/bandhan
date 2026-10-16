@@ -69,6 +69,14 @@ export async function PUT(request: NextRequest) {
       },
     })
 
+    // Invalidate ALL sessions except current for security
+    await db.userSession.deleteMany({
+      where: {
+        userId: auth.userId,
+        token: { not: auth.sessionToken || '' },
+      },
+    })
+
     await logAudit({
       userId: auth.userId,
       action: 'user.password_change',

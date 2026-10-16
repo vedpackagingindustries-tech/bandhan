@@ -62,8 +62,27 @@ export async function POST(request: NextRequest) {
     // ─── Hash Password ───
     const passwordHash = await hashPassword(password)
 
-    // ─── Get FREE_USER role ───
-    const role = await db.role.findUnique({ where: { name: 'FREE_USER' } })
+    // ─── Determine Role ───
+    // First user to register automatically becomes SUPER_ADMIN
+    const existingUserCount = await db.user.count()
+    const isFirstUser = existingUserCount === 0
+
+    let role
+    if (isFirstUser) {
+      // Create SUPER_ADMIN role if needed, and assign to first user
+      role = await db.role.upsert({
+        where: { name: 'SUPER_ADMIN' },
+        update: {},
+        create: { name: 'SUPER_ADMIN', displayName: 'Super Admin', level: 100, description: 'First user — full system access' },
+      })
+    } else {
+      // Ensure FREE_USER role exists
+      role = await db.role.upsert({
+        where: { name: 'FREE_USER' },
+        update: {},
+        create: { name: 'FREE_USER', displayName: 'Free User', level: 0, description: 'Standard free user' },
+      })
+    }
 
     // ─── Create User ───
     const user = await db.user.create({
@@ -71,10 +90,10 @@ export async function POST(request: NextRequest) {
         email: email || null,
         phone: phone || null,
         passwordHash,
-        status: 'PENDING_APPROVAL',
-        membershipTier: 'FREE',
+        status: isFirstUser ? 'ACTIVE' : 'PENDING_APPROVAL', // First user auto-approved
+        membershipTier: isFirstUser ? 'ELITE' : 'FREE',
         registrationCategory: category || 'GENERAL',
-        roleId: role?.id,
+        roleId: role.id,
         acceptedTerms: true,
         ipAddress,
         userAgent,

@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     // ─── Login Successful ───
     const sessionToken = generateSessionToken()
-    const sessionDurationDays = parseInt(process.env.SESSION_DURATION_DAYS || '30')
+    const sessionDurationDays = parseInt(process.env.SESSION_DURATION_DAYS || '7')
     const sessionExpiry = new Date(Date.now() + sessionDurationDays * 24 * 60 * 60 * 1000)
 
     // Create session

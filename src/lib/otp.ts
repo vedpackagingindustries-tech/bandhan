@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { generateOTP } from '@/lib/auth'
+import { generateOTP, hashOTP, verifyOTPCode } from '@/lib/auth'
 import { logSecurityEvent } from '@/lib/audit'
 import { enqueueJob } from '@/services/queue'
 
@@ -10,10 +10,11 @@ export async function sendOTP(params: {
   userId?: string
   identifier: string // phone or email
   type: string // REGISTRATION, LOGIN, RESET_PASSWORD, CHANGE_PHONE, CHANGE_EMAIL
-  method: string // SMS, EMAIL, BOTH
+  method: string // SMS, EMAIL, BOTH, WHATSAPP
   ipAddress?: string
 }) {
   const otpCode = generateOTP()
+  const otpHash = hashOTP(otpCode) // Store hash, NOT plaintext
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000)
 
   // Invalidate previous OTPs for this identifier
@@ -28,13 +29,13 @@ export async function sendOTP(params: {
       type: params.type,
       method: params.method,
       identifier: params.identifier,
-      otpCode,
+      otpCode: otpHash, // Store HMAC hash instead of plaintext
       maxAttempts: OTP_MAX_ATTEMPTS,
       expiresAt,
     },
   })
 
-  // Dispatch OTP via queue
+  // Dispatch OTP via queue — real delivery
   if (params.method === 'EMAIL' || params.method === 'BOTH') {
     enqueueJob('EMAIL_SEND', {
       templateId: 'OTP',
@@ -47,6 +48,14 @@ export async function sendOTP(params: {
     enqueueJob('SMS_SEND', {
       to: params.identifier,
       message: `Your Bandhan verification code is: ${otpCode}. Valid for 10 minutes. - Bandhan`,
+    })
+  }
+
+  if (params.method === 'WHATSAPP') {
+    enqueueJob('SMS_SEND', {
+      to: params.identifier,
+      message: `Your Bandhan verification code is: ${otpCode}. Valid for 10 minutes. - Bandhan`,
+      isWhatsApp: true,
     })
   }
 
@@ -86,13 +95,14 @@ export async function verifyOTP(params: {
     return { success: false, error: 'MAX_ATTEMPTS_EXCEEDED' }
   }
 
-  // Increment attempt
+  // Increment attempt BEFORE checking — prevents timing oracle
   await db.otpVerification.update({
     where: { id: otp.id },
     data: { attempts: { increment: 1 } },
   })
 
-  if (otp.otpCode !== params.otpCode) {
+  // Timing-safe OTP comparison using HMAC hash
+  if (!verifyOTPCode(params.otpCode, otp.otpCode)) {
     return { success: false, error: 'INVALID_OTP' }
   }
 
