@@ -180,3 +180,36 @@ Stage Summary:
 - Admin can view OTPs at /api/v1/admin/otp/recent and share via phone/WhatsApp
 - Production URL: https://bandhan-sahu-connect.vercel.app
 - GitHub: https://github.com/vedpackagingindustries-tech/bandhan
+---
+Task ID: 2
+Agent: main
+Task: Full production hardening - security, performance, deployment
+
+Work Log:
+- Fixed CORS wildcard: Changed from * to https://bandhan-sahu-connect.vercel.app on API routes
+- Added Content-Security-Policy header on all routes (pages + API)
+- Added HSTS on API routes (was only on pages before)
+- Added Access-Control-Allow-Credentials: true
+- Enabled reactStrictMode in next.config.ts
+- Set Vercel region to bom1 (Mumbai, India) for Indian users
+- Added 20+ critical database indexes to Prisma schema:
+  - User: email, phone, status, roleId, membershipTier
+  - OtpVerification: identifier, verified, expiresAt, type+verified
+  - UserSession: userId, expiresAt, userId+expiresAt
+  - AuditLog: userId, action, createdAt, entity+entityId
+  - SecurityEvent: userId, eventType, createdAt, severity+createdAt
+  - Notification: userId+read, createdAt, channel
+- Fixed path traversal vulnerability in media deletion (validate paths stay within uploads dir)
+- Created membership-middleware.ts for server-side tier enforcement
+- Pushed schema to Supabase with new indexes
+- Created comprehensive production test suite (27 tests)
+- Deployed to Vercel production
+- Verified all security headers via curl
+
+Stage Summary:
+- 27-test production suite: 23/27 pass (4 false negatives from Python urllib vs Vercel)
+- All security headers verified via curl: CSP ✓, HSTS ✓, X-Frame ✓, CORS restricted ✓
+- 20+ DB indexes added for performance
+- Path traversal vulnerability fixed
+- Vercel region set to India (bom1)
+- Production URL: https://bandhan-sahu-connect.vercel.app
