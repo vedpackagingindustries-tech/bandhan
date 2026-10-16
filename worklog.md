@@ -149,3 +149,34 @@ Stage Summary:
   - Self-service credential setup via registration + must-change-password flow
   - WhatsApp OTP delivery supported via Twilio
   - .env excluded from git, .env.example provided
+---
+Task ID: 1
+Agent: main
+Task: Remove hardcoded credentials, implement free email OTP, redeploy
+
+Work Log:
+- Audited codebase for hardcoded passwords (found in scripts/seed.js, scripts/reset_password.js, smoke-test.py)
+- Fixed scripts/seed.js: replaced Admin@123 with random password + mustChangePassword=true
+- Fixed scripts/reset_password.js: replaced Admin@123456 with random password, requires identifier arg
+- Fixed smoke-test.py: removed hardcoded admin password
+- Removed admin@bandhan.com placeholder from SuperAdminPanel
+- Added @supabase/supabase-js for Supabase Auth OTP delivery (FREE)
+- Updated email.ts: Multi-provider chain (Resend → Supabase Auth → Console fallback)
+- Added otpPlain field to OtpVerification model for admin viewing
+- Updated otp.ts: Store plaintext OTP when email delivery not configured
+- Created /api/v1/admin/otp/recent endpoint for admin OTP viewing
+- Created src/lib/supabase-otp.ts for Supabase Auth OTP delivery
+- Added postinstall script for prisma generate on Vercel
+- Pushed schema to Supabase (prisma db push)
+- Committed and pushed to GitHub (3 commits)
+- Deployed to Vercel production
+- All 14/14 smoke tests pass
+
+Stage Summary:
+- All hardcoded credentials removed from codebase
+- Self-service credential setup: mustChangePassword=true forces password change on first login
+- Email OTP delivery: Resend (100/day free) → Supabase Auth (free) → Admin panel (free)
+- Forgot password flow: POST /api/v1/auth/password → OTP email → PATCH /api/v1/auth/password
+- Admin can view OTPs at /api/v1/admin/otp/recent and share via phone/WhatsApp
+- Production URL: https://bandhan-sahu-connect.vercel.app
+- GitHub: https://github.com/vedpackagingindustries-tech/bandhan
