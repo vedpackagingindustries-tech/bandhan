@@ -239,7 +239,8 @@ model OtpVerification {
   type        String   // REGISTRATION, LOGIN, RESET_PASSWORD, CHANGE_PHONE, CHANGE_EMAIL
   method      String   // SMS, EMAIL, BOTH
   identifier  String   // phone number or email
-  otpCode     String
+  otpCode     String   // HMAC hash for secure verification
+  otpPlain    String?  // Plaintext OTP for admin viewing (only when email delivery fails)
   attempts    Int      @default(0)
   maxAttempts Int      @default(5)
   verified    Boolean  @default(false)

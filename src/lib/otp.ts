@@ -14,7 +14,7 @@ export async function sendOTP(params: {
   ipAddress?: string
 }) {
   const otpCode = generateOTP()
-  const otpHash = hashOTP(otpCode) // Store hash, NOT plaintext
+  const otpHash = hashOTP(otpCode) // Store hash for secure verification
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000)
 
   // Invalidate previous OTPs for this identifier
@@ -23,13 +23,21 @@ export async function sendOTP(params: {
     data: { verified: true }, // Mark old ones as "consumed"
   })
 
+  // Determine if email delivery is configured
+  const emailConfigured = !!(process.env.RESEND_API_KEY || process.env.NEXT_PUBLIC_SUPABASE_URL)
+
+  // Store plaintext OTP ONLY when email delivery is not configured
+  // This allows admin to view and share OTP via phone/WhatsApp
+  const otpPlain = emailConfigured ? null : otpCode
+
   const otp = await db.otpVerification.create({
     data: {
       userId: params.userId,
       type: params.type,
       method: params.method,
       identifier: params.identifier,
-      otpCode: otpHash, // Store HMAC hash instead of plaintext
+      otpCode: otpHash, // HMAC hash for verification
+      otpPlain, // Plaintext for admin viewing (null when email works)
       maxAttempts: OTP_MAX_ATTEMPTS,
       expiresAt,
     },
@@ -106,10 +114,10 @@ export async function verifyOTP(params: {
     return { success: false, error: 'INVALID_OTP' }
   }
 
-  // Mark as verified
+  // Mark as verified and clear plaintext
   await db.otpVerification.update({
     where: { id: otp.id },
-    data: { verified: true, verifiedAt: new Date() },
+    data: { verified: true, verifiedAt: new Date(), otpPlain: null },
   })
 
   return { success: true }
