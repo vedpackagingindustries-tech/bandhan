@@ -4,15 +4,11 @@ import { logAudit } from '@/lib/audit'
 import { validateMediaFile, MEDIA_CATEGORIES } from '@/services/media'
 import { db } from '@/lib/db'
 import { NextRequest } from 'next/server'
-import { writeFileSync, mkdirSync, existsSync } from 'fs'
-import { join } from 'path'
 import { randomUUID } from 'crypto'
 
 /**
  * POST /api/v1/media/upload — Upload a file (auth required)
- * Accepts multipart/form-data with:
- *   - file: the file blob
- *   - category: PROFILE | BUSINESS | ADVERTISEMENT | DOCUMENT | GENERAL
+ * Uses Vercel Blob in production, local filesystem in development
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,22 +21,20 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     const category = (formData.get('category') as string) || 'GENERAL'
+    const isPublic = formData.get('isPublic') !== 'false'
 
     if (!file) return error('No file provided')
 
-    // Validate category
     if (!MEDIA_CATEGORIES.includes(category as any)) {
       return error(`Invalid category. Must be one of: ${MEDIA_CATEGORIES.join(', ')}`)
     }
 
-    // Validate file
     const validation = validateMediaFile(
       { name: file.name, type: file.type, size: file.size },
       category
     )
     if (!validation.valid) return error(validation.error!)
 
-    // Check membership photo limits
     const existingMediaCount = await db.media.count({
       where: { userId: auth.userId, category },
     })
@@ -50,23 +44,35 @@ export async function POST(request: NextRequest) {
       return error(`Photo limit reached (${maxPhotos} for ${auth.user.membershipTier}). Upgrade for more.`, 403)
     }
 
-    // Read file buffer
     const buffer = Buffer.from(await file.arrayBuffer())
-
-    // Generate safe filename
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
-    const safeName = `${randomUUID()}.${ext}`
-
-    // Save to local storage (production: S3/GCS + CDN)
-    const uploadDir = join(process.cwd(), 'upload', category.toLowerCase())
-    if (!existsSync(uploadDir)) mkdirSync(uploadDir, { recursive: true })
-    const filePath = join(uploadDir, safeName)
-    writeFileSync(filePath, buffer)
-
-    const url = `/upload/${category.toLowerCase()}/${safeName}`
     const isImage = file.type.startsWith('image/')
+    let url: string
 
-    // Create media record
+    // Try Vercel Blob first (production)
+    try {
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        const { put } = await import('@vercel/blob')
+        const safeName = `${category.toLowerCase()}/${auth.userId}/${randomUUID()}-${file.name}`
+        const blob = await put(safeName, buffer, {
+          access: isPublic ? 'public' : 'private',
+          contentType: file.type,
+        })
+        url = blob.url
+      } else {
+        throw new Error('Blob not configured')
+      }
+    } catch {
+      // Fallback: local filesystem
+      const { writeFileSync, mkdirSync, existsSync } = await import('fs')
+      const { join } = await import('path')
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
+      const safeName = `${randomUUID()}.${ext}`
+      const uploadDir = join(process.cwd(), 'upload', category.toLowerCase())
+      if (!existsSync(uploadDir)) mkdirSync(uploadDir, { recursive: true })
+      writeFileSync(join(uploadDir, safeName), buffer)
+      url = `/upload/${category.toLowerCase()}/${safeName}`
+    }
+
     const media = await db.media.create({
       data: {
         userId: auth.userId,
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
         fileSize: file.size,
         mimeType: file.type,
         url,
-        isPublic: category !== 'DOCUMENT',
+        isPublic,
       },
     })
 

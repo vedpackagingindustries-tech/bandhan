@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Heart, Briefcase, Search, Building2 } from 'lucide-react'
+import { NotificationBell } from './NotificationBell'
 import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
 import { useTranslations } from '@/i18n'
@@ -71,6 +72,7 @@ export function Header() {
         {/* Right Actions */}
         <div className="flex items-center gap-2">
           <HeaderSearch />
+          <NotificationBell />
           {/* Mobile Toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}

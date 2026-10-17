@@ -88,7 +88,7 @@ CREATE POLICY "contact_requests_participant" ON "ContactRequest"
 
 -- 6. Job applications: can see own applications
 CREATE POLICY "job_applications_own" ON "JobApplication"
-  FOR ALL USING (auth.uid()::text = "applicantId");
+  FOR ALL USING (auth.uid()::text = "candidateId");
 
 -- 7. Audit log: read-only for all authenticated users (admin view)
 CREATE POLICY "audit_read_authenticated" ON "AuditLog"
