@@ -60,3 +60,4 @@ server.log
 /db/
 tool-results/
 .env
+.env*
