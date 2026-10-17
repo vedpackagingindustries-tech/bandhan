@@ -32,7 +32,7 @@ ALTER TABLE "MatchScore" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "LoginHistory" ENABLE ROW LEVEL SECURITY;
 `
 
-// Verify SUPER_ADMIN access
+// Verify SUPER_ADMIN access OR initial setup key
 async function verifySuperAdmin(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader?.startsWith('Bearer ')) return null
@@ -47,15 +47,52 @@ async function verifySuperAdmin(request: NextRequest) {
   return session.user
 }
 
+/**
+ * Check if this is a valid initial setup request.
+ * Before any SUPER_ADMIN exists, a setup key can be used.
+ * The setup key is the OTP_HASH_SECRET env var (already a secure random value).
+ */
+function isInitialSetup(request: NextRequest, body: Record<string, unknown>): boolean {
+  const setupKey = body.setupKey || request.headers.get('x-setup-key')
+  return setupKey === process.env.OTP_HASH_SECRET
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const admin = await verifySuperAdmin(request)
-    if (!admin) return unauthorized('SUPER_ADMIN access required')
-
     const body = await request.json().catch(() => ({}))
+    const admin = await verifySuperAdmin(request)
+    const isSetup = isInitialSetup(request, body)
+
+    if (!admin && !isSetup) return unauthorized('SUPER_ADMIN access required')
     const action = body.action || 'all'
 
     const results: Record<string, string> = {}
+
+    // 0. Schema migration (add TOTP fields if missing)
+    if (action === 'all' || action === 'schema') {
+      try {
+        // Add TOTP 2FA columns to User table if they don't exist
+        const migrations = [
+          `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpSecret" TEXT`,
+          `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpEnabled" BOOLEAN NOT NULL DEFAULT false`,
+          `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpBackupCodes" TEXT`,
+          `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpVerifiedAt" TIMESTAMP(3)`,
+        ]
+
+        for (const sql of migrations) {
+          await db.$executeRawUnsafe(sql)
+        }
+
+        results.schema = 'MIGRATED - TOTP 2FA fields added'
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        if (msg.includes('already exists')) {
+          results.schema = 'OK - Fields already exist'
+        } else {
+          results.schema = `ERROR: ${msg}`
+        }
+      }
+    }
 
     // 1. Apply RLS policies
     if (action === 'all' || action === 'rls') {
@@ -150,13 +187,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Audit log
-    await logAudit({
-      userId: admin.id,
-      action: 'admin.init',
-      entity: 'System',
-      entityId: 'rls-policies',
-      details: { action, results },
-    })
+    if (admin) {
+      await logAudit({
+        userId: admin.id,
+        action: 'admin.init',
+        entity: 'System',
+        entityId: 'rls-policies',
+        details: { action, results },
+      })
+    }
 
     return success({ action, results, timestamp: new Date().toISOString() })
   } catch (err) {

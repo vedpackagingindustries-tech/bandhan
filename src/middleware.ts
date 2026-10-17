@@ -68,7 +68,7 @@ export function middleware(request: NextRequest) {
     '/actuator', '/.well-known/security.txt', '/backup', '/dump', '/export',
   ]
   for (const blocked of blockedPaths) {
-    if (pathname.startsWith(blocked)) {
+    if (pathname === blocked || pathname.startsWith(blocked + '/')) {
       return new NextResponse('Not Found', { status: 404 })
     }
   }

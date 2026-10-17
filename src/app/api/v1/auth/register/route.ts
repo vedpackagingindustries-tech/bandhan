@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
     }, 201)
   } catch (err) {
     console.error('[REGISTER] Error:', err)
-    return serverError('Registration failed. Please try again.')
+    const message = err instanceof Error ? err.message : 'Registration failed. Please try again.'
+    return serverError(message)
   }
 }
