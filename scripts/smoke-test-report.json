@@ -1,6 +1,10 @@
 {
   "PASS": [
     "[SSL] HTTPS redirects from HTTP",
+    "[SSL] HSTS header present",
+    "[SSL] X-Frame-Options DENY",
+    "[SSL] X-Content-Type-Options nosniff",
+    "[SSL] CSP header present",
     "[Health] GET /api/v1/health returns 200",
     "[Health] DB is healthy",
     "[Gotras] GET /api/v1/gotras returns 200",
@@ -33,7 +37,9 @@
     "[Admin Dashboard] GET without auth returns 401",
     "[Admin OTP] GET without auth returns 401",
     "[Auth] POST /login with empty body returns error",
+    "[Auth] POST /register with empty body returns error",
     "[Auth] GET /me without token returns 401",
+    "[Auth] POST /logout without token returns error",
     "[Auth] POST /password without token returns 401",
     "[Security] Blocked path /.env returns 404",
     "[Security] Blocked path /.git returns 404",
@@ -41,18 +47,11 @@
     "[Security] Blocked path /phpmyadmin returns 404",
     "[Security] Rate limiting headers present",
     "[Security] SQL injection in search param is handled safely",
-    "[Security] XSS in search param is handled safely"
-  ],
-  "FAIL": [
-    "[SSL] HSTS header present",
-    "[SSL] X-Frame-Options DENY",
-    "[SSL] X-Content-Type-Options nosniff",
-    "[SSL] CSP header present",
-    "[Auth] POST /register with empty body returns error",
-    "[Auth] POST /logout without token returns 401",
+    "[Security] XSS in search param is handled safely",
     "[Homepage] GET / returns 200",
     "[Homepage] Response is HTML"
   ],
+  "FAIL": [],
   "BLOCKED": [],
   "NOT_TESTED": [],
   "WARN": []
