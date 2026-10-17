@@ -4,7 +4,8 @@ import type { NextRequest } from 'next/server'
 // ═══════════════════════════════════════════════════════════
 // BANDHAN EDGE MIDDLEWARE
 // Security: rate limiting, bot blocking, anti-scraping, CSRF origin check
-// Rate limiting: Vercel KV (persistent) + in-memory fallback
+// Edge rate limiting: in-memory (edge runtime can't use KV)
+// App-level rate limiting: Vercel KV (persistent) via @/lib/rate-limit
 // ═══════════════════════════════════════════════════════════
 
 // Suspicious user agents to block
@@ -187,8 +188,9 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // ─── 8. Request ID ───
+  // ─── 8. Request ID + Rate Limit Provider Header ───
   response.headers.set('X-Request-Id', `${now}-${ip.slice(0, 8)}`)
+  response.headers.set('X-RateLimit-Provider', 'edge')
 
   return response
 }

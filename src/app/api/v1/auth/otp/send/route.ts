@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
     const otpMethod = method || (identifier.includes('@') ? 'EMAIL' : 'SMS')
     if (!validMethods.includes(otpMethod)) return error('Invalid method')
 
-    // Rate limiting
-    const rateCheck = checkRateLimit(`otp:${identifier}`)
+    // Rate limiting (persistent via Vercel KV)
+    const rateCheck = await checkRateLimit(`otp:${identifier}`)
     if (!rateCheck.allowed) return error('Too many OTP requests. Please wait.', 429)
 
     const { ipAddress } = getClientInfo(request)

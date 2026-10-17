@@ -3,12 +3,13 @@ import { db } from '@/lib/db'
 import { verifyPassword, checkRateLimit, generateSessionToken } from '@/lib/auth'
 import { logAudit, logSecurityEvent } from '@/lib/audit'
 import { success, error, unauthorized, getClientInfo } from '@/lib/api-response'
+import { verifyTOTP } from '@/lib/totp'
 import { NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, phone, password } = body
+    const { email, phone, password, totpCode } = body
 
     if (!password || (!email && !phone)) {
       return error('Email/phone and password are required')
@@ -17,8 +18,8 @@ export async function POST(request: NextRequest) {
     const identifier = email || phone!
     const { ipAddress, userAgent } = getClientInfo(request)
 
-    // Rate limiting
-    const rateCheck = checkRateLimit(`login:${identifier}`)
+    // Rate limiting (persistent via Vercel KV)
+    const rateCheck = await checkRateLimit(`login:${identifier}`)
     if (!rateCheck.allowed) {
       return error('Too many login attempts. Please try again later.', 429)
     }
@@ -94,6 +95,68 @@ export async function POST(request: NextRequest) {
       return unauthorized('Invalid credentials')
     }
 
+    // ─── TOTP 2FA Check ───
+    // If user has TOTP enabled, require TOTP code
+    if (user.totpEnabled && user.totpSecret) {
+      if (!totpCode) {
+        // Return a response indicating 2FA is required
+        // Generate a temporary token for the 2FA step
+        const tempToken = generateSessionToken()
+        await db.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+          },
+        })
+        return success({
+          requiresTwoFactor: true,
+          tempToken, // Client sends this back with the TOTP code
+          message: 'Two-factor authentication required',
+        })
+      }
+
+      // Verify TOTP code
+      const totpValid = verifyTOTP(user.totpSecret, totpCode)
+      if (!totpValid) {
+        // Check backup codes
+        let backupValid = false
+        if (user.totpBackupCodes) {
+          try {
+            const backupCodes: string[] = JSON.parse(user.totpBackupCodes)
+            const codeIndex = backupCodes.indexOf(totpCode)
+            if (codeIndex !== -1) {
+              // Remove used backup code
+              backupCodes.splice(codeIndex, 1)
+              await db.user.update({
+                where: { id: user.id },
+                data: { totpBackupCodes: JSON.stringify(backupCodes) },
+              })
+              backupValid = true
+            }
+          } catch {}
+        }
+
+        if (!backupValid) {
+          await logSecurityEvent({
+            userId: user.id,
+            eventType: 'TOTP_FAILURE',
+            description: 'Invalid TOTP code or backup code',
+            ipAddress,
+            userAgent,
+            severity: 'WARNING',
+          })
+          return error('Invalid authentication code', 401)
+        }
+      }
+
+      // Mark TOTP as verified for this session
+      await db.user.update({
+        where: { id: user.id },
+        data: { totpVerifiedAt: new Date() },
+      })
+    }
+
     // ─── Login Successful ───
     const sessionToken = generateSessionToken()
     const sessionDurationDays = parseInt(process.env.SESSION_DURATION_DAYS || '7')
@@ -154,6 +217,7 @@ export async function POST(request: NextRequest) {
         membershipTier: user.membershipTier,
         registrationCategory: user.registrationCategory,
         mustChangePassword: user.mustChangePassword,
+        totpEnabled: user.totpEnabled,
         profile: user.profile ? {
           firstName: user.profile.firstName,
           lastName: user.profile.lastName,

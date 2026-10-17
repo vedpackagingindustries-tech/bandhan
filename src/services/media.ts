@@ -1,12 +1,13 @@
 // ═══════════════════════════════════════════════════════════
-// MEDIA SERVICE
-// Handles upload, processing, and retrieval of media files.
-// Production: replace local storage with S3/GCS + CDN.
+// MEDIA SERVICE — PRODUCTION CLOUD STORAGE
+// Uses @vercel/blob for durable, CDN-backed file storage.
+// Falls back to local filesystem in development.
 // ═══════════════════════════════════════════════════════════
 
 import { db } from '@/lib/db'
 import { logAudit } from '@/lib/audit'
-import { existsSync, unlinkSync, mkdirSync } from 'fs'
+import { put, del } from '@vercel/blob'
+import { existsSync, unlinkSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
 export const ALLOWED_IMAGE_TYPES = [
@@ -79,6 +80,80 @@ export function validateMediaFile(
 }
 
 /**
+ * Upload file to cloud storage (Vercel Blob) or local filesystem.
+ * Returns the public URL of the uploaded file.
+ */
+export async function uploadFile(
+  file: { name: string; type: string; size: number; data: Buffer | ArrayBuffer },
+  category: string,
+  userId: string
+): Promise<{ url: string; thumbnailUrl?: string }> {
+  const buffer = Buffer.isBuffer(file.data) ? file.data : Buffer.from(file.data)
+
+  // Production: Use Vercel Blob (S3-compatible, CDN-backed)
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL) {
+    try {
+      const blob = await put(`uploads/${category}/${userId}/${file.name}`, buffer, {
+        access: 'public',
+        contentType: file.type,
+        addRandomSuffix: true, // Prevent name collisions
+      })
+
+      return {
+        url: blob.url,
+        // Vercel Blob doesn't auto-generate thumbnails;
+        // we use URL params for image resizing via next/image
+        thumbnailUrl: `${blob.url}?w=300&h=300&fit=crop`,
+      }
+    } catch (err) {
+      console.error('[MEDIA] Vercel Blob upload failed, falling back to local:', err)
+      // Fall through to local storage
+    }
+  }
+
+  // Local filesystem fallback (development)
+  const uploadsDir = join(process.cwd(), 'uploads', category, userId)
+  mkdirSync(uploadsDir, { recursive: true })
+
+  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name}`
+  const filePath = join(uploadsDir, uniqueName)
+  writeFileSync(filePath, buffer)
+
+  const url = `/uploads/${category}/${userId}/${uniqueName}`
+  return { url, thumbnailUrl: `${url}?w=300&h=300&fit=crop` }
+}
+
+/**
+ * Delete a file from cloud storage (Vercel Blob) or local filesystem.
+ */
+export async function deleteFile(url: string): Promise<boolean> {
+  // Vercel Blob URLs start with https://
+  if (url.startsWith('https://') && process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      await del(url)
+      return true
+    } catch (err) {
+      console.error('[MEDIA] Vercel Blob delete failed:', err)
+      return false
+    }
+  }
+
+  // Local filesystem
+  try {
+    const uploadsDir = join(process.cwd(), 'uploads')
+    const resolvedPath = join(process.cwd(), url)
+    if (resolvedPath.startsWith(uploadsDir) && existsSync(resolvedPath)) {
+      unlinkSync(resolvedPath)
+      return true
+    }
+  } catch (err) {
+    console.error('[MEDIA] Local file delete failed:', err)
+  }
+
+  return false
+}
+
+/**
  * Create a media record in the database.
  */
 export async function createMediaRecord(params: {
@@ -146,26 +221,12 @@ export async function deleteMedia(mediaId: string, userId: string, ipAddress?: s
   const media = await db.media.findFirst({ where: { id: mediaId, userId } })
   if (!media) return false
 
-  // Delete the actual file from disk (path-traversal safe)
-  try {
-    // Normalize and validate path to prevent directory traversal
-    const uploadsDir = join(process.cwd(), 'uploads')
-    const resolvedPath = join(process.cwd(), media.url)
-    // Only delete files within the uploads directory
-    if (resolvedPath.startsWith(uploadsDir) && existsSync(resolvedPath)) {
-      unlinkSync(resolvedPath)
-    }
+  // Delete the actual file from cloud/local storage
+  await deleteFile(media.url)
 
-    // Delete thumbnail variant if it exists
-    if (media.thumbnailUrl) {
-      const thumbClean = media.thumbnailUrl.replace('?w=300&h=300&fit=crop', '')
-      const thumbResolved = join(process.cwd(), thumbClean)
-      if (thumbResolved.startsWith(uploadsDir) && existsSync(thumbResolved)) {
-        unlinkSync(thumbResolved)
-      }
-    }
-  } catch (err) {
-    console.error('[MEDIA] Failed to delete file from disk:', err)
+  // Delete thumbnail variant if it exists
+  if (media.thumbnailUrl) {
+    await deleteFile(media.thumbnailUrl)
   }
 
   await db.media.delete({ where: { id: mediaId } })
@@ -240,7 +301,6 @@ export async function processImage(inputPath: string): Promise<ProcessedImageRes
 
 /**
  * Get multi-resolution image URLs for CDN delivery.
- * Returns URLs following the convention: original, large, medium, thumbnail.
  */
 export function getMultiResolutionUrls(baseUrl: string): {
   original: string
@@ -248,7 +308,6 @@ export function getMultiResolutionUrls(baseUrl: string): {
   medium: string
   thumbnail: string
 } {
-  // CDN-ready URL pattern: append resolution suffix before file extension
   const dotIdx = baseUrl.lastIndexOf('.')
   const base = dotIdx > -1 ? baseUrl.substring(0, dotIdx) : baseUrl
   const ext = dotIdx > -1 ? baseUrl.substring(dotIdx) : '.jpg'
@@ -263,7 +322,6 @@ export function getMultiResolutionUrls(baseUrl: string): {
 
 /**
  * Generate a CDN-ready URL with transformation parameters.
- * Production: use CDN image transformation API (Cloudinary, Imgix, etc.)
  */
 export function getCdnUrl(originalUrl: string, options?: {
   width?: number

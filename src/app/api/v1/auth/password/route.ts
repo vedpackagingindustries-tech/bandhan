@@ -34,7 +34,7 @@ export async function PUT(request: NextRequest) {
       return error('New password must contain at least one digit')
     }
 
-    const rateCheck = checkRateLimit(`password_change:${auth.userId}`)
+    const rateCheck = await checkRateLimit(`password_change:${auth.userId}`)
     if (!rateCheck.allowed) {
       return error('Too many password change attempts. Please try again later.', 429)
     }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       return error('Email or phone number is required')
     }
 
-    const rateCheck = checkRateLimit(`pw_reset:${identifier}`, 3, 15 * 60 * 1000)
+    const rateCheck = await checkRateLimit(`pw_reset:${identifier}`, 3, 15 * 60 * 1000)
     if (!rateCheck.allowed) {
       return error('Too many password reset attempts. Please try again later.', 429)
     }
@@ -171,7 +171,7 @@ export async function PATCH(request: NextRequest) {
     if (!/[0-9]/.test(newPassword)) return error('New password must contain at least one digit')
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) return error('New password must contain at least one special character')
 
-    const rateCheck = checkRateLimit(`pw_reset_verify:${identifier}`, 5, 15 * 60 * 1000)
+    const rateCheck = await checkRateLimit(`pw_reset_verify:${identifier}`, 5, 15 * 60 * 1000)
     if (!rateCheck.allowed) return error('Too many attempts. Please try again later.', 429)
 
     const otpResult = await verifyOTP({

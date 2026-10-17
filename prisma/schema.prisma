@@ -73,6 +73,12 @@ model User {
   lockedUntil   DateTime?
   mustChangePassword Boolean @default(false)
 
+  // TOTP 2FA (for admin & privileged accounts)
+  totpSecret    String?   // Base32-encoded TOTP secret
+  totpEnabled   Boolean   @default(false)
+  totpBackupCodes String? // JSON array of hashed backup codes
+  totpVerifiedAt DateTime? // When 2FA was last verified in a session
+
   // Metadata
   deviceId      String?
   ipAddress     String?

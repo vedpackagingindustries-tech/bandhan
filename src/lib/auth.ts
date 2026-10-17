@@ -1,5 +1,6 @@
 import { scrypt, randomBytes, randomInt, timingSafeEqual, createHmac } from 'crypto'
 import { promisify } from 'util'
+import { checkRateLimit as kvCheckRateLimit } from '@/lib/rate-limit'
 
 const scryptAsync = promisify(scrypt)
 
@@ -51,34 +52,25 @@ export function generateSessionToken(): string {
   return randomBytes(48).toString('hex')
 }
 
-// Simple in-memory rate limiter (replace with Redis for production)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+// ═══════════════════════════════════════════════════════════
+// PERSISTENT RATE LIMITING
+// Uses Vercel KV (Redis) for multi-instance, persistent limits.
+// Falls back to in-memory if KV is not configured.
+// ═══════════════════════════════════════════════════════════
 
-export function checkRateLimit(
+/**
+ * Check rate limit using persistent KV store.
+ * This is the app-level rate limiter (not edge middleware).
+ * Uses Vercel KV for production, in-memory fallback for dev.
+ */
+export async function checkRateLimit(
   identifier: string,
   maxRequests: number = 5,
   windowMs: number = 60 * 1000
-): { allowed: boolean; retryAfterMs?: number } {
-  const now = Date.now()
-  const record = rateLimitMap.get(identifier)
-
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(identifier, { count: 1, resetAt: now + windowMs })
-    return { allowed: true }
+): Promise<{ allowed: boolean; retryAfterMs?: number }> {
+  const result = await kvCheckRateLimit(`auth:${identifier}`, maxRequests, windowMs)
+  if (!result.allowed) {
+    return { allowed: false, retryAfterMs: result.resetAt - Date.now() }
   }
-
-  if (record.count >= maxRequests) {
-    return { allowed: false, retryAfterMs: record.resetAt - now }
-  }
-
-  record.count++
   return { allowed: true }
-}
-
-// Clean up rate limit entries - lazy cleanup on next call instead of interval
-export function cleanupRateLimits() {
-  const now = Date.now()
-  for (const [key, record] of rateLimitMap.entries()) {
-    if (now > record.resetAt) rateLimitMap.delete(key)
-  }
 }

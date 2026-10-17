@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
 
     const identifier = email || phone!
 
-    // ─── Rate Limiting ───
-    const rateCheck = checkRateLimit(`register:${identifier}`)
+    // ─── Rate Limiting (persistent via Vercel KV) ───
+    const rateCheck = await checkRateLimit(`register:${identifier}`)
     if (!rateCheck.allowed) {
       return error('Too many registration attempts. Please try again later.', 429)
     }
