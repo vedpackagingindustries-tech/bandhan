@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""BANDHAN — Comprehensive Production Smoke Test Suite
+"""BANDHAN — Full Production Smoke Test Suite v2
 Tests ALL API endpoints on production with positive + negative tests.
+Includes: transport security, health, all CRUD APIs, auth, admin,
+media upload, CORS preflight, rate limiting, security hardening.
 """
 
 import json
@@ -60,25 +62,11 @@ def test(category, name, func):
         results["FAIL"].append(f"{label} — {e}")
         print(f"  ❌ FAIL: {label} — {e}")
 
-def test_blocked(category, name, reason):
-    label = f"[{category}] {name}"
-    results["BLOCKED"].append(f"{label} — {reason}")
-    print(f"  ⏹️ BLOCKED: {label} — {reason}")
-
 def test_warn(category, name, reason):
     label = f"[{category}] {name}"
     results["WARN"].append(f"{label} — {reason}")
     print(f"  ⚠️ WARN: {label} — {reason}")
 
-print("\n" + "="*70)
-print("BANDHAN — Comprehensive Production Smoke Tests")
-print("="*70)
-
-# ═══════════════════════════════════════════════════════════
-# 1. TRANSPORT SECURITY
-# ═══════════════════════════════════════════════════════════
-print("\n🔒 TRANSPORT SECURITY")
-test("SSL", "HTTPS redirects from HTTP", lambda: True)  # Vercel handles this
 def get_header(headers, name):
     """Case-insensitive header lookup"""
     for k, v in headers.items():
@@ -86,6 +74,14 @@ def get_header(headers, name):
             return v
     return None
 
+print("\n" + "="*70)
+print("BANDHAN — Full Production Smoke Tests v2")
+print("="*70)
+
+# ═══════════════════════════════════════════════════════════
+# 1. TRANSPORT SECURITY
+# ═══════════════════════════════════════════════════════════
+print("\n🔒 TRANSPORT SECURITY")
 test("SSL", "HSTS header present", lambda: 
     (get_header(fetch("/")[2], 'strict-transport-security') or '').startswith('max-age='))
 test("SSL", "X-Frame-Options DENY", lambda: 
@@ -94,17 +90,31 @@ test("SSL", "X-Content-Type-Options nosniff", lambda:
     get_header(fetch("/")[2], 'x-content-type-options') == 'nosniff')
 test("SSL", "CSP header present", lambda: 
     get_header(fetch("/")[2], 'content-security-policy') is not None)
+test("SSL", "X-Powered-By header removed (no server leak)", lambda:
+    get_header(fetch("/api/v1/health")[2], 'x-powered-by') is None)
+test("SSL", "Referrer-Policy set", lambda:
+    get_header(fetch("/")[2], 'referrer-policy') is not None)
+test("SSL", "Permissions-Policy set", lambda:
+    get_header(fetch("/")[2], 'permissions-policy') is not None)
 
 # ═══════════════════════════════════════════════════════════
 # 2. HEALTH CHECK
 # ═══════════════════════════════════════════════════════════
 print("\n🏥 HEALTH CHECK")
-test("Health", "GET /api/v1/health returns 200", lambda:
-    fetch("/api/v1/health")[0] == 200)
 code, body, _ = fetch("/api/v1/health")
+test("Health", "GET /api/v1/health returns 200", lambda: code == 200)
+test("Health", "Overall status is HEALTHY", lambda: body.get("data", {}).get("status") == "HEALTHY")
 test("Health", "DB is healthy", lambda: 
     any(c.get('name') == 'database' and c.get('status') == 'UP' 
         for c in body.get('data', {}).get('checks', [])))
+test("Health", "Cache is healthy", lambda:
+    any(c.get('name') == 'cache' and c.get('status') == 'UP'
+        for c in body.get('data', {}).get('checks', [])))
+test("Health", "Queue is healthy", lambda:
+    any(c.get('name') == 'job_queue' and c.get('status') == 'UP'
+        for c in body.get('data', {}).get('checks', [])))
+test("Health", "Version is reported", lambda:
+    body.get('data', {}).get('version') is not None)
 
 # ═══════════════════════════════════════════════════════════
 # 3. GOTRAS API
@@ -118,7 +128,7 @@ code2, body2, _ = fetch("/api/v1/gotras?search=Vasishtha")
 test("Gotras", "Search filter works", lambda: code2 == 200)
 
 # ═══════════════════════════════════════════════════════════
-# 4. LOCATIONS API (NEW)
+# 4. LOCATIONS API
 # ═══════════════════════════════════════════════════════════
 print("\n📍 LOCATIONS API")
 code, body, _ = fetch("/api/v1/locations")
@@ -136,7 +146,7 @@ code, body, _ = fetch("/api/v1/jobs")
 test("Jobs", "GET /api/v1/jobs returns 200", lambda: code == 200)
 test("Jobs", "Returns job items", lambda:
     isinstance(body.get("data", {}).get("items"), list))
-test("Jobs", "POST without auth returns 401", lambda:
+test("Jobs", "POST without auth returns 401/403", lambda:
     fetch("/api/v1/jobs", "POST", {"title": "test"})[0] in [401, 403])
 
 # ═══════════════════════════════════════════════════════════
@@ -145,7 +155,7 @@ test("Jobs", "POST without auth returns 401", lambda:
 print("\n🏢 BUSINESS API")
 code, body, _ = fetch("/api/v1/business")
 test("Business", "GET /api/v1/business returns 200", lambda: code == 200)
-test("Business", "POST without auth returns 401", lambda:
+test("Business", "POST without auth returns 401/403", lambda:
     fetch("/api/v1/business", "POST", {"name": "test"})[0] in [401, 403])
 
 # ═══════════════════════════════════════════════════════════
@@ -154,11 +164,11 @@ test("Business", "POST without auth returns 401", lambda:
 print("\n📋 DIRECTORY API")
 code, body, _ = fetch("/api/v1/directory")
 test("Directory", "GET /api/v1/directory returns 200", lambda: code == 200)
-test("Directory", "POST without auth returns 401", lambda:
+test("Directory", "POST without auth returns 401/403", lambda:
     fetch("/api/v1/directory", "POST", {"name": "test"})[0] in [401, 403])
 
 # ═══════════════════════════════════════════════════════════
-# 8. MATRIMONY API (NEW)
+# 8. MATRIMONY API
 # ═══════════════════════════════════════════════════════════
 print("\n💑 MATRIMONY API")
 code, body, _ = fetch("/api/v1/matrimony/search")
@@ -173,7 +183,7 @@ test("Matrimony", "POST contact request without auth returns 401", lambda:
     fetch("/api/v1/matrimony/search", "POST", {"receiverId": "fake"})[0] == 401)
 
 # ═══════════════════════════════════════════════════════════
-# 9. PROFILES API (NEW)
+# 9. PROFILES API
 # ═══════════════════════════════════════════════════════════
 print("\n👤 PROFILES API")
 code, body, _ = fetch("/api/v1/profiles")
@@ -184,7 +194,7 @@ test("Profiles", "PUT without auth returns 401", lambda:
     fetch("/api/v1/profiles", "PUT", {"firstName": "test"})[0] == 401)
 
 # ═══════════════════════════════════════════════════════════
-# 10. NOTIFICATIONS API (NEW)
+# 10. NOTIFICATIONS API
 # ═══════════════════════════════════════════════════════════
 print("\n🔔 NOTIFICATIONS API")
 test("Notifications", "GET without auth returns 401", lambda:
@@ -193,7 +203,7 @@ test("Notifications", "PATCH without auth returns 401", lambda:
     fetch("/api/v1/notifications", "PATCH", {"markAll": True})[0] == 401)
 
 # ═══════════════════════════════════════════════════════════
-# 11. MEMBERSHIP API (NEW)
+# 11. MEMBERSHIP API
 # ═══════════════════════════════════════════════════════════
 print("\n⭐ MEMBERSHIP API")
 code, body, _ = fetch("/api/v1/membership")
@@ -202,11 +212,13 @@ test("Membership", "Returns plan items", lambda:
     isinstance(body.get("data", {}).get("items"), list) and len(body["data"]["items"]) > 0)
 
 # ═══════════════════════════════════════════════════════════
-# 12. MEDIA UPLOAD API (NEW)
+# 12. MEDIA UPLOAD API
 # ═══════════════════════════════════════════════════════════
 print("\n📸 MEDIA UPLOAD API")
 test("Media", "POST without auth returns 401", lambda:
     fetch("/api/v1/media/upload", "POST", {})[0] == 401)
+test("Media", "GET without auth returns 401", lambda:
+    fetch("/api/v1/media/upload")[0] == 401)
 
 # ═══════════════════════════════════════════════════════════
 # 13. ADMIN API
@@ -246,21 +258,69 @@ test("Security", "Blocked path /wp-admin returns 404", lambda:
     fetch("/wp-admin")[0] in [404, 403])
 test("Security", "Blocked path /phpmyadmin returns 404", lambda:
     fetch("/phpmyadmin")[0] in [404, 403])
+test("Security", "Blocked path /debug returns 404", lambda:
+    fetch("/debug")[0] in [404, 403])
+test("Security", "Blocked path /graphql returns 404", lambda:
+    fetch("/graphql")[0] in [404, 403])
 test("Security", "Rate limiting headers present", lambda:
-    "X-Ratelimit-Limit" in fetch("/api/v1/health")[2] or "x-ratelimit-limit" in fetch("/api/v1/health")[2])
+    get_header(fetch("/api/v1/health")[2], 'x-ratelimit-limit') is not None)
+test("Security", "Rate limit provider header is edge", lambda:
+    get_header(fetch("/api/v1/health")[2], 'x-ratelimit-provider') == 'edge')
+test("Security", "Request ID header present", lambda:
+    get_header(fetch("/api/v1/health")[2], 'x-request-id') is not None)
 test("Security", "SQL injection in search param is handled safely", lambda:
-    fetch("/api/v1/jobs?search=test%27%20OR%201%3D1--")[0] in [200, 400, 422])  # shouldn't crash
+    fetch("/api/v1/jobs?search=test%27%20OR%201%3D1--")[0] in [200, 400, 422])
 test("Security", "XSS in search param is handled safely", lambda:
     fetch("/api/v1/jobs?search=<script>alert(1)</script>")[0] in [200, 400])
+test("Security", "CORS restricted to bandhan domain", lambda:
+    get_header(fetch("/api/v1/health")[2], 'access-control-allow-origin') == BASE)
+test("Security", "HSTS includes preload", lambda:
+    'preload' in (get_header(fetch("/")[2], 'strict-transport-security') or ''))
 
 # ═══════════════════════════════════════════════════════════
-# 16. HOMEPAGE
+# 16. CORS PREFLIGHT
+# ═══════════════════════════════════════════════════════════
+print("\n🌐 CORS PREFLIGHT")
+# Test OPTIONS request (manual fetch since our helper doesn't support OPTIONS well)
+import urllib.request as ur
+def options_fetch(path, origin=BASE):
+    url = f"{BASE}{path}"
+    req = ur.Request(url, method="OPTIONS", headers={
+        "User-Agent": BROWSER_UA,
+        "Origin": origin,
+    })
+    try:
+        with ur.urlopen(req, timeout=10, context=ctx) as resp:
+            return resp.status, dict(resp.headers)
+    except urllib.error.HTTPError as e:
+        return e.code, dict(e.headers)
+    except Exception as e:
+        return 0, {}
+
+code_opt, hdrs_opt = options_fetch("/api/v1/health")
+test("CORS", "OPTIONS preflight returns 204", lambda: code_opt == 204)
+test("CORS", "Preflight includes Access-Control-Allow-Origin", lambda:
+    get_header(hdrs_opt, 'access-control-allow-origin') == BASE)
+test("CORS", "Preflight includes Access-Control-Allow-Methods", lambda:
+    get_header(hdrs_opt, 'access-control-allow-methods') is not None)
+test("CORS", "Invalid origin rejected on mutating request", lambda:
+    fetch("/api/v1/jobs", "POST", {"title": "test"}, {"Origin": "https://evil.com"})[0] == 403)
+
+# ═══════════════════════════════════════════════════════════
+# 17. HOMEPAGE
 # ═══════════════════════════════════════════════════════════
 print("\n🏠 HOMEPAGE")
 code_h, body_h, hdrs_h = fetch("/")
 test("Homepage", "GET / returns 200", lambda: code_h == 200)
 test("Homepage", "Response is HTML", lambda:
     (get_header(hdrs_h, 'content-type') or '').startswith('text/html'))
+
+# ═══════════════════════════════════════════════════════════
+# 18. API ROOT
+# ═══════════════════════════════════════════════════════════
+print("\n🔗 API ROOT")
+code_r, body_r, _ = fetch("/api")
+test("API Root", "GET /api returns 200", lambda: code_r == 200)
 
 # ═══════════════════════════════════════════════════════════
 # RESULTS SUMMARY

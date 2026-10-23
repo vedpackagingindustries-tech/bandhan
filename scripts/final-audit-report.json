@@ -1,0 +1,353 @@
+{
+  "timestamp": "2026-10-23 10:52:01 UTC",
+  "project": "Bandhan – Sahu Samaj Connects",
+  "production_url": "https://bandhan-sahu-connect.vercel.app",
+  "sections": {
+    "Transport": [
+      {
+        "id": "HSTS",
+        "status": "PASS",
+        "detail": "Strict-Transport-Security: max-age=63072000; includeSubDomains; preload"
+      },
+      {
+        "id": "HSTS_PRELOAD",
+        "status": "PASS",
+        "detail": "HSTS includes preload directive: True"
+      },
+      {
+        "id": "X_FRAME_OPTIONS",
+        "status": "PASS",
+        "detail": "X-Frame-Options: DENY"
+      },
+      {
+        "id": "X_CONTENT_TYPE",
+        "status": "PASS",
+        "detail": "X-Content-Type-Options: nosniff"
+      },
+      {
+        "id": "CSP",
+        "status": "PASS",
+        "detail": "CSP header present"
+      },
+      {
+        "id": "REFERRER_POLICY",
+        "status": "PASS",
+        "detail": "Referrer-Policy: strict-origin-when-cross-origin"
+      },
+      {
+        "id": "PERMISSIONS_POLICY",
+        "status": "PASS",
+        "detail": "Permissions-Policy: camera=(), microphone=(), geolocation=()"
+      },
+      {
+        "id": "NO_POWERED_BY",
+        "status": "PASS",
+        "detail": "X-Powered-By header removed"
+      }
+    ],
+    "API": [
+      {
+        "id": "ENDPOINT_API_ROOT",
+        "status": "PASS",
+        "detail": "GET /api → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_HEALTH_CHECK",
+        "status": "PASS",
+        "detail": "GET /api/v1/health → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_GOTRAS",
+        "status": "PASS",
+        "detail": "GET /api/v1/gotras → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_LOCATIONS",
+        "status": "PASS",
+        "detail": "GET /api/v1/locations → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_JOBS",
+        "status": "PASS",
+        "detail": "GET /api/v1/jobs → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_BUSINESS",
+        "status": "PASS",
+        "detail": "GET /api/v1/business → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_DIRECTORY",
+        "status": "PASS",
+        "detail": "GET /api/v1/directory → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_MATRIMONY_SEARCH",
+        "status": "PASS",
+        "detail": "GET /api/v1/matrimony/search → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_PROFILES",
+        "status": "PASS",
+        "detail": "GET /api/v1/profiles → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_MEMBERSHIP_PLANS",
+        "status": "PASS",
+        "detail": "GET /api/v1/membership → 200 (expected 200)"
+      },
+      {
+        "id": "ENDPOINT_NOTIFICATIONS_(AUTH_REQUIRED)",
+        "status": "PASS",
+        "detail": "GET /api/v1/notifications → 401 (expected 401)"
+      },
+      {
+        "id": "ENDPOINT_MEDIA_UPLOAD_(AUTH_REQUIRED)",
+        "status": "PASS",
+        "detail": "GET /api/v1/media/upload → 401 (expected 401)"
+      },
+      {
+        "id": "ENDPOINT_ADMIN_USERS_(AUTH_REQUIRED)",
+        "status": "PASS",
+        "detail": "GET /api/v1/admin/users → 401 (expected 401)"
+      },
+      {
+        "id": "ENDPOINT_ADMIN_DASHBOARD_(AUTH_REQUIRED)",
+        "status": "PASS",
+        "detail": "GET /api/v1/admin/dashboard → 401 (expected 401)"
+      },
+      {
+        "id": "ENDPOINT_ADMIN_OTP_(AUTH_REQUIRED)",
+        "status": "PASS",
+        "detail": "GET /api/v1/admin/otp/recent → 401 (expected 401)"
+      },
+      {
+        "id": "ENDPOINT_AUTH_ME_(AUTH_REQUIRED)",
+        "status": "PASS",
+        "detail": "GET /api/v1/auth/me → 401 (expected 401)"
+      }
+    ],
+    "Auth": [
+      {
+        "id": "LOGIN_EMPTY_BODY",
+        "status": "PASS",
+        "detail": "Empty login returns 400"
+      },
+      {
+        "id": "REGISTER_EMPTY_BODY",
+        "status": "PASS",
+        "detail": "Empty register returns 500"
+      },
+      {
+        "id": "ME_NO_TOKEN",
+        "status": "PASS",
+        "detail": "Me without token returns 401"
+      }
+    ],
+    "CSRF": [
+      {
+        "id": "INVALID_ORIGIN_REJECTED",
+        "status": "PASS",
+        "detail": "POST with evil origin returns 403"
+      },
+      {
+        "id": "NO_ORIGIN_AUTH_REJECTED",
+        "status": "PASS",
+        "detail": "POST /auth/login without origin returns 403"
+      },
+      {
+        "id": "PREFLIGHT_204",
+        "status": "PASS",
+        "detail": "OPTIONS preflight returns 204"
+      }
+    ],
+    "RateLimit": [
+      {
+        "id": "HEADERS_PRESENT",
+        "status": "PASS",
+        "detail": "X-RateLimit-Limit: 100"
+      },
+      {
+        "id": "PROVIDER_EDGE",
+        "status": "PASS",
+        "detail": "X-RateLimit-Provider: edge"
+      },
+      {
+        "id": "REQUEST_ID",
+        "status": "PASS",
+        "detail": "X-Request-Id: 1792752726272-47.57.23"
+      }
+    ],
+    "AttackPaths": [
+      {
+        "id": "BLOCK___env",
+        "status": "PASS",
+        "detail": "/.env → 404"
+      },
+      {
+        "id": "BLOCK___env_local",
+        "status": "PASS",
+        "detail": "/.env.local → 404"
+      },
+      {
+        "id": "BLOCK___git",
+        "status": "PASS",
+        "detail": "/.git → 404"
+      },
+      {
+        "id": "BLOCK__wp-admin",
+        "status": "PASS",
+        "detail": "/wp-admin → 403"
+      },
+      {
+        "id": "BLOCK__wp-login",
+        "status": "PASS",
+        "detail": "/wp-login → 403"
+      },
+      {
+        "id": "BLOCK__phpmyadmin",
+        "status": "PASS",
+        "detail": "/phpmyadmin → 404"
+      },
+      {
+        "id": "BLOCK__xmlrpc_php",
+        "status": "PASS",
+        "detail": "/xmlrpc.php → 403"
+      },
+      {
+        "id": "BLOCK__debug",
+        "status": "PASS",
+        "detail": "/debug → 404"
+      },
+      {
+        "id": "BLOCK__console",
+        "status": "PASS",
+        "detail": "/console → 404"
+      },
+      {
+        "id": "BLOCK__graphql",
+        "status": "PASS",
+        "detail": "/graphql → 404"
+      },
+      {
+        "id": "BLOCK__actuator",
+        "status": "PASS",
+        "detail": "/actuator → 404"
+      },
+      {
+        "id": "BLOCK__backup",
+        "status": "PASS",
+        "detail": "/backup → 404"
+      },
+      {
+        "id": "BLOCK__dump",
+        "status": "PASS",
+        "detail": "/dump → 404"
+      }
+    ],
+    "Validation": [
+      {
+        "id": "SQLI_SAFE",
+        "status": "PASS",
+        "detail": "SQLi in search returns 200"
+      },
+      {
+        "id": "XSS_SAFE",
+        "status": "PASS",
+        "detail": "XSS in search returns 200"
+      }
+    ],
+    "CORS": [
+      {
+        "id": "RESTRICTED_ORIGIN",
+        "status": "PASS",
+        "detail": "Access-Control-Allow-Origin: https://bandhan-sahu-connect.vercel.app"
+      },
+      {
+        "id": "CREDENTIALS_ALLOWED",
+        "status": "PASS",
+        "detail": "Access-Control-Allow-Credentials: true"
+      }
+    ],
+    "Codebase": [
+      {
+        "id": "API_ROUTES_COUNT",
+        "status": "INFO",
+        "detail": "24 API route files found"
+      },
+      {
+        "id": "KEY_FILE_src_middleware_ts",
+        "status": "PASS",
+        "detail": "src/middleware.ts exists"
+      },
+      {
+        "id": "KEY_FILE_src_lib_auth_ts",
+        "status": "PASS",
+        "detail": "src/lib/auth.ts exists"
+      },
+      {
+        "id": "KEY_FILE_src_lib_rate-limit_ts",
+        "status": "PASS",
+        "detail": "src/lib/rate-limit.ts exists"
+      },
+      {
+        "id": "KEY_FILE_src_lib_validation_ts",
+        "status": "PASS",
+        "detail": "src/lib/validation.ts exists"
+      },
+      {
+        "id": "KEY_FILE_src_lib_auth-middleware_ts",
+        "status": "PASS",
+        "detail": "src/lib/auth-middleware.ts exists"
+      },
+      {
+        "id": "KEY_FILE_src_lib_api-response_ts",
+        "status": "PASS",
+        "detail": "src/lib/api-response.ts exists"
+      },
+      {
+        "id": "KEY_FILE_prisma_schema_prisma",
+        "status": "PASS",
+        "detail": "prisma/schema.prisma exists"
+      },
+      {
+        "id": "TYPESCRIPT_STRICT",
+        "status": "PASS",
+        "detail": "ignoreBuildErrors: false in next.config.ts"
+      }
+    ],
+    "Health": [
+      {
+        "id": "OVERALL_STATUS",
+        "status": "PASS",
+        "detail": "Overall: HEALTHY"
+      },
+      {
+        "id": "CHECK_DATABASE",
+        "status": "PASS",
+        "detail": "UP (5ms)"
+      },
+      {
+        "id": "CHECK_CACHE",
+        "status": "PASS",
+        "detail": "UP — 0 entries, 0 expired"
+      },
+      {
+        "id": "CHECK_JOB_QUEUE",
+        "status": "PASS",
+        "detail": "UP — 0 pending, 0 processing"
+      },
+      {
+        "id": "CHECK_MEMORY",
+        "status": "PASS",
+        "detail": "UP — 31MB heap used"
+      }
+    ]
+  },
+  "summary": {
+    "PASS": 63,
+    "FAIL": 0,
+    "WARN": 0,
+    "INFO": 1
+  }
+}

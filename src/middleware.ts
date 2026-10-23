@@ -49,6 +49,24 @@ export function middleware(request: NextRequest) {
   const userAgent = request.headers.get('user-agent')?.toLowerCase() || ''
   const now = Date.now()
 
+  // ─── 0. Handle CORS preflight (OPTIONS) ───
+  if (method === 'OPTIONS' && pathname.startsWith('/api/')) {
+    const origin = request.headers.get('origin')
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+      return new NextResponse(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Max-Age': '86400',
+        },
+      })
+    }
+    return new NextResponse(null, { status: 204 })
+  }
+
   // ─── 1. Block suspicious user agents ───
   for (const blocked of BLOCKED_USER_AGENTS) {
     if (userAgent.includes(blocked)) {
@@ -66,6 +84,7 @@ export function middleware(request: NextRequest) {
     '/.env', '/.env.local', '/.env.production', '/.git', '/wp-admin', '/wp-login',
     '/xmlrpc.php', '/phpmyadmin', '/admin/config', '/server-status', '/.DS_Store',
     '/actuator', '/.well-known/security.txt', '/backup', '/dump', '/export',
+    '/debug', '/trace', '/console', '/graphql', '/.svn', '/.hg',
   ]
   for (const blocked of blockedPaths) {
     if (pathname === blocked || pathname.startsWith(blocked + '/')) {
@@ -73,7 +92,12 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // ─── 4. CSRF origin check on mutating API requests ───
+  // ─── 4. Block HTTP method tampering on API routes ───
+  if (pathname.startsWith('/api/') && !['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'].includes(method)) {
+    return new NextResponse('Method Not Allowed', { status: 405 })
+  }
+
+  // ─── 5. CSRF origin check on mutating API requests ───
   if (pathname.startsWith('/api/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
     const origin = request.headers.get('origin')
 
@@ -102,7 +126,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // ─── 5. API Rate limiting (edge in-memory) ───
+  // ─── 6. API Rate limiting (edge in-memory) ───
   if (pathname.startsWith('/api/')) {
     const entry = rateLimitMap.get(ip)
 
@@ -136,7 +160,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // ─── 6. Stricter auth endpoint rate limiting ───
+  // ─── 7. Stricter auth endpoint rate limiting ───
   if (pathname.startsWith('/api/v1/auth/')) {
     const authKey = `${ip}:auth`
     const authEntry = authRateLimitMap.get(authKey)
@@ -165,7 +189,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // ─── 7. Anti-scraping detection ───
+  // ─── 8. Anti-scraping detection ───
   if (pathname.startsWith('/api/')) {
     const tracker = scrapeTracker.get(ip)
     if (!tracker || now - tracker.firstAt > SCRAPE_WINDOW) {
@@ -188,9 +212,13 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // ─── 8. Request ID + Rate Limit Provider Header ───
+  // ─── 9. Request ID + Security Headers ───
   response.headers.set('X-Request-Id', `${now}-${ip.slice(0, 8)}`)
   response.headers.set('X-RateLimit-Provider', 'edge')
+
+  // Hide server info
+  response.headers.delete('X-Powered-By')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
 
   return response
 }

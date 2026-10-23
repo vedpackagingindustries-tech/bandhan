@@ -5,9 +5,7 @@
 // and are shared across all instances.
 // ═══════════════════════════════════════════════════════════
 
-import { kv } from '@vercel/kv'
-
-// In-memory fallback for local dev
+// In-memory fallback for local dev / KV unavailable
 const memoryStore = new Map<string, { count: number; resetAt: number }>()
 
 interface RateLimitResult {
@@ -17,8 +15,24 @@ interface RateLimitResult {
 }
 
 /**
+ * Lazily get KV client. Returns null if KV_REST_API_URL is not set
+ * or if @vercel/kv is not available.
+ */
+async function getKvClient() {
+  if (!process.env.KV_REST_API_URL) return null
+  try {
+    const { kv } = await import('@vercel/kv')
+    return kv
+  } catch {
+    // @vercel/kv not available (e.g. local dev without KV)
+    return null
+  }
+}
+
+/**
  * Check rate limit using Vercel KV (Redis) with atomic operations.
  * Falls back to in-memory if KV is not configured.
+ * Safe: dynamic import ensures no crash when @vercel/kv is absent.
  */
 export async function checkRateLimit(
   key: string,
@@ -29,8 +43,9 @@ export async function checkRateLimit(
   const resetAt = now + windowMs
 
   // Try Vercel KV first (production)
-  try {
-    if (process.env.KV_REST_API_URL) {
+  const kv = await getKvClient()
+  if (kv) {
+    try {
       const kvKey = `ratelimit:${key}`
       const existing = await kv.get<{ count: number; resetAt: number }>(kvKey)
 
@@ -44,14 +59,14 @@ export async function checkRateLimit(
         return { allowed: false, remaining: 0, resetAt: existing.resetAt }
       }
 
-      // Increment atomically
+      // Increment
       const newCount = existing.count + 1
       await kv.set(kvKey, { count: newCount, resetAt: existing.resetAt }, { px: existing.resetAt - now + 1000 })
       return { allowed: true, remaining: limit - newCount, resetAt: existing.resetAt }
+    } catch (err) {
+      // KV operation failed, fall through to in-memory
+      console.warn('[RATE-LIMIT] KV operation failed, using in-memory fallback:', err)
     }
-  } catch (err) {
-    // KV failed, fall through to in-memory
-    console.warn('[RATE-LIMIT] KV failed, using in-memory fallback:', err)
   }
 
   // In-memory fallback (local dev / KV unavailable)
@@ -68,6 +83,21 @@ export async function checkRateLimit(
 
   entry.count++
   return { allowed: true, remaining: limit - entry.count, resetAt: entry.resetAt }
+}
+
+/**
+ * Check if KV is configured and reachable
+ */
+export async function isKvAvailable(): Promise<boolean> {
+  const kv = await getKvClient()
+  if (!kv) return false
+  try {
+    await kv.set('__health_check', 1, { ex: 5 })
+    const val = await kv.get('__health_check')
+    return val === 1
+  } catch {
+    return false
+  }
 }
 
 /**

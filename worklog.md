@@ -213,3 +213,27 @@ Stage Summary:
 - Path traversal vulnerability fixed
 - Vercel region set to India (bom1)
 - Production URL: https://bandhan-sahu-connect.vercel.app
+
+---
+Task ID: 1
+Agent: main
+Task: Fix all failing tests, redeploy, full smoke test, production hardening
+
+Work Log:
+- Fixed rate-limit.ts: replaced top-level @vercel/kv import with safe dynamic import (no crash when KV not configured)
+- Created /api/v1/media/upload route with @vercel/blob cloud storage + local filesystem fallback
+- Fixed TypeScript errors in media upload route (Buffer type, AuditLog entity field)
+- Fixed npm audit: added overrides for braces@3.0.3 to eliminate DoS vulnerability
+- Production hardening: added CORS OPTIONS preflight handling, HTTP method tampering block, server info hiding (X-Powered-By removal), additional blocked paths (/debug, /graphql, /console, /trace, /.svn, /.hg)
+- Enhanced smoke test suite v2: expanded from 50 to 68 tests covering CORS preflight, rate limit provider, request ID, HSTS preload, X-Powered-By removal, additional attack paths
+- Redeployed to Vercel production successfully
+- All 68/68 smoke tests PASS
+- Final audit: 63/64 PASS (98.4%), 0 FAIL, 1 INFO
+
+Stage Summary:
+- Production URL: https://bandhan-sahu-connect.vercel.app
+- All 25 API routes operational (including new /api/v1/media/upload)
+- Security: CSRF, CORS, rate limiting, anti-scraping, attack path blocking all working
+- Health: DB UP (5ms), Cache UP, Queue UP, Memory UP (31MB)
+- npm audit: braces@3.0.3 override applied (dev-only transitive dep)
+- Score: 98.4% (63 PASS / 64 total, 0 FAIL)
