@@ -42,6 +42,54 @@ export function SuperAdminPanel({ onBack }: { onBack: () => void }) {
   const [newPwdOnLogin, setNewPwdOnLogin] = useState('')
   const [cfmPwdOnLogin, setCfmPwdOnLogin] = useState('')
 
+  // ─── First-time setup (bootstrap) state ───
+  const [bootstrapChecking, setBootstrapChecking] = useState(true)
+  const [bootstrapAvailable, setBootstrapAvailable] = useState(false)
+  const [setupMode, setSetupMode] = useState(false)
+  const [setupEmail, setSetupEmail] = useState('')
+  const [setupPwd, setSetupPwd] = useState('')
+  const [setupCfm, setSetupCfm] = useState('')
+  const [setupName, setSetupName] = useState('')
+  const [setupLoading, setSetupLoading] = useState(false)
+  const [setupSuccess, setSetupSuccess] = useState('')
+
+  // Check bootstrap status on mount (only when not logged in)
+  useEffect(() => {
+    if (token) { setBootstrapChecking(false); return }
+    let cancelled = false
+    fetch('/api/v1/admin/bootstrap')
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return
+        setBootstrapAvailable(!!d.data?.bootstrapAvailable)
+        if (d.data?.bootstrapAvailable) setSetupMode(true)
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setBootstrapChecking(false) })
+    return () => { cancelled = true }
+  }, [token])
+
+  const handleBootstrap = useCallback(async () => {
+    if (!setupEmail || !setupPwd) { setAuthError('Email and password are required'); return }
+    if (setupPwd !== setupCfm) { setAuthError('Passwords do not match'); return }
+    if (setupPwd.length < 8 || !/[A-Z]/.test(setupPwd) || !/[0-9]/.test(setupPwd)) { setAuthError('Password must be at least 8 characters with 1 uppercase and 1 digit'); return }
+    setSetupLoading(true); setAuthError('')
+    try {
+      const r = await fetch('/api/v1/admin/bootstrap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: setupEmail, password: setupPwd, confirmPassword: setupCfm, firstName: setupName }),
+      })
+      const d = await r.json()
+      if (!r.ok) { setAuthError(d.error || 'Setup failed'); return }
+      // Success → switch to login with the new email prefilled
+      setBootstrapAvailable(false); setSetupMode(false)
+      setEmail(setupEmail); setPassword('')
+      setAuthError('')
+      setSetupSuccess('Admin account created! Log in with your credentials.')
+    } catch { setAuthError('Network error') } finally { setSetupLoading(false) }
+  }, [setupEmail, setupPwd, setupCfm, setupName])
+
   const handleLogin = useCallback(async () => {
     if (!email || !password) { setAuthError('Email and password are required'); return }
     setLoading(true); setAuthError('')
@@ -130,7 +178,7 @@ export function SuperAdminPanel({ onBack }: { onBack: () => void }) {
     </div>
   )
 
-  // ─── LOGIN ───
+  // ─── LOGIN / FIRST-TIME SETUP ───
   if (!token) return (
     <div className="flex min-h-screen flex-col bg-ivory">
       <header className="sticky top-0 z-40 border-b border-border/40 bg-white/90 backdrop-blur-xl">
@@ -141,15 +189,36 @@ export function SuperAdminPanel({ onBack }: { onBack: () => void }) {
       </header>
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-sm rounded-2xl border border-border/40 bg-white p-6 shadow-sm sm:p-8">
-          <div className="mb-6 flex justify-center"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-burgundy/10"><ShieldCheck className="h-6 w-6 text-burgundy" /></div></div>
-          <h1 className="text-center text-xl font-bold text-foreground font-serif">{sa.loginTitle}</h1>
-          <p className="mt-1 text-center text-xs text-muted-foreground">{sa.loginSubtitle}</p>
-          {authError && <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">{authError}</div>}
-          <div className="mt-5 space-y-3">
-            <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.email}</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && !loading && handleLogin()} placeholder="admin@example.com" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
-            <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.password}</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && !loading && handleLogin()} placeholder="............" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
-          </div>
-          <button onClick={handleLogin} disabled={loading} className="btn-bandhan-primary mt-6 w-full text-sm disabled:opacity-50">{loading ? sa.loggingIn : sa.login}</button>
+          {bootstrapChecking ? (
+            <div className="flex justify-center py-8"><RefreshCw className="h-6 w-6 animate-spin text-burgundy" /></div>
+          ) : setupMode ? (
+            <>
+              <div className="mb-6 flex justify-center"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50"><Lock className="h-6 w-6 text-emerald-600" /></div></div>
+              <h1 className="text-center text-xl font-bold text-foreground font-serif">First-Time Setup</h1>
+              <p className="mt-1 text-center text-xs text-muted-foreground">No admin exists yet. Claim the Super Admin account by creating your own credentials. This setup locks forever after the first claim.</p>
+              {authError && <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">{authError}</div>}
+              <div className="mt-5 space-y-3">
+                <div><label className="mb-1 block text-xs font-medium text-foreground">Your Name (optional)</label><input type="text" value={setupName} onChange={e => setSetupName(e.target.value)} placeholder="e.g. Ramesh Sahu" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+                <div><label className="mb-1 block text-xs font-medium text-foreground">Admin Email</label><input type="email" value={setupEmail} onChange={e => setSetupEmail(e.target.value)} placeholder="you@yourdomain.com" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+                <div><label className="mb-1 block text-xs font-medium text-foreground">Password</label><input type="password" value={setupPwd} onChange={e => setSetupPwd(e.target.value)} placeholder="Min 8 chars, 1 uppercase, 1 digit" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+                <div><label className="mb-1 block text-xs font-medium text-foreground">Confirm Password</label><input type="password" value={setupCfm} onChange={e => setSetupCfm(e.target.value)} onKeyDown={e => e.key === 'Enter' && !setupLoading && handleBootstrap()} placeholder="Re-enter password" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+              </div>
+              <button onClick={handleBootstrap} disabled={setupLoading} className="btn-bandhan-primary mt-6 w-full text-sm disabled:opacity-50">{setupLoading ? 'Creating...' : 'Create Admin Account'}</button>
+            </>
+          ) : (
+            <>
+              <div className="mb-6 flex justify-center"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-burgundy/10"><ShieldCheck className="h-6 w-6 text-burgundy" /></div></div>
+              <h1 className="text-center text-xl font-bold text-foreground font-serif">{sa.loginTitle}</h1>
+              <p className="mt-1 text-center text-xs text-muted-foreground">{sa.loginSubtitle}</p>
+              {setupSuccess && <div className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">{setupSuccess}</div>}
+              {authError && <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">{authError}</div>}
+              <div className="mt-5 space-y-3">
+                <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.email}</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && !loading && handleLogin()} placeholder="admin@example.com" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+                <div><label className="mb-1 block text-xs font-medium text-foreground">{sa.password}</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && !loading && handleLogin()} placeholder="............" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" /></div>
+              </div>
+              <button onClick={handleLogin} disabled={loading} className="btn-bandhan-primary mt-6 w-full text-sm disabled:opacity-50">{loading ? sa.loggingIn : sa.login}</button>
+            </>
+          )}
         </motion.div>
       </main>
     </div>

@@ -1,6 +1,4 @@
 import { db } from '@/lib/db'
-import { hashPassword, generateToken } from '@/lib/auth'
-import { randomBytes } from 'crypto'
 
 const ROLES = [
   { name: 'SUPER_ADMIN', displayName: 'Super Admin', level: 6, description: 'Full system access' },
@@ -128,53 +126,16 @@ export async function seedDatabase() {
   }
   console.log('  Role permissions assigned')
 
-  // 4. Create Super Admin user
-  const superAdminRole = await db.role.findUnique({ where: { name: 'SUPER_ADMIN' } })
-  const existingAdmin = await db.user.findFirst({
-    where: { role: { name: 'SUPER_ADMIN' } },
-  })
-
-  if (!existingAdmin && superAdminRole) {
-    // Generate a secure random password — NOT hardcoded
-    // The admin must change this on first login (mustChangePassword = true)
-    const tempPassword = randomBytes(12).toString('base64url').slice(0, 16) + '@A1'
-    const passwordHash = await hashPassword(tempPassword)
-    const admin = await db.user.create({
-      data: {
-        email: 'admin@bandhan.com',
-        phone: '+919999999999',
-        passwordHash,
-        status: 'ACTIVE',
-        emailVerified: true,
-        phoneVerified: true,
-        membershipTier: 'ELITE',
-        registrationCategory: 'GENERAL',
-        roleId: superAdminRole.id,
-        acceptedTerms: true,
-        mustChangePassword: true, // Force password change on first login
-      },
-    })
-
-    await db.profile.create({
-      data: {
-        userId: admin.id,
-        firstName: 'Super',
-        lastName: 'Admin',
-        displayName: 'Super Admin',
-        gender: 'MALE',
-      },
-    })
-
-    // Print temp credentials ONCE — admin must change immediately
-    console.log('  ╔══════════════════════════════════════════════════════╗')
-    console.log('  ║  SUPER ADMIN CREATED — CHANGE PASSWORD IMMEDIATELY   ║')
-    console.log('  ╠══════════════════════════════════════════════════════╣')
-    console.log(`  ║  Email:    admin@bandhan.com                          ║`)
-    console.log(`  ║  Password: ${tempPassword.padEnd(43)}║`)
-    console.log('  ║  ⚠️  This password is shown ONCE. Change it now!      ║')
-    console.log('  ╚══════════════════════════════════════════════════════╝')
+  // 4. NO ADMIN SEEDING — Admin credentials are NEVER predefined or hardcoded.
+  // The first Super Admin claims the account via /api/v1/admin/bootstrap
+  // (one-time setup, locked forever after the first claim).
+  const adminCount = await db.user.count({ where: { role: { name: 'SUPER_ADMIN' } } })
+  if (adminCount === 0) {
+    console.log('  ⚠️  No Super Admin exists yet.')
+    console.log('  → Visit the admin panel and use First-Time Setup to claim the account.')
+    console.log('  → No default credentials exist anywhere (secure by design).')
   } else {
-    console.log('  Super Admin already exists')
+    console.log('  Super Admin exists — bootstrap locked')
   }
 
   console.log('Database seeded successfully!')

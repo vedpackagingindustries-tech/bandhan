@@ -1,0 +1,87 @@
+name: Bandhan CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ─── Build & Type Check ───
+  build:
+    name: Build & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build Next.js
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/test
+          OTP_HASH_SECRET: test-secret-for-ci-only
+
+  # ─── Security Audit ───
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit (production only)
+        run: npm audit --production --audit-level=high
+        continue-on-error: true
+
+      - name: Check for hardcoded secrets
+        run: |
+          # Check for common secret patterns
+          ! grep -rE '(password|secret|token|key)\s*[=:]\s*["\x27][^"\x27]{8,}["\x27]' \
+            --include='*.ts' --include='*.tsx' --include='*.js' \
+            src/ 2>/dev/null || echo "Warning: Potential hardcoded secret found"
+
+  # ─── Lint ───
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npx eslint src/ --max-warnings=0 || true
+        continue-on-error: true

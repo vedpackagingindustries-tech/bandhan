@@ -101,8 +101,8 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
     const origin = request.headers.get('origin')
 
-    // Auth routes require valid origin
-    if (pathname.startsWith('/api/v1/auth/')) {
+    // Auth + bootstrap routes require valid origin
+    if (pathname.startsWith('/api/v1/auth/') || pathname === '/api/v1/admin/bootstrap') {
       if (!origin) {
         return new NextResponse(
           JSON.stringify({ success: false, error: 'Origin header required' }),
@@ -161,7 +161,7 @@ export function middleware(request: NextRequest) {
   }
 
   // ─── 7. Stricter auth endpoint rate limiting ───
-  if (pathname.startsWith('/api/v1/auth/')) {
+  if (pathname.startsWith('/api/v1/auth/') || pathname === '/api/v1/admin/bootstrap') {
     const authKey = `${ip}:auth`
     const authEntry = authRateLimitMap.get(authKey)
 
