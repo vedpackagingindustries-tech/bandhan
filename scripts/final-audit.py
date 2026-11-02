@@ -11,6 +11,7 @@ import urllib.request
 import urllib.error
 import ssl
 import os
+import subprocess
 
 BASE = "https://bandhan-sahu-connect.vercel.app"
 PROJECT = "/home/z/my-project"
@@ -37,32 +38,68 @@ def add(section, check_id, status, detail):
     icon = {"PASS": "✅", "FAIL": "❌", "WARN": "⚠️", "INFO": "ℹ️"}[status]
     print(f"  {icon} [{status}] {check_id}: {detail}")
 
-def fetch(path, method="GET", headers=None, timeout=10):
+_last_request_time = [0.0]
+
+def fetch(path, method="GET", headers=None, timeout=20, retries=2):
+    """Fetch via curl subprocess — curl's TLS fingerprint passes Vercel bot checks
+    while Python's urllib fingerprint can trigger Vercel Security Checkpoint (403)."""
     url = f"{BASE}{path}"
-    hdrs = {"User-Agent": BROWSER_UA}
+    hdrs = ["-H", f"User-Agent: {BROWSER_UA}"]
     if headers:
-        hdrs.update(headers)
+        for k, v in headers.items():
+            if v is not None:
+                hdrs += ["-H", f"{k}: {v}"]
     if method in ("POST", "PUT", "PATCH", "DELETE"):
-        hdrs.setdefault("Origin", BASE)
-    data_bytes = None
-    req = urllib.request.Request(url, data=data_bytes, headers=hdrs, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
-            raw = resp.read().decode()
-            try:
-                body = json.loads(raw)
-            except:
-                body = raw[:200]
-            return resp.status, body, dict(resp.headers)
-    except urllib.error.HTTPError as e:
-        body = {}
+        hdrs += ["-H", f"Origin: {BASE}"]
+        hdrs += ["-H", "Content-Type: application/json"]
+    cmd = ["curl", "-s", "-D", "-", "-X", method, *hdrs, url, "--max-time", str(timeout)]
+    if method in ("POST", "PUT", "PATCH", "DELETE"):
+        cmd += ["-d", "{}"]
+    for attempt in range(retries + 1):
+        # Pacing: stay under the 100 req/min edge rate limit
+        now = time.time()
+        elapsed = now - _last_request_time[0]
+        if elapsed < 0.7:
+            time.sleep(0.7 - elapsed)
+        _last_request_time[0] = time.time()
         try:
-            body = json.loads(e.read().decode())
-        except:
-            pass
-        return e.code, body, dict(e.headers)
-    except Exception as e:
-        return 0, {"error": str(e)}, {}
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5)
+            raw = proc.stdout
+            if "\r\n\r\n" in raw:
+                header_block, body = raw.split("\r\n\r\n", 1)
+            elif "\n\n" in raw:
+                header_block, body = raw.split("\n\n", 1)
+            else:
+                header_block, body = raw, ""
+            # Parse status
+            status = 0
+            for line in header_block.split("\n"):
+                if line.startswith("HTTP/") and " " in line:
+                    parts = line.split(" ")
+                    try:
+                        status = int(parts[1])
+                    except (ValueError, IndexError):
+                        pass
+            # Parse headers
+            resp_headers = {}
+            for line in header_block.split("\n")[1:]:
+                if ":" in line:
+                    k, _, v = line.partition(":")
+                    resp_headers[k.strip()] = v.strip()
+            if status == 429 and attempt < retries:
+                retry_after = float(resp_headers.get("Retry-After", 3) or 3)
+                time.sleep(retry_after + 1)
+                continue
+            try:
+                parsed = json.loads(body)
+            except Exception:
+                parsed = {"_raw": body[:200]}
+            return status, parsed, resp_headers
+        except Exception as e:
+            if attempt < retries:
+                time.sleep(1.0)
+                continue
+            return 0, {"error": str(e)}, {}
 
 def get_header(headers, name):
     for k, v in headers.items():
@@ -161,54 +198,39 @@ add("Auth", "ME_NO_TOKEN", "PASS" if code == 401 else "FAIL",
 # ═══════════════════════════════════════════════════════════
 print("\n🛡️ 4. CSRF PROTECTION")
 
-# Test invalid origin - POST with evil origin header
-url_evil = f"{BASE}/api/v1/jobs"
-data_evil = json.dumps({"title": "test"}).encode()
-req_evil = urllib.request.Request(url_evil, data=data_evil, method="POST", headers={
-    "User-Agent": BROWSER_UA,
-    "Origin": "https://evil.com",
-    "Content-Type": "application/json",
-})
-try:
-    with urllib.request.urlopen(req_evil, timeout=10, context=ctx) as resp_evil:
-        evil_code = resp_evil.status
-except urllib.error.HTTPError as e:
-    evil_code = e.code
-except:
-    evil_code = 0
+# Test invalid origin - POST with evil origin header (via curl)
+def curl_raw(path, method="GET", extra_headers=None, data=None):
+    url = f"{BASE}{path}"
+    cmd = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "-X", method,
+           "-H", f"User-Agent: {BROWSER_UA}", url, "--max-time", "20"]
+    if extra_headers:
+        for k, v in extra_headers:
+            cmd += ["-H", f"{k}: {v}"]
+    if data is not None:
+        cmd += ["-d", data]
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=25)
+    try:
+        return int(proc.stdout.strip())
+    except ValueError:
+        return 0
+
+evil_code = curl_raw("/api/v1/jobs", "POST",
+                     [("Origin", "https://evil.com"), ("Content-Type", "application/json")],
+                     data='{"title":"test"}')
 add("CSRF", "INVALID_ORIGIN_REJECTED", "PASS" if evil_code == 403 else "FAIL",
     f"POST with evil origin returns {evil_code}")
 
-# Test no origin on auth routes
-url_no_origin = f"{BASE}/api/v1/auth/login"
-data_login = json.dumps({}).encode()
-req_no_origin = urllib.request.Request(url_no_origin, data=data_login, method="POST", headers={
-    "User-Agent": BROWSER_UA,
-    "Content-Type": "application/json",
-    # Deliberately no Origin header
-})
-try:
-    with urllib.request.urlopen(req_no_origin, timeout=10, context=ctx) as resp_no:
-        no_origin_code = resp_no.status
-except urllib.error.HTTPError as e:
-    no_origin_code = e.code
-except:
-    no_origin_code = 0
+# Test no origin on auth routes (curl, deliberately no Origin header)
+no_origin_code = curl_raw("/api/v1/auth/login", "POST",
+                          [("Content-Type", "application/json")],
+                          data='{}')
 add("CSRF", "NO_ORIGIN_AUTH_REJECTED", "PASS" if no_origin_code in [400, 401, 403] else "FAIL",
     f"POST /auth/login without origin returns {no_origin_code}")
 
-# Test CORS preflight
-import urllib.request as ur
-req = ur.Request(f"{BASE}/api/v1/health", method="OPTIONS", headers={
-    "User-Agent": BROWSER_UA,
-    "Origin": BASE,
-})
-try:
-    with ur.urlopen(req, timeout=10, context=ctx) as resp:
-        add("CSRF", "PREFLIGHT_204", "PASS" if resp.status == 204 else "FAIL",
-            f"OPTIONS preflight returns {resp.status}")
-except Exception as e:
-    add("CSRF", "PREFLIGHT_204", "FAIL", str(e))
+# Test CORS preflight (curl OPTIONS)
+preflight_code = curl_raw("/api/v1/health", "OPTIONS", [("Origin", BASE)])
+add("CSRF", "PREFLIGHT_204", "PASS" if preflight_code == 204 else "FAIL",
+    f"OPTIONS preflight returns {preflight_code}")
 
 # ═══════════════════════════════════════════════════════════
 # 5. RATE LIMITING

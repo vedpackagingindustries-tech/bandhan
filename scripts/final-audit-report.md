@@ -1,18 +1,18 @@
 # Bandhan — Final Audit Report
 
-**Date:** 2026-11-02 07:10:38 UTC
+**Date:** 2026-11-02 07:27:03 UTC
 
 **Production URL:** https://bandhan-sahu-connect.vercel.app
 
-**Score:** 95.3% (61 PASS / 64 total)
+**Score:** 98.4% (63 PASS / 64 total)
 
 ## Summary
 
 | Status | Count |
 |--------|-------|
-| ✅ PASS | 61 |
-| ❌ FAIL | 1 |
-| ⚠️ WARN | 1 |
+| ✅ PASS | 63 |
+| ❌ FAIL | 0 |
+| ⚠️ WARN | 0 |
 | ℹ️ INFO | 1 |
 
 ## Transport
@@ -54,7 +54,7 @@
 | ID | Status | Detail |
 |----|--------|--------|
 | LOGIN_EMPTY_BODY | ✅ PASS | Empty login returns 400 |
-| REGISTER_EMPTY_BODY | ✅ PASS | Empty register returns 500 |
+| REGISTER_EMPTY_BODY | ✅ PASS | Empty register returns 400 |
 | ME_NO_TOKEN | ✅ PASS | Me without token returns 401 |
 
 ## CSRF
@@ -71,7 +71,7 @@
 |----|--------|--------|
 | HEADERS_PRESENT | ✅ PASS | X-RateLimit-Limit: 100 |
 | PROVIDER_EDGE | ✅ PASS | X-RateLimit-Provider: edge |
-| REQUEST_ID | ✅ PASS | X-Request-Id: 1793603443029-47.57.23 |
+| REQUEST_ID | ✅ PASS | X-Request-Id: 1793604437573-47.57.23 |
 
 ## AttackPaths
 
@@ -102,8 +102,8 @@
 
 | ID | Status | Detail |
 |----|--------|--------|
-| RESTRICTED_ORIGIN | ❌ FAIL | Access-Control-Allow-Origin: None |
-| CREDENTIALS_ALLOWED | ⚠️ WARN | Access-Control-Allow-Credentials: None |
+| RESTRICTED_ORIGIN | ✅ PASS | Access-Control-Allow-Origin: https://bandhan-sahu-connect.vercel.app |
+| CREDENTIALS_ALLOWED | ✅ PASS | Access-Control-Allow-Credentials: true |
 
 ## Codebase
 
@@ -124,8 +124,8 @@
 | ID | Status | Detail |
 |----|--------|--------|
 | OVERALL_STATUS | ✅ PASS | Overall: HEALTHY |
-| CHECK_DATABASE | ✅ PASS | UP (14ms) |
+| CHECK_DATABASE | ✅ PASS | UP (13ms) |
 | CHECK_CACHE | ✅ PASS | UP — 0 entries, 0 expired |
 | CHECK_JOB_QUEUE | ✅ PASS | UP — 0 pending, 0 processing |
-| CHECK_MEMORY | ✅ PASS | UP — 25MB heap used |
+| CHECK_MEMORY | ✅ PASS | UP — 28MB heap used |
 

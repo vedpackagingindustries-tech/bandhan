@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-02 07:10:38 UTC",
+  "timestamp": "2026-11-02 07:27:03 UTC",
   "project": "Bandhan – Sahu Samaj Connects",
   "production_url": "https://bandhan-sahu-connect.vercel.app",
   "sections": {
@@ -136,7 +136,7 @@
       {
         "id": "REGISTER_EMPTY_BODY",
         "status": "PASS",
-        "detail": "Empty register returns 500"
+        "detail": "Empty register returns 400"
       },
       {
         "id": "ME_NO_TOKEN",
@@ -175,7 +175,7 @@
       {
         "id": "REQUEST_ID",
         "status": "PASS",
-        "detail": "X-Request-Id: 1793603443029-47.57.23"
+        "detail": "X-Request-Id: 1793604437573-47.57.23"
       }
     ],
     "AttackPaths": [
@@ -260,13 +260,13 @@
     "CORS": [
       {
         "id": "RESTRICTED_ORIGIN",
-        "status": "FAIL",
-        "detail": "Access-Control-Allow-Origin: None"
+        "status": "PASS",
+        "detail": "Access-Control-Allow-Origin: https://bandhan-sahu-connect.vercel.app"
       },
       {
         "id": "CREDENTIALS_ALLOWED",
-        "status": "WARN",
-        "detail": "Access-Control-Allow-Credentials: None"
+        "status": "PASS",
+        "detail": "Access-Control-Allow-Credentials: true"
       }
     ],
     "Codebase": [
@@ -325,7 +325,7 @@
       {
         "id": "CHECK_DATABASE",
         "status": "PASS",
-        "detail": "UP (14ms)"
+        "detail": "UP (13ms)"
       },
       {
         "id": "CHECK_CACHE",
@@ -340,14 +340,14 @@
       {
         "id": "CHECK_MEMORY",
         "status": "PASS",
-        "detail": "UP — 25MB heap used"
+        "detail": "UP — 28MB heap used"
       }
     ]
   },
   "summary": {
-    "PASS": 61,
-    "FAIL": 1,
-    "WARN": 1,
+    "PASS": 63,
+    "FAIL": 0,
+    "WARN": 0,
     "INFO": 1
   }
 }

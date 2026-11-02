@@ -19,32 +19,56 @@ BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
 results = {"PASS": [], "FAIL": [], "BLOCKED": [], "NOT_TESTED": [], "WARN": []}
 
-def fetch(path, method="GET", data=None, headers=None, timeout=15):
+import subprocess
+
+_last_request_time = [0.0]
+
+def fetch(path, method="GET", data=None, headers=None, timeout=20):
+    """Fetch via curl — Python TLS fingerprint triggers Vercel Security Checkpoint."""
     url = f"{BASE}{path}"
-    hdrs = headers or {}
-    hdrs["User-Agent"] = hdrs.get("User-Agent", BROWSER_UA)
-    # Add origin for mutating requests (CSRF enforcement)
+    hdrs = ["-H", f"User-Agent: {BROWSER_UA}"]
     if method in ("POST", "PUT", "PATCH", "DELETE"):
-        hdrs.setdefault("Origin", BASE)
+        hdrs += ["-H", f"Origin: {BASE}"]
+    hdrs += ["-H", "Content-Type: application/json"]
+    if headers:
+        for k, v in headers.items():
+            if v is not None:
+                hdrs += ["-H", f"{k}: {v}"]
+    cmd = ["curl", "-s", "-D", "-", "-X", method, *hdrs, url, "--max-time", str(timeout)]
     if data:
-        data = json.dumps(data).encode()
-        hdrs["Content-Type"] = "application/json"
-    req = urllib.request.Request(url, data=data, headers=hdrs, method=method)
+        cmd += ["-d", json.dumps(data)]
+    # Pacing to stay under 100 req/min edge rate limit
+    now = time.time()
+    elapsed = now - _last_request_time[0]
+    if elapsed < 0.65:
+        time.sleep(0.65 - elapsed)
+    _last_request_time[0] = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
-            raw = resp.read().decode()
-            try:
-                body = json.loads(raw)
-            except:
-                body = {"_raw": raw[:200]}
-            return resp.status, body, dict(resp.headers)
-    except urllib.error.HTTPError as e:
-        body = {}
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5)
+        raw = proc.stdout
+        if "\r\n\r\n" in raw:
+            header_block, body_raw = raw.split("\r\n\r\n", 1)
+        elif "\n\n" in raw:
+            header_block, body_raw = raw.split("\n\n", 1)
+        else:
+            header_block, body_raw = raw, ""
+        status = 0
+        for line in header_block.split("\n"):
+            if line.startswith("HTTP/") and " " in line:
+                try:
+                    status = int(line.split(" ")[1])
+                except (ValueError, IndexError):
+                    pass
+        resp_headers = {}
+        for line in header_block.split("\n")[1:]:
+            if ":" in line:
+                k, _, v = line.partition(":")
+                resp_headers[k.strip()] = v.strip()
         try:
-            body = json.loads(e.read().decode())
-        except:
-            pass
-        return e.code, body, dict(e.headers)
+            body = json.loads(body_raw)
+        except Exception:
+            body = {"_raw": body_raw[:200]}
+        return status, body, resp_headers
     except Exception as e:
         return 0, {"error": str(e)}, {}
 
