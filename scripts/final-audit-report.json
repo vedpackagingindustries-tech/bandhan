@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-23 10:52:01 UTC",
+  "timestamp": "2026-11-02 07:10:38 UTC",
   "project": "Bandhan – Sahu Samaj Connects",
   "production_url": "https://bandhan-sahu-connect.vercel.app",
   "sections": {
@@ -175,7 +175,7 @@
       {
         "id": "REQUEST_ID",
         "status": "PASS",
-        "detail": "X-Request-Id: 1792752726272-47.57.23"
+        "detail": "X-Request-Id: 1793603443029-47.57.23"
       }
     ],
     "AttackPaths": [
@@ -260,20 +260,20 @@
     "CORS": [
       {
         "id": "RESTRICTED_ORIGIN",
-        "status": "PASS",
-        "detail": "Access-Control-Allow-Origin: https://bandhan-sahu-connect.vercel.app"
+        "status": "FAIL",
+        "detail": "Access-Control-Allow-Origin: None"
       },
       {
         "id": "CREDENTIALS_ALLOWED",
-        "status": "PASS",
-        "detail": "Access-Control-Allow-Credentials: true"
+        "status": "WARN",
+        "detail": "Access-Control-Allow-Credentials: None"
       }
     ],
     "Codebase": [
       {
         "id": "API_ROUTES_COUNT",
         "status": "INFO",
-        "detail": "24 API route files found"
+        "detail": "123 API route files found"
       },
       {
         "id": "KEY_FILE_src_middleware_ts",
@@ -325,7 +325,7 @@
       {
         "id": "CHECK_DATABASE",
         "status": "PASS",
-        "detail": "UP (5ms)"
+        "detail": "UP (14ms)"
       },
       {
         "id": "CHECK_CACHE",
@@ -340,14 +340,14 @@
       {
         "id": "CHECK_MEMORY",
         "status": "PASS",
-        "detail": "UP — 31MB heap used"
+        "detail": "UP — 25MB heap used"
       }
     ]
   },
   "summary": {
-    "PASS": 63,
-    "FAIL": 0,
-    "WARN": 0,
+    "PASS": 61,
+    "FAIL": 1,
+    "WARN": 1,
     "INFO": 1
   }
 }

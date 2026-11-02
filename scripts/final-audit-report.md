@@ -1,18 +1,18 @@
 # Bandhan — Final Audit Report
 
-**Date:** 2026-10-23 10:52:01 UTC
+**Date:** 2026-11-02 07:10:38 UTC
 
 **Production URL:** https://bandhan-sahu-connect.vercel.app
 
-**Score:** 98.4% (63 PASS / 64 total)
+**Score:** 95.3% (61 PASS / 64 total)
 
 ## Summary
 
 | Status | Count |
 |--------|-------|
-| ✅ PASS | 63 |
-| ❌ FAIL | 0 |
-| ⚠️ WARN | 0 |
+| ✅ PASS | 61 |
+| ❌ FAIL | 1 |
+| ⚠️ WARN | 1 |
 | ℹ️ INFO | 1 |
 
 ## Transport
@@ -71,7 +71,7 @@
 |----|--------|--------|
 | HEADERS_PRESENT | ✅ PASS | X-RateLimit-Limit: 100 |
 | PROVIDER_EDGE | ✅ PASS | X-RateLimit-Provider: edge |
-| REQUEST_ID | ✅ PASS | X-Request-Id: 1792752726272-47.57.23 |
+| REQUEST_ID | ✅ PASS | X-Request-Id: 1793603443029-47.57.23 |
 
 ## AttackPaths
 
@@ -102,14 +102,14 @@
 
 | ID | Status | Detail |
 |----|--------|--------|
-| RESTRICTED_ORIGIN | ✅ PASS | Access-Control-Allow-Origin: https://bandhan-sahu-connect.vercel.app |
-| CREDENTIALS_ALLOWED | ✅ PASS | Access-Control-Allow-Credentials: true |
+| RESTRICTED_ORIGIN | ❌ FAIL | Access-Control-Allow-Origin: None |
+| CREDENTIALS_ALLOWED | ⚠️ WARN | Access-Control-Allow-Credentials: None |
 
 ## Codebase
 
 | ID | Status | Detail |
 |----|--------|--------|
-| API_ROUTES_COUNT | ℹ️ INFO | 24 API route files found |
+| API_ROUTES_COUNT | ℹ️ INFO | 123 API route files found |
 | KEY_FILE_src_middleware_ts | ✅ PASS | src/middleware.ts exists |
 | KEY_FILE_src_lib_auth_ts | ✅ PASS | src/lib/auth.ts exists |
 | KEY_FILE_src_lib_rate-limit_ts | ✅ PASS | src/lib/rate-limit.ts exists |
@@ -124,8 +124,8 @@
 | ID | Status | Detail |
 |----|--------|--------|
 | OVERALL_STATUS | ✅ PASS | Overall: HEALTHY |
-| CHECK_DATABASE | ✅ PASS | UP (5ms) |
+| CHECK_DATABASE | ✅ PASS | UP (14ms) |
 | CHECK_CACHE | ✅ PASS | UP — 0 entries, 0 expired |
 | CHECK_JOB_QUEUE | ✅ PASS | UP — 0 pending, 0 processing |
-| CHECK_MEMORY | ✅ PASS | UP — 31MB heap used |
+| CHECK_MEMORY | ✅ PASS | UP — 25MB heap used |
 
