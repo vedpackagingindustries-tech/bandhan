@@ -26,11 +26,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             user: {
               select: {
                 id: true,
-                email: true,
-                phone: true,
                 membershipTier: true,
                 emailVerified: true,
                 phoneVerified: true,
+                // PRIVACY: owner's email/phone are NEVER returned here.
+                // Contact happens exclusively through the admin-mediated CONNECT flow.
               },
             },
           },
@@ -94,80 +94,35 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
-    // Privacy: determine what contact info to show
+    // ── PRIVACY (Phase 4/9): the listing owner's phone & email are NEVER
+    // sent to any viewer — not in API responses, not conditionally.
+    // Ordinary browsing users use the CONNECT button; the ADMIN mediates
+    // contact between the interested person and the listing owner.
     const ownerProfile = matrimonyProfile.profile
     const ownerUser = ownerProfile.user
-    const viewerTier = auth.user.membershipTier || 'FREE'
+    const isOwnerView = profileOwnerUserId === auth.userId
 
-    let showPhone = false
-    let showEmail = false
-
-    if (isOwner) {
-      // Owner can always see their own info
-      showPhone = true
-      showEmail = true
-    } else {
-      // Check phone visibility
-      if (ownerProfile.phoneVisible) {
-        // Check contact permission based on viewer's membership tier
-        switch (ownerProfile.contactPermission) {
-          case 'EVERYONE':
-            showPhone = true
-            break
-          case 'MEMBERS_ONLY':
-            // Any authenticated user with a profile is a member
-            showPhone = true
-            break
-          case 'PREMIUM_ONLY':
-            showPhone = viewerTier === 'PREMIUM' || viewerTier === 'ELITE'
-            break
-          case 'NONE':
-            showPhone = false
-            break
-        }
-      }
-
-      // Check email visibility
-      if (ownerProfile.emailVisible) {
-        switch (ownerProfile.contactPermission) {
-          case 'EVERYONE':
-            showEmail = true
-            break
-          case 'MEMBERS_ONLY':
-            showEmail = true
-            break
-          case 'PREMIUM_ONLY':
-            showEmail = viewerTier === 'PREMIUM' || viewerTier === 'ELITE'
-            break
-          case 'NONE':
-            showEmail = false
-            break
-        }
-      }
-    }
-
-    // Build the response - strip private fields based on privacy rules
+    // Build the response — contact fields are stripped at the API layer
     const responseData = {
       ...matrimonyProfile,
       profile: {
         ...ownerProfile,
         user: {
-          ...ownerUser,
-          // Only include contact info if allowed
-          ...(showPhone ? { phone: ownerUser.phone } : { phone: null }),
-          ...(showEmail ? { email: ownerUser.email } : { email: null }),
-          // Always include non-contact user fields
           id: ownerUser.id,
           membershipTier: ownerUser.membershipTier,
           emailVerified: ownerUser.emailVerified,
           phoneVerified: ownerUser.phoneVerified,
+          phone: null,  // never exposed
+          email: null,  // never exposed
         },
       },
       media,
       privacy: {
-        canSeePhone: showPhone,
-        canSeeEmail: showEmail,
-        isOwner,
+        canSeePhone: false,
+        canSeeEmail: false,
+        isOwner: isOwnerView,
+        connectOnly: !isOwnerView,
+        connectEnabled: true,
       },
     }
 

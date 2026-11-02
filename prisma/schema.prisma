@@ -47,6 +47,9 @@ model RolePermission {
   @@unique([roleId, permissionId])
 }
 
+// NOTE: Favourite, ConnectionRequest, ModuleSubscription, PremiumShowcase
+// and Payment UPI verification fields are defined later in this file.
+
 // ═══════════════════════════════════════════════════════════
 // USER AUTHENTICATION
 // ═══════════════════════════════════════════════════════════
@@ -115,6 +118,10 @@ model User {
   blockedUsers      UserBlock[] @relation("Blocker")
   blockedBy         UserBlock[] @relation("Blocked")
   payments          Payment[]  @relation("UserPayments")
+  verifiedPayments  Payment[]  @relation("PaymentVerifier")
+  favourites        Favourite[]
+  connectionRequestsSent  ConnectionRequest[]
+  moduleSubscriptions     ModuleSubscription[]
   jobs              Job[]      @relation("EmployerJobs")
   jobApplications   JobApplication[] @relation("CandidateApplications")
   businesses        Business[]  @relation("OwnerBusinesses")
@@ -605,6 +612,7 @@ model MatrimonyProfile {
   contactLimit      Int      @default(10)
   isFeatured        Boolean  @default(false)
   featuredExpiry    DateTime?
+  expiresAt         DateTime? // Free listing period: 5 days; extended by premium
   rejectedAt        DateTime?
   rejectionReason   String?
   approvedAt        DateTime?
@@ -727,6 +735,7 @@ model Business {
   isVerified        Boolean  @default(false)
   isFeatured        Boolean  @default(false)
   featuredExpiry    DateTime?
+  expiresAt         DateTime? // Free listing period: 5 days; extended by premium
   status            String   @default("PENDING") // PENDING, ACTIVE, REJECTED, BLOCKED
   viewsCount        Int      @default(0)
   approvedAt        DateTime?
@@ -746,6 +755,7 @@ model Business {
   @@index([isVerified])
   @@index([isFeatured])
   @@index([districtId])
+  @@index([expiresAt])
 }
 
 // ═════════════════════════════════════════════════════════
@@ -842,16 +852,32 @@ model UserBlock {
 model Payment {
   id              String   @id @default(cuid())
   userId          String
-  provider        String   // RAZORPAY, STRIPE, PAYPAL, UPI, BANK_TRANSFER, MANUAL
+  provider        String   @default("UPI") // UPI (primary), BANK_TRANSFER, MANUAL (legacy: RAZORPAY, STRIPE, PAYPAL)
   providerTxnId   String?
   amount          Float
   currency        String   @default("INR")
-  status          String   @default("INITIATED") // INITIATED, PENDING, SUCCESS, FAILED, REFUNDED, CANCELLED
-  purpose         String   // MEMBERSHIP, BUSINESS_FEATURED, JOB_FEATURED, ADVERTISEMENT, SPONSORED_LISTING
+  status          String   @default("INITIATED") // INITIATED, PENDING (awaiting verification), APPROVED, REJECTED, SUCCESS (legacy), FAILED, REFUNDED, CANCELLED
+  purpose         String   // MEMBERSHIP, BUSINESS_FEATURED, JOB_FEATURED, ADVERTISEMENT, SPONSORED_LISTING (legacy)
   purposeRefId    String? // ID of the entity this payment is for
   membershipTier  String? // FREE, PREMIUM, ELITE
   durationDays    Int?
   metadata        String? // JSON: provider-specific data
+
+  // ── Centralized UPI payment workflow (Phase 9) ──
+  category        String? // MATRIMONY_PREMIUM, BUSINESS_PREMIUM, JOBS_PREMIUM, DIRECTORY_REGISTRATION, HERO_ADVERTISEMENT, OTHER
+  module          String? // MATRIMONY, BUSINESS, JOBS, DIRECTORY, HERO_AD
+  planName        String?  // MONTHLY, QUARTERLY, HALFYEARLY, YEARLY, ONETIME, TRIAL_7D
+  planLabel       String?  // Human-readable plan at purchase time (price snapshot)
+  priceSnapshot   Float?   // Price at purchase time — future price changes never alter past purchases
+  upiId           String?  // Receiving UPI ID snapshot (admin-controlled)
+  utr             String?  // Customer-submitted UPI transaction reference (unique)
+  paymentDate     DateTime? // Customer-claimed payment date
+  screenshotUrl   String?  // Optional payment screenshot (evidence only, NOT proof)
+  verifiedById    String?  // Admin who verified the real bank/UPI transaction
+  verifiedAt      DateTime?
+  verificationNotes String?
+  receiptNo       String?  // Generated on approval (unique)
+
   failureReason   String?
   refundReason    String?
   refundedAt      DateTime?
@@ -860,12 +886,128 @@ model Payment {
   updatedAt       DateTime @updatedAt
 
   user User @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+  verifiedBy User? @relation("PaymentVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
 
+  @@unique([utr])
+  @@unique([receiptNo])
   @@index([userId])
   @@index([status])
   @@index([provider])
   @@index([purpose])
   @@index([createdAt])
+  @@index([category, status])
+  @@index([verifiedAt])
+}
+
+// ═════════════════════════════════════════════════════════
+// FAVOURITES (Max 5 per user per module — enforced server-side)
+// ═════════════════════════════════════════════════════════
+
+model Favourite {
+  id        String   @id @default(cuid())
+  userId    String
+  module    String   // MATRIMONY, BUSINESS, JOBS
+  listingId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module, listingId])
+  @@index([userId, module])
+  @@index([module, listingId])
+}
+
+// ═════════════════════════════════════════════════════════
+// CONNECTION REQUESTS (CONNECT button — privacy-first)
+// The listing owner's phone/email is NEVER exposed to the requester.
+// Admin reviews and contacts the owner via WhatsApp/email workflow.
+// ═════════════════════════════════════════════════════════
+
+model ConnectionRequest {
+  id               String    @id @default(cuid())
+  module           String    // MATRIMONY, BUSINESS, JOBS, DIRECTORY
+  listingId        String
+  requesterId      String
+  ownerId          String?   // Resolved listing owner at request time
+  requesterName    String?   // Snapshot for admin review
+  requesterPhone   String?   // Snapshot — visible to ADMIN ONLY, never to owners/public
+  message          String?
+  status           String    @default("PENDING") // PENDING, CONTACTED, ACCEPTED, REJECTED, CLOSED
+  adminNotes       String?
+  ownerNotifiedVia String?   // WHATSAPP, EMAIL, BOTH
+  ownerNotifiedAt  DateTime?
+  respondedAt      DateTime?
+  respondedById    String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  requester        User      @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@unique([module, listingId, requesterId])
+  @@index([status, createdAt])
+  @@index([module, listingId])
+  @@index([ownerId])
+}
+
+// ═════════════════════════════════════════════════════════
+// MODULE SUBSCRIPTIONS (Per-module premium entitlements)
+// Pricing/entitlements are NEVER mixed between modules.
+// Price snapshot is stored at purchase time.
+// ═════════════════════════════════════════════════════════
+
+model ModuleSubscription {
+  id            String    @id @default(cuid())
+  userId        String
+  module        String    // MATRIMONY, BUSINESS, JOBS, DIRECTORY
+  listingId     String?
+  planName      String    // TRIAL_7D, MONTHLY, QUARTERLY, HALFYEARLY, YEARLY, ONETIME
+  planLabel     String?
+  priceSnapshot Float
+  currency      String    @default("INR")
+  durationDays  Int?
+  isTrial       Boolean   @default(false)
+  startedAt     DateTime  @default(now())
+  expiresAt     DateTime?
+  status        String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
+  paymentId     String?
+  source        String    @default("PAYMENT") // PAYMENT, TRIAL, ADMIN
+  grantedById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, module, status])
+  @@index([module, status, expiresAt])
+  @@index([paymentId])
+}
+
+// ═════════════════════════════════════════════════════════
+// MONTHLY TOP 10 PREMIUM SHOWCASE
+// Selected at the start of each month, displayed in the hero
+// section for exactly 2 days. Auto-expires.
+// ═════════════════════════════════════════════════════════
+
+model PremiumShowcase {
+  id         String   @id @default(cuid())
+  module     String   // MATRIMONY, BUSINESS, JOBS
+  listingId  String
+  title      String?  // Display snapshot
+  subtitle   String?  // e.g. city / profession
+  imageUrl   String?
+  rank       Int
+  monthKey   String   // YYYY-MM
+  score      Float?
+  startsAt   DateTime
+  endsAt     DateTime
+  status     String   @default("APPROVED") // PENDING, APPROVED, EXPIRED
+  selectedBy String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([module, listingId, monthKey])
+  @@index([monthKey, status])
+  @@index([startsAt, endsAt])
 }
 
 // ═════════════════════════════════════════════════════════

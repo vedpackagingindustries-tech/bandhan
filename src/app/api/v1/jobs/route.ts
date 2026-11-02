@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
         type: type || 'FULL_TIME', salaryMin, salaryMax, experience, skills: skills ? JSON.stringify(skills) : undefined,
         education, vacancies: vacancies || 1, location, districtId, cityId,
         isRemote: isRemote || false, contactEmail, contactPhone, applyUrl,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        // Free listing period: 5 days unless employer sets a shorter window
+        expiresAt: expiresAt ? new Date(expiresAt) : new Date(Date.now() + 5 * 86400000),
       },
     })
 

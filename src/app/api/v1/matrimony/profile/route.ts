@@ -172,6 +172,8 @@ export async function POST(request: NextRequest) {
         data: {
           profileId: profile.id,
           ...matrimonyData,
+          // Free listing period: 5 days (extended automatically by premium approval)
+          expiresAt: new Date(Date.now() + 5 * 86400000),
         } as any,
       })
 

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const [items, total] = await Promise.all([
       db.directory.findMany({
         where,
-        select: { id: true, name: true, description: true, category: true, type: true, phone: true, website: true, memberCount: true, isVerified: true, isFeatured: true, viewsCount: true, createdAt: true, district: { select: { id: true, name: true, nameHi: true } }, city: { select: { id: true, name: true, nameHi: true } } },
+        select: { id: true, name: true, description: true, category: true, type: true, website: true, memberCount: true, isVerified: true, isFeatured: true, viewsCount: true, createdAt: true, district: { select: { id: true, name: true, nameHi: true } }, city: { select: { id: true, name: true, nameHi: true } } },
         orderBy: isFeatured ? [{ isFeatured: 'desc' }, { createdAt: 'desc' }] : { createdAt: 'desc' },
         skip, take: limit,
       }),

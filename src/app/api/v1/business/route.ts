@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         where,
         select: {
           id: true, name: true, description: true, category: true, type: true,
-          address: true, phone: true, website: true, isVerified: true, isFeatured: true,
+          address: true, website: true, isVerified: true, isFeatured: true,
           viewsCount: true, createdAt: true,
           district: { select: { id: true, name: true, nameHi: true } },
           city: { select: { id: true, name: true, nameHi: true } },
@@ -67,6 +67,8 @@ export async function POST(request: NextRequest) {
         services: services ? JSON.stringify(services) : undefined,
         workingHours: workingHours ? JSON.stringify(workingHours) : undefined,
         foundedYear, employeeCount,
+        // Free listing period: 5 days (extended automatically by premium approval)
+        expiresAt: new Date(Date.now() + 5 * 86400000),
       },
     })
 
