@@ -199,7 +199,10 @@ async function activateListingPremium(tx: Tx, payment: {
         },
       })
       if (!payment.purposeRefId) {
-        const mp = await tx.matrimonyProfile.findFirst({ where: { userId: payment.userId }, select: { id: true } })
+        const mp = await tx.matrimonyProfile.findFirst({
+          where: { profile: { userId: payment.userId } },
+          select: { id: true },
+        })
         if (mp) {
           await tx.moduleSubscription.updateMany({
             where: { paymentId: payment.id },

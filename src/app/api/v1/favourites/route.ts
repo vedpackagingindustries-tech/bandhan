@@ -171,7 +171,7 @@ export async function DELETE(request: NextRequest) {
 
     const sp = request.nextUrl.searchParams
     const id = sp.get('id')
-    const module = sp.get('module')
+    const moduleFilter = sp.get('module')
     const listingId = sp.get('listingId')
 
     if (id) {
@@ -182,9 +182,9 @@ export async function DELETE(request: NextRequest) {
       return success({ removed: id, message: 'Removed from favourites' })
     }
 
-    if (module && listingId && VALID_MODULES.includes(module)) {
+    if (moduleFilter && listingId && VALID_MODULES.includes(moduleFilter)) {
       const deleted = await db.favourite.deleteMany({
-        where: { userId: auth.userId, module, listingId },
+        where: { userId: auth.userId, module: moduleFilter, listingId },
       })
       if (deleted.count === 0) return error('Favourite not found', 404)
       return success({ removedListing: listingId, message: 'Removed from favourites' })

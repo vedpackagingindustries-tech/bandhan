@@ -6,6 +6,7 @@ import { TopInfoBar } from '@/components/layout/TopInfoBar'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { HeroAdvertisement } from '@/components/home/HeroAdvertisement'
+import { TopShowcase } from '@/components/home/TopShowcase'
 import { LiveCommunityActivity } from '@/components/home/LiveCommunityActivity'
 import { ModuleGrid } from '@/components/home/ModuleGrid'
 import { PremiumAdBanner } from '@/components/home/PremiumAdBanner'
@@ -86,6 +87,9 @@ export default function Home() {
       <main className="flex-1">
         {/* 1. Large Spacious Hero Advertisement */}
         <HeroAdvertisement />
+
+        {/* 1.5 Monthly Top 10 Premium Showcase (2-day window) */}
+        <TopShowcase />
 
         {/* 2. Live Community Activity */}
         <LiveCommunityActivity />

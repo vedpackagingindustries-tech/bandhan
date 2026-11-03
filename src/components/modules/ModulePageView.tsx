@@ -16,6 +16,7 @@ import { MatrimonyContent } from './MatrimonyContent'
 import { BusinessContent } from './BusinessContent'
 import { JobsContent } from './JobsContent'
 import { DirectoryContent } from './DirectoryContent'
+import { PricingSection } from './PricingSection'
 import { DetailView, fetchDetail, type ModuleKey as DetailModuleKey } from './DetailView'
 
 export type ModuleKey = 'matrimony' | 'business' | 'jobs' | 'directory'
@@ -237,6 +238,9 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
             {module === 'directory' && (
               <DirectoryContent onOpenDetail={openDetail} onAuthRequired={() => setAuthMode('login')} showAdvanced={showAdvanced} setShowAdvanced={setShowAdvanced} />
             )}
+
+            {/* Dedicated per-module pricing + direct UPI payment flow */}
+            <PricingSection module={module} onAuthRequired={() => setAuthMode('login')} />
 
             <section className="px-4 py-4 sm:px-6">
               <div className="mx-auto max-w-7xl">

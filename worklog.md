@@ -260,3 +260,32 @@ Stage Summary:
 - Smoke tests: 68/68 PASS | Audit: 63/64 PASS, 0 FAIL (98.4%)
 - NO admin credentials exist anywhere in code — first admin claims via admin panel setup
 - Bootstrap currently OPEN on production (owner should claim now)
+
+---
+Task ID: 1
+Agent: main
+Task: ULTIMATE MASTER COMMAND — UPI payments, revenue, Excel reports, favourites, CONNECT, showcase, privacy lockdown, redeploy
+
+Work Log:
+- Schema (additive-only migration 20261103070000): Payment UTR/verification/priceSnapshot/receiptNo columns (+unique utr & receiptNo), Favourite, ConnectionRequest, ModuleSubscription, PremiumShowcase tables, Business/MatrimonyProfile expiresAt (5-day free listing), Payment→verifier FK
+- Build pipeline: prisma migrate deploy during deploy + pre-migration DB backup to Vercel Blob (scripts/prebuild-backup.mjs, scripts/run-migrate.mjs with reachability guard)
+- Centralized UPI payment system (NO gateway): /api/v1/payments/qr (server-side QR with admin-controlled UPI ID 9301056006 + exact amount, customers cannot alter), /payments/submit (UTR + date, duplicate UTR blocked at API + unique index), /payments/:id/receipt (printable HTML)
+- Atomic admin verification: PATCH /api/v1/admin/payments/:id (approve/reject) — guarded updateMany prevents double approval; same transaction creates ModuleSubscription entitlement + listing premium flags + receipt no + notifications; price snapshot preserved per purchase
+- Revenue dashboard API /api/v1/admin/revenue: per-category cards (verified only — pending/rejected NEVER counted), today/7d/30d/month/prev-month/year/prev-year/custom in Asia/Kolkata, daily/monthly/yearly series, top customers
+- Excel .xlsx export (exceljs) /api/v1/admin/reports/export — 13 report types, BANDHAN heading, INR formatting, frozen header, auto-filter, category totals + grand total, Summary sheet
+- Favourites: /api/v1/favourites with server-side MAX 5 per module + duplicate prevention + Hindi limit message
+- CONNECT workflow: /api/v1/connect (privacy-first: request → ADMIN, never exposes owner phone; duplicate + spam guards), /api/v1/admin/connect (statuses PENDING/CONTACTED/ACCEPTED/REJECTED/CLOSED + WhatsApp wa.me click-to-chat links with prefilled Hindi messages)
+- Monthly Top 10 Showcase: fair scoring (premium 50 + completeness 20 + views 15 + freshness 10 + media 5), 2-day window at month start, auto-expiry, lazy auto-generation, /showcase public + /admin/showcase generate/review
+- Privacy lockdown: business/directory/jobs/matrimony public APIs now strip phone/email via field whitelists; matrimony conditional contact exposure REMOVED; detail views show CONNECT instead
+- Deterrence: ProtectedContent watermark (user-specific, rotating), no-select/no-copy/right-click guard (honest: cannot prevent screenshots — real protection is API-layer stripping)
+- UI: per-module PricingSection + PaymentModal (QR/UPI/UTR), favourites heart, CONNECT buttons, homepage TopShowcase, admin tabs: Payments register (approve/reject + receipt), Revenue cards+trend, Reports (xlsx), CONNECT manager, Showcase manager, Master Settings (UPI ID + editable per-module pricing)
+- Listing creation now sets 5-day free expiry (business/jobs/matrimony); premium approval extends expiry + featured flag
+- Security: npm audit — zod override ^4.6.7 (high fixed), minimatch ^11, uuid ^9; runtime audit 0 high
+- Smoke test v3: +21 tests covering pricing exactness, UPI auth guards, privacy (no phone/email in public lists), showcase structure
+- Local build: ✓ compiled successfully, 0 TS errors
+
+Stage Summary:
+- Migration: additive-only, IF NOT EXISTS guards, no data risk
+- Backup: prebuild dump → Blob + BackupRecord before every deploy
+- 12 new API routes, 7 new components, 4 new libs
+- Statuses/limits enforced server-side (favourites max 5, duplicate UTR, duplicate connect)

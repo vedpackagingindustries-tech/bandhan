@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "prisma generate && node scripts/prebuild-backup.mjs && prisma migrate deploy && next build && node -e \"const fs=require('fs'),p=require('path');function cp(s,d){fs.mkdirSync(d,{recursive:true});for(const e of fs.readdirSync(s,{withFileTypes:true})){const t=p.join(d,e.name);e.isDirectory()?cp(p.join(s,e.name),t):fs.copyFileSync(p.join(s,e.name),t)}}cp('.next/static','.next/standalone/.next/static');cp('public','.next/standalone/public')\"",
+    "build": "prisma generate && node scripts/prebuild-backup.mjs && node scripts/run-migrate.mjs && next build && node -e \"const fs=require('fs'),p=require('path');function cp(s,d){fs.mkdirSync(d,{recursive:true});for(const e of fs.readdirSync(s,{withFileTypes:true})){const t=p.join(d,e.name);e.isDirectory()?cp(p.join(s,e.name),t):fs.copyFileSync(p.join(s,e.name),t)}}cp('.next/static','.next/standalone/.next/static');cp('public','.next/standalone/public')\"",
     "postinstall": "prisma generate",
     "start": "node .next/standalone/server.js",
     "lint": "eslint .",

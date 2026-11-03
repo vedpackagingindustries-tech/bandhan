@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Briefcase, MapPin, Shield, Star, ExternalLink, Building2, Users, Eye, Calendar, GraduationCap, User, Heart, IndianRupee, CheckCircle, Loader2 } from 'lucide-react'
+import { ArrowLeft, Briefcase, MapPin, Shield, Star, ExternalLink, Building2, Users, Eye, Calendar, GraduationCap, User, Heart, IndianRupee, CheckCircle, Loader2, Lock, PhoneOff } from 'lucide-react'
 import { useTranslations } from '@/i18n'
 import { apiGet, apiPost } from '@/lib/api'
 import { EmptyState, ErrorState, computeAge } from './ModuleShared'
+import { ConnectButton } from './ConnectButton'
+import { FavouriteButton } from './FavouriteButton'
+import { ProtectedContent } from './ProtectedContent'
 
 export type ModuleKey = 'matrimony' | 'business' | 'jobs' | 'directory'
 
@@ -86,10 +89,10 @@ export function DetailView({ module, onBack, onAuthRequired, data: propData, det
 
   if (!data) return null
 
-  if (module === 'business') return <BusinessDetail data={data} />
-  if (module === 'jobs') return <JobDetail data={data} t={t} />
-  if (module === 'directory') return <DirectoryDetail data={data} />
-  if (module === 'matrimony') return <MatrimonyDetail data={data} />
+  if (module === 'business') return <ProtectedContent><BusinessDetail data={data} onAuthRequired={onAuthRequired} /></ProtectedContent>
+  if (module === 'jobs') return <ProtectedContent><JobDetail data={data} t={t} onAuthRequired={onAuthRequired} /></ProtectedContent>
+  if (module === 'directory') return <ProtectedContent><DirectoryDetail data={data} onAuthRequired={onAuthRequired} /></ProtectedContent>
+  if (module === 'matrimony') return <ProtectedContent><MatrimonyDetail data={data} onAuthRequired={onAuthRequired} /></ProtectedContent>
   return null
 }
 
@@ -106,7 +109,7 @@ export async function fetchDetail(module: ModuleKey, id: string): Promise<{ data
   return { data: null, error: result.error }
 }
 
-function BusinessDetail({ data }: { data: Record<string, unknown> }) {
+function BusinessDetail({ data, onAuthRequired }: { data: Record<string, unknown>; onAuthRequired?: () => void }) {
   const owner = data.owner as { profile?: { firstName: string | null; lastName: string | null } } | null
   const ownerName = owner?.profile ? [owner.profile.firstName, owner.profile.lastName].filter(Boolean).join(' ') : null
   const district = data.district as { name: string } | null
@@ -138,7 +141,8 @@ function BusinessDetail({ data }: { data: Record<string, unknown> }) {
           )}
           <div className="mt-5 grid grid-cols-2 gap-4">
             {!!location && <div className="flex items-center gap-2 text-xs text-muted-foreground"><MapPin className="h-4 w-4 text-burgundy" />{location}</div>}
-            {!!data.phone && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Users className="h-4 w-4 text-burgundy" />{data.phone as string}</div>}
+            {/* PRIVACY: business phone/email are NEVER sent by the API — CONNECT mediates contact */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><PhoneOff className="h-4 w-4 text-burgundy/60" /><span className="italic">नंबर गोपनीय — कनेक्ट करें</span></div>
             {!!data.website && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <ExternalLink className="h-4 w-4 text-burgundy" />
@@ -151,13 +155,18 @@ function BusinessDetail({ data }: { data: Record<string, unknown> }) {
             <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{String(data.viewsCount)} views</span>
             {ownerName && <span>By {ownerName}</span>}
           </div>
+          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/30 pt-5">
+            <ConnectButton module="business" listingId={data.id as string} onAuthRequired={onAuthRequired} size="lg" />
+            <FavouriteButton module="business" listingId={data.id as string} onAuthRequired={onAuthRequired} />
+            <span className="text-[0.65rem] leading-tight text-muted-foreground">मालिक का नंबर 100% गोपनीय<br />Admin आपसे व मालिक से संपर्क करेगा</span>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function JobDetail({ data, t }: { data: Record<string, unknown>; t: ReturnType<typeof useTranslations>['t'] }) {
+function JobDetail({ data, t, onAuthRequired }: { data: Record<string, unknown>; t: ReturnType<typeof useTranslations>['t']; onAuthRequired?: () => void }) {
   const mp = t.modulePage
   const [applyLoading, setApplyLoading] = useState(false)
   const [applyResult, setApplyResult] = useState<{ success: boolean; message: string } | null>(null)
@@ -224,6 +233,8 @@ function JobDetail({ data, t }: { data: Record<string, unknown>; t: ReturnType<t
                 <button onClick={handleApply} disabled={applyLoading} className="btn-bandhan-primary text-sm disabled:opacity-50 flex items-center gap-2">
                   {applyLoading && <Loader2 className="h-4 w-4 animate-spin" />}{t.featured.applyNow}
                 </button>
+                <ConnectButton module="jobs" listingId={data.id as string} onAuthRequired={onAuthRequired} />
+                <FavouriteButton module="jobs" listingId={data.id as string} onAuthRequired={onAuthRequired} />
                 {applyResult && !applyResult.success && <span className="text-xs text-red-500">{applyResult.message}</span>}
               </div>
             )}
@@ -234,7 +245,7 @@ function JobDetail({ data, t }: { data: Record<string, unknown>; t: ReturnType<t
   )
 }
 
-function DirectoryDetail({ data }: { data: Record<string, unknown> }) {
+function DirectoryDetail({ data, onAuthRequired }: { data: Record<string, unknown>; onAuthRequired?: () => void }) {
   const owner = data.owner as { profile?: { firstName: string | null; lastName: string | null } } | null
   const ownerName = owner?.profile ? [owner.profile.firstName, owner.profile.lastName].filter(Boolean).join(' ') : null
   const district = data.district as { name: string } | null
@@ -265,7 +276,8 @@ function DirectoryDetail({ data }: { data: Record<string, unknown> }) {
           )}
           <div className="mt-5 grid grid-cols-2 gap-4">
             {!!location && <div className="flex items-center gap-2 text-xs text-muted-foreground"><MapPin className="h-4 w-4 text-burgundy-light" />{location}</div>}
-            {!!data.phone && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Users className="h-4 w-4 text-burgundy-light" />{data.phone as string}</div>}
+            {/* PRIVACY: directory phone is NEVER sent by the API — CONNECT mediates contact */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><PhoneOff className="h-4 w-4 text-burgundy-light/60" /><span className="italic">नंबर गोपनीय — कनेक्ट करें</span></div>
             {!!data.website && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <ExternalLink className="h-4 w-4 text-burgundy-light" />
@@ -278,13 +290,17 @@ function DirectoryDetail({ data }: { data: Record<string, unknown> }) {
             <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{String(data.viewsCount)} views</span>
             {ownerName && <span>By {ownerName}</span>}
           </div>
+          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/30 pt-5">
+            <ConnectButton module="directory" listingId={data.id as string} onAuthRequired={onAuthRequired} size="lg" />
+            <span className="text-[0.65rem] leading-tight text-muted-foreground">संपर्क विवरण गोपनीय हैं<br />Admin के माध्यम से जुड़ें</span>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function MatrimonyDetail({ data }: { data: Record<string, unknown> }) {
+function MatrimonyDetail({ data, onAuthRequired }: { data: Record<string, unknown>; onAuthRequired?: () => void }) {
   // Matrimony API wraps response: { profile: { ...matrimonyProfile, profile: { ...ownerProfile }, media: [...], privacy: {...} } }
   const matrimonyData = data.profile as Record<string, unknown> | undefined
   const profileData = matrimonyData?.profile as Record<string, unknown> | undefined
@@ -331,15 +347,24 @@ function MatrimonyDetail({ data }: { data: Record<string, unknown> }) {
               <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{matrimonyData.familyDescription as string}</p>
             </div>
           )}
-          {userData && (privacy?.canSeePhone || privacy?.canSeeEmail) && (
-            <div className="mt-5 border-t border-border/30 pt-4">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contact</h3>
-              <div className="space-y-1">
-                {privacy?.canSeePhone && (userData.phone as string) && <p className="text-sm text-foreground">{userData.phone as string}</p>}
-                {privacy?.canSeeEmail && (userData.email as string) && <p className="text-sm text-burgundy">{userData.email as string}</p>}
+          {/* ── PRIVACY-FIRST CONNECT (Phase 4): owner phone/email NEVER shown ──
+              The API strips contact data; connection is admin-mediated. */}
+          <div className="mt-5 border-t border-border/30 pt-5">
+            <div className="flex items-start gap-3 rounded-xl bg-cream/70 px-4 py-3">
+              <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-burgundy" />
+              <div>
+                <p className="text-xs font-semibold text-foreground">संपर्क विवरण 100% गोपनीय (Contact details are fully private)</p>
+                <p className="mt-0.5 text-[0.65rem] leading-relaxed text-muted-foreground">
+                  मोबाइल नंबर/ईमेल कभी नहीं दिखाया जाता। CONNECT दबाएं — प्रशासक आपका अनुरोध मालिक तक पहुंचाएंगे।
+                </p>
               </div>
             </div>
-          )}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <ConnectButton module="matrimony" listingId={matrimonyData?.id as string} onAuthRequired={onAuthRequired} size="lg" />
+              <FavouriteButton module="matrimony" listingId={matrimonyData?.id as string} onAuthRequired={onAuthRequired} />
+              <span className="text-[0.65rem] leading-tight text-muted-foreground">पसंदीदा: अधिकतम 5 प्रोफ़ाइल</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

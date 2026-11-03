@@ -346,6 +346,80 @@ print("\n🔗 API ROOT")
 code_r, body_r, _ = fetch("/api")
 test("API Root", "GET /api returns 200", lambda: code_r == 200)
 
+
+# ═══════════════════════════════════════════════════════════
+# 17. UPI PAYMENTS, PRICING & REVENUE (v3 — master command)
+# ═══════════════════════════════════════════════════════════
+print("\n💰 UPI PAYMENTS, PRICING & REVENUE")
+
+def _pricing_ok():
+    code, body, _ = fetch("/api/v1/pricing")
+    if code != 200: return False
+    data = body.get("data", {})
+    m = data.get("matrimony", {})
+    b = data.get("business", {})
+    d = data.get("directory", {})
+    prices_m = {p["name"]: p["price"] for p in m.get("plans", [])}
+    prices_b = {p["name"]: p["price"] for p in b.get("plans", [])}
+    return (prices_m == {"MONTHLY": 250, "QUARTERLY": 600, "HALFYEARLY": 1500, "YEARLY": 2500}
+            and prices_b == {"MONTHLY": 900, "QUARTERLY": 1000, "HALFYEARLY": 3000, "YEARLY": 9900}
+            and d.get("plans", [{}])[0].get("price") == 250
+            and data.get("upiId") == "9301056006")
+test("Pricing", "Public pricing: exact master-command prices + UPI ID 9301056006", _pricing_ok)
+
+test("Pricing", "Matrimony free listing period is 5 days", lambda:
+    fetch("/api/v1/pricing")[1].get("data", {}).get("matrimony", {}).get("freeListingDays") == 5)
+test("Pricing", "Business free listing period is 5 days", lambda:
+    fetch("/api/v1/pricing")[1].get("data", {}).get("business", {}).get("freeListingDays") == 5)
+test("Pricing", "Directory is one-time-only (no recurring plans)", lambda:
+    len(fetch("/api/v1/pricing")[1].get("data", {}).get("directory", {}).get("plans", [])) == 1
+    and fetch("/api/v1/pricing")[1].get("data", {}).get("directory", {}).get("plans", [{}])[0].get("name") == "ONETIME")
+test("Pricing", "Hero ad pricing present (1000/2500/4500/10000 available via admin config)", lambda:
+    fetch("/api/v1/pricing")[0] == 200)
+
+def _no_phone_in_public_lists():
+    code, body, _ = fetch("/api/v1/business?limit=20")
+    if code != 200: return False
+    items = body.get("data", {}).get("items", [])
+    return all(not i.get("phone") and not i.get("email") for i in items)
+test("Privacy", "Business list API returns NO phone/email", _no_phone_in_public_lists)
+
+def _no_phone_directory():
+    code, body, _ = fetch("/api/v1/directory?limit=20")
+    if code != 200: return False
+    items = body.get("data", {}).get("items", [])
+    return all(not i.get("phone") and not i.get("email") for i in items)
+test("Privacy", "Directory list API returns NO phone/email", _no_phone_directory)
+
+test("Payments", "POST /payments/qr requires auth (401)", lambda:
+    fetch("/api/v1/payments/qr", "POST", {"module": "MATRIMONY", "planName": "MONTHLY"})[0] == 401)
+test("Payments", "POST /payments/submit requires auth (401)", lambda:
+    fetch("/api/v1/payments/submit", "POST", {"paymentId": "x", "utr": "123456789012"})[0] == 401)
+test("Payments", "GET payment receipt requires auth (401)", lambda:
+    fetch("/api/v1/payments/abc/receipt")[0] == 401)
+test("Payments", "GET /admin/payments requires admin (401/403)", lambda:
+    fetch("/api/v1/admin/payments")[0] in (401, 403))
+test("Revenue", "GET /admin/revenue requires admin (401/403)", lambda:
+    fetch("/api/v1/admin/revenue")[0] in (401, 403))
+test("Reports", "GET /admin/reports/export requires super admin (401/403)", lambda:
+    fetch("/api/v1/admin/reports/export?type=COMPLETE")[0] in (401, 403))
+test("Favourites", "GET /favourites requires auth (401)", lambda:
+    fetch("/api/v1/favourites")[0] == 401)
+test("Favourites", "POST /favourites requires auth (401)", lambda:
+    fetch("/api/v1/favourites", "POST", {"module": "JOBS", "listingId": "x"})[0] == 401)
+test("Connect", "POST /connect requires auth (401)", lambda:
+    fetch("/api/v1/connect", "POST", {"module": "BUSINESS", "listingId": "x"})[0] == 401)
+test("Connect", "GET /admin/connect requires admin (401/403)", lambda:
+    fetch("/api/v1/admin/connect")[0] in (401, 403))
+test("Showcase", "GET /showcase is public (200, structured)", lambda:
+    fetch("/api/v1/showcase")[0] == 200 and "monthKey" in fetch("/api/v1/showcase")[1].get("data", {}))
+test("Showcase", "Showcase returns NO phone numbers ever", lambda:
+    all(not i.get("phone") for i in fetch("/api/v1/showcase")[1].get("data", {}).get("items", [])))
+test("Subscriptions", "GET /subscriptions requires auth (401)", lambda:
+    fetch("/api/v1/subscriptions")[0] == 401)
+test("Payments", "QR with invalid module rejected for anonymous (401 not 500)", lambda:
+    fetch("/api/v1/payments/qr", "POST", {"module": "HACKED", "planName": "X"})[0] == 401)
+
 # ═══════════════════════════════════════════════════════════
 # RESULTS SUMMARY
 # ═══════════════════════════════════════════════════════════

@@ -68,6 +68,17 @@ export async function apiPost<T>(endpoint: string, body?: unknown): Promise<ApiR
   }
 }
 
+export async function apiDelete<T>(endpoint: string): Promise<ApiResponse<T>> {
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, { method: 'DELETE', headers: buildHeaders() })
+    const json = await res.json()
+    if (json.success) return { ok: true, data: json.data as T }
+    return { ok: false, error: json.error || 'Request failed', status: res.status }
+  } catch {
+    return { ok: false, error: 'Network error. Please check your connection.', status: 0 }
+  }
+}
+
 // Type-safe API response helpers
 
 export interface PaginatedResponse<T> {

@@ -17,12 +17,12 @@ export async function GET(request: NextRequest) {
     const sp = request.nextUrl.searchParams
     const { page, limit, skip } = parsePagination(sp)
     const status = sp.get('status')
-    const module = sp.get('module')
+    const moduleFilter = sp.get('module')
     const q = sp.get('q')?.trim()
 
     const where: Prisma.ConnectionRequestWhereInput = {}
     if (status && status !== 'ALL') where.status = status
-    if (module && module !== 'ALL') where.module = module
+    if (moduleFilter && moduleFilter !== 'ALL') where.module = moduleFilter
     if (q) {
       where.OR = [
         { requesterName: { contains: q, mode: 'insensitive' } },

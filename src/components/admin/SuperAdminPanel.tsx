@@ -12,9 +12,11 @@ import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
 import { useTranslations } from '@/i18n'
 
-type TabId = 'dashboard' | 'users' | 'advertisements' | 'offers' | 'membership' | 'settings'
+import { PaymentsAdminTab, RevenueAdminTab, ConnectionsAdminTab, ShowcaseAdminTab, ReportsAdminTab, MasterSettingsTab } from './MasterControls'
 
-const TABS: TabId[] = ['dashboard', 'users', 'advertisements', 'offers', 'membership', 'settings']
+type TabId = 'dashboard' | 'users' | 'advertisements' | 'offers' | 'membership' | 'payments' | 'revenue' | 'reports' | 'connections' | 'showcase' | 'settings'
+
+const TABS: TabId[] = ['dashboard', 'users', 'payments', 'revenue', 'reports', 'connections', 'showcase', 'advertisements', 'offers', 'membership', 'settings']
 
 interface TabDef { id: TabId; icon: typeof Users; labelKey: string }
 
@@ -148,10 +150,15 @@ export function SuperAdminPanel({ onBack }: { onBack: () => void }) {
   const tabDefs: TabDef[] = [
     { id: 'dashboard', icon: LayoutDashboard, labelKey: sa.dashboard },
     { id: 'users', icon: Users, labelKey: sa.users },
+    { id: 'payments', icon: IndianRupee, labelKey: 'Payments' },
+    { id: 'revenue', icon: BarChart3, labelKey: 'Revenue' },
+    { id: 'reports', icon: FileText, labelKey: 'Reports' },
+    { id: 'connections', icon: Heart, labelKey: 'CONNECT' },
+    { id: 'showcase', icon: Crown, labelKey: 'Top 10' },
     { id: 'advertisements', icon: Megaphone, labelKey: sa.advertisements },
     { id: 'offers', icon: Gift, labelKey: sa.offers },
     { id: 'membership', icon: Crown, labelKey: sa.membership },
-    { id: 'settings', icon: Settings, labelKey: sa.settings },
+    { id: 'settings', icon: Settings, labelKey: 'Master Settings' },
   ]
 
   // ─── MUST CHANGE PASSWORD ───
@@ -251,10 +258,15 @@ export function SuperAdminPanel({ onBack }: { onBack: () => void }) {
         <div className="mx-auto max-w-7xl">
           {tab === 'dashboard' && <DashboardTab sa={sa} dash={dash} dashLoading={dashLoading} fetchDash={fetchDash} />}
           {tab === 'users' && <UsersTab sa={sa} api={api} showToast={showToast} />}
+          {tab === 'payments' && <PaymentsAdminTab api={api} showToast={showToast} />}
+          {tab === 'revenue' && <RevenueAdminTab api={api} />}
+          {tab === 'reports' && <ReportsAdminTab token={token} showToast={showToast} />}
+          {tab === 'connections' && <ConnectionsAdminTab api={api} showToast={showToast} />}
+          {tab === 'showcase' && <ShowcaseAdminTab api={api} showToast={showToast} />}
           {tab === 'advertisements' && <AdsTab sa={sa} api={api} showToast={showToast} />}
           {tab === 'offers' && <OffersTab sa={sa} api={api} showToast={showToast} />}
           {tab === 'membership' && <MembershipTab sa={sa} api={api} showToast={showToast} />}
-          {tab === 'settings' && <SettingsTab sa={sa} api={api} token={token} showToast={showToast} />}
+          {tab === 'settings' && <MasterSettingsTab api={api} showToast={showToast} />}
         </div>
       </main>
 
