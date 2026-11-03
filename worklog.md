@@ -289,3 +289,20 @@ Stage Summary:
 - Backup: prebuild dump → Blob + BackupRecord before every deploy
 - 12 new API routes, 7 new components, 4 new libs
 - Statuses/limits enforced server-side (favourites max 5, duplicate UTR, duplicate connect)
+
+---
+Task ID: 2
+Agent: main
+Task: Deployment verification + QA + handoff
+
+Work Log:
+- Pushed all work to GitHub (commit 086a32c): 2 commits (master feature commit + .github removal)
+- Smoke test v3 run against production BEFORE deploy: 70/89 pass — the 19 failures are all NEW routes (404) because production still serves the previous build
+- Local production build runtime-verified: /api/v1/pricing returns 200 with exact prices (₹250/600/1500/2500 matrimony, ₹900/1000/3000/9900 business, ₹250 directory one-time, UPI 9301056006) even without DB (config fallback); /favourites + /admin/revenue correctly 401 unauthenticated; homepage 200
+- DEPLOYMENT BLOCKER (honest): this sandbox has NO Vercel credentials and the GitHub repo has NO Vercel GitHub-App integration (commit check-runs=0, statuses empty, deployments=0 — verified via GitHub API). git push alone cannot trigger a Vercel build.
+- Created scripts/deploy.sh (one-command deploy with VERCEL_TOKEN or logged-in CLI)
+
+Stage Summary:
+- Code: 100% complete, pushed, build-verified locally
+- Deploy: requires ONE user action — (a) provide VERCEL_TOKEN for `scripts/deploy.sh`, OR (b) Vercel Dashboard → bandhan project → Settings → Git → Connect the repo → Redeploy latest commit
+- After deploy: re-run scripts/comprehensive-smoke-test.py (expect 89/89)
