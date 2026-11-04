@@ -306,3 +306,10 @@ Stage Summary:
 - Code: 100% complete, pushed, build-verified locally
 - Deploy: requires ONE user action — (a) provide VERCEL_TOKEN for `scripts/deploy.sh`, OR (b) Vercel Dashboard → bandhan project → Settings → Git → Connect the repo → Redeploy latest commit
 - After deploy: re-run scripts/comprehensive-smoke-test.py (expect 89/89)
+
+## 2026-11-04 — Final implementation session (aa5ac26)
+- My Account dashboard (`#account`): payments history + IST statuses + blob-open receipts, per-module entitlements + one-click 7-day trial, favourites (server-enforced max-5) with remove.
+- New API: POST /api/v1/subscriptions/trial (one trial per module, server-side eligibility, Hindi errors).
+- Hindi+English auth error mapping, live password-rule checklist, account entry in Home + module headers.
+- Verified: tsc 0 errors, local prod build OK, local smoke (health/pricing/auth guards/anti-bot 403) OK.
+- Deployment: pushed to GitHub main (aa5ac26). GitHub API shows 0 deployments/check-runs → Vercel Git integration NOT connected for this repo; production still serves pre-master build. Manual deploy required: `npx vercel link --project bandhan && npx vercel --prod` or dashboard import; clean source zip at download/bandhan-deploy-aa5ac26.zip (no secrets).
