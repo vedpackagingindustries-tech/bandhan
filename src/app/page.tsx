@@ -15,6 +15,7 @@ import { FooterAdvertisement } from '@/components/home/FooterAdvertisement'
 import { PremiumStats } from '@/components/home/PremiumStats'
 import { FeaturedProfiles } from '@/components/home/FeaturedProfiles'
 import { ModulePageView, type ModuleKey } from '@/components/modules/ModulePageView'
+import { MyAccountView } from '@/components/account/MyAccountView'
 import { SuperAdminPanel } from '@/components/admin/SuperAdminPanel'
 
 // Dynamic import for BrandIntro to avoid blocking initial render
@@ -35,6 +36,10 @@ export default function Home() {
     if (typeof window === 'undefined') return false
     return window.location.hash.replace('#', '') === 'admin'
   })
+  const [showAccount, setShowAccount] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.location.hash.replace('#', '') === 'account'
+  })
 
   // Hash-based routing - subscribe to changes only
   useEffect(() => {
@@ -43,12 +48,19 @@ export default function Home() {
       if (hash === 'admin') {
         setShowAdmin(true)
         setActiveModule(null)
+        setShowAccount(false)
+      } else if (hash === 'account') {
+        setShowAccount(true)
+        setActiveModule(null)
+        setShowAdmin(false)
       } else if (validModules.includes(hash as ModuleKey)) {
         setActiveModule(hash as ModuleKey)
         setShowAdmin(false)
+        setShowAccount(false)
       } else {
         setActiveModule(null)
         setShowAdmin(false)
+        setShowAccount(false)
       }
     }
     window.addEventListener('hashchange', onHashChange)
@@ -59,12 +71,18 @@ export default function Home() {
     window.location.hash = ''
     setActiveModule(null)
     setShowAdmin(false)
+    setShowAccount(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
   // Super Admin Panel
   if (showAdmin) {
     return <SuperAdminPanel onBack={goHome} />
+  }
+
+  // My Account (payments / subscriptions / favourites)
+  if (showAccount) {
+    return <MyAccountView onBack={goHome} />
   }
 
   // Module page view

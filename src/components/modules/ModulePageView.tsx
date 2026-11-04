@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, X, SlidersHorizontal,
-  Heart, Briefcase, Search, Building2,
+  Heart, Briefcase, Search, Building2, UserRound,
 } from 'lucide-react'
 import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
@@ -41,6 +41,25 @@ const moduleMeta: Record<ModuleKey, {
 }
 
 type AuthMode = 'login' | 'register' | null
+
+// Hindi error mapping for login/register (server messages stay truthful;
+// common cases are surfaced in Hindi + English)
+function authErrorHi(raw: string): string {
+  const s = (raw || '').toLowerCase()
+  if (s.includes('invalid') && (s.includes('credential') || s.includes('password')))
+    return 'ईमेल/फ़ोन या पासवर्ड गलत है। पुनः प्रयास करें। (Invalid email/phone or password)'
+  if (s.includes('not found') || s.includes('no user'))
+    return 'इस ईमेल/फ़ोन से कोई खाता नहीं मिला। पहले रजिस्टर करें। (No account found — please register first)'
+  if (s.includes('already') && (s.includes('exist') || s.includes('register')))
+    return 'यह ईमेल/फ़ोन पहले से पंजीकृत है। कृपया लॉग इन करें। (Already registered — please log in)'
+  if (s.includes('locked') || s.includes('too many') || s.includes('rate'))
+    return 'बहुत अधिक प्रयास। कुछ देर बाद पुनः प्रयास करें। (Too many attempts — try again later)'
+  if (s.includes('verified') && s.includes('not'))
+    return 'आपका खाता सत्यापित नहीं है। कृपया OTP सत्यापन पूरा करें। (Account not verified — complete OTP verification)'
+  if (s.includes('network'))
+    return 'नेटवर्क त्रुटि। कृपया अपना इंटरनेट जांचें और पुनः प्रयास करें। (Network error — check your connection)'
+  return raw
+}
 
 export function ModulePageView({ module, onBack }: ModulePageViewProps) {
   const { t } = useTranslations()
@@ -82,11 +101,19 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
   const handleAuth = useCallback(async () => {
     if (!authMode) return
     if (!authPassword || (!authEmail && !authPhone)) {
-      setAuthError(authMode === 'login' ? 'Email/phone and password are required' : 'Email or phone and password are required')
+      setAuthError('ईमेल/फ़ोन और पासवर्ड आवश्यक हैं। (Email/phone and password are required)')
       return
     }
     if (authMode === 'register' && authPassword.length < 8) {
-      setAuthError('Password must be at least 8 characters')
+      setAuthError('पासवर्ड कम से कम 8 अक्षरों का होना चाहिए। (Password must be at least 8 characters)')
+      return
+    }
+    if (authMode === 'register' && !/[A-Z]/.test(authPassword)) {
+      setAuthError('पासवर्ड में कम से कम एक बड़ा अक्षर (A–Z) होना चाहिए। (Password needs at least one uppercase letter)')
+      return
+    }
+    if (authMode === 'register' && !/[0-9]/.test(authPassword)) {
+      setAuthError('पासवर्ड में कम से कम एक अंक (0–9) होना चाहिए। (Password needs at least one digit)')
       return
     }
     setAuthLoading(true)
@@ -103,7 +130,7 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
       })
       const data = await res.json()
       if (!res.ok) {
-        setAuthError(data.error || data.message || 'Request failed')
+        setAuthError(authErrorHi(data.error || data.message || 'Request failed'))
         return
       }
       if (data.data?.token) {
@@ -114,11 +141,18 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
       setAuthPhone('')
       setAuthPassword('')
     } catch {
-      setAuthError('Network error. Please try again.')
+      setAuthError('नेटवर्क त्रुटि। कृपया पुनः प्रयास करें। (Network error. Please try again.)')
     } finally {
       setAuthLoading(false)
     }
   }, [authMode, authEmail, authPhone, authPassword, meta.registrationCategory, login])
+
+  // Real-time password rule hint (register mode only)
+  const pwdChecks = authMode === 'register' ? [
+    { ok: authPassword.length >= 8, label: '8+ अक्षर' },
+    { ok: /[A-Z]/.test(authPassword), label: 'बड़ा अक्षर (A-Z)' },
+    { ok: /[0-9]/.test(authPassword), label: 'अंक (0-9)' },
+  ] : []
 
   const openDetail = useCallback(async (id: string) => {
     if (!isLoggedIn) {
@@ -166,6 +200,16 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
               <Icon className="h-3.5 w-3.5" />
               {navTitle}
             </span>
+            {/* My Account entry */}
+            <a
+              href="#account"
+              className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-[0.75rem] font-semibold text-foreground/70 transition-all hover:bg-cream hover:text-burgundy"
+              aria-label="मेरा खाता · My Account"
+              title="मेरा खाता · My Account"
+            >
+              <UserRound className="h-4 w-4" strokeWidth={1.75} />
+              <span className="hidden md:inline">खाता</span>
+            </a>
           </div>
         </div>
       </header>
@@ -292,6 +336,15 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
               <div>
                 <label className="mb-1 block text-xs font-medium text-foreground">Password</label>
                 <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="........" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+                {authMode === 'register' && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {pwdChecks.map((c) => (
+                      <span key={c.label} className={cn('rounded-full px-2 py-0.5 text-[0.6rem] font-medium', c.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500')}>
+                        {c.ok ? '✓ ' : ''}{c.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <button onClick={handleAuth} disabled={authLoading} className="btn-bandhan-primary mt-6 w-full text-sm disabled:opacity-50">

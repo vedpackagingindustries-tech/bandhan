@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Heart, Briefcase, Search, Building2 } from 'lucide-react'
+import { Menu, X, Heart, Briefcase, Search, Building2, UserRound } from 'lucide-react'
 import { NotificationBell } from './NotificationBell'
 import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
@@ -73,6 +73,16 @@ export function Header() {
         <div className="flex items-center gap-2">
           <HeaderSearch />
           <NotificationBell />
+          {/* My Account (payments / subscriptions / favourites) */}
+          <a
+            href="#account"
+            className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-[0.75rem] font-semibold text-foreground/70 transition-all duration-200 hover:bg-cream hover:text-burgundy"
+            aria-label="My Account — मेरा खाता"
+            title="मेरा खाता · My Account"
+          >
+            <UserRound className="h-4 w-4" strokeWidth={1.75} />
+            <span className="hidden md:inline">खाता</span>
+          </a>
           {/* Mobile Toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -108,6 +118,17 @@ export function Header() {
               className="absolute left-3 right-3 top-full z-50 overflow-hidden rounded-2xl border border-border/30 bg-white/95 shadow-2xl backdrop-blur-2xl lg:hidden"
             >
               <nav className="mx-auto max-w-lg px-2 py-2">
+                <motion.a
+                  href="#account"
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.25 }}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-xl bg-burgundy/5 px-4 py-3 text-sm font-semibold text-burgundy transition-all duration-200 hover:bg-burgundy/10"
+                >
+                  <UserRound className="h-4 w-4" strokeWidth={1.5} />
+                  मेरा खाता · My Account (भुगतान / सदस्यता / पसंदीदा)
+                </motion.a>
                 {navItems.map(({ key, icon: Icon }, idx) => (
                   <motion.a
                     key={key}
