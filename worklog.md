@@ -323,3 +323,13 @@ Stage Summary:
 - Lint: 17 react-hooks/set-state-in-effect advisory errors (no build impact; Next 16 does not lint-gate builds) — deferred, listed in report.
 - Pushed 7e943f6 to GitHub main; clean deploy zip regenerated at download/bandhan-deploy-7e943f6.zip (git archive; no .env/node_modules/.git).
 - Production probe: /api/v1/pricing|showcase|favourites|admin/revenue still 404 → production NOT yet redeployed; Vercel CLI logged out, no VERCEL_TOKEN. Deploy still needs user action (token / dashboard git-connect / local CLI deploy).
+
+## 2026-11-05 — PRODUCTION DEPLOYED via user VERCEL_TOKEN (89/89 PASS)
+- User provided VERCEL_TOKEN (scoped, 1-day). Account: vedpackagingindustries-tech, project: bandhan-sahu-connect.
+- Deploy 1 failed: P3005 (DB created via db push in earlier sessions, no _prisma_migrations history). Backup ran OK pre-migration (users 5, roles 6, plans 3, profiles 5, jobs 5, directories 3, locations 7, gotras 40; 3 new-column tables FAILED pre-migration — expected, non-fatal).
+- Fixed scripts/run-migrate.mjs → self-healing: on P3005 applies additive DDL via `prisma db execute` (all IF NOT EXISTS, 0 DROPs verified) then `migrate resolve --applied`, then re-deploys. Deploy 2: baselined successfully, build 129 pages, new routes LIVE (pricing 200, showcase 200, favourites 401, revenue 401).
+- Deploy 3 added recreated POST /api/v1/media/upload route (requireAuth + Vercel Blob + MIME whitelist + 4MB cap). Initially 405 on prod: ROOT CAUSE — .vercelignore pattern `upload` excluded ANY dir named upload incl. src/app/api/v1/media/upload/. Fixed with root-anchored `/upload`. Deploy 4: route live (POST anon → 401, GET → 405 correct).
+- Final smoke suite: **89/89 PASS** (test expectation for GET on POST-only route corrected to 405).
+- Migration state: production DB now has migration history baselined at 20261103070000; future `migrate deploy` clean.
+- Security note: production env DATABASE_URL/DIRECT_URL are Sensitive (vercel env pull returns [SENSITIVE]) — by design; BLOB_READ_WRITE_TOKEN not configured → backup skips blob upload (BackupRecord still written). Optional: connect Vercel Blob store for off-server backups.
+- Owner TODO: claim Super Admin via /admin bootstrap (first claim wins, then locked). Token should be revoked by user.
