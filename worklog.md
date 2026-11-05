@@ -313,3 +313,13 @@ Stage Summary:
 - Hindi+English auth error mapping, live password-rule checklist, account entry in Home + module headers.
 - Verified: tsc 0 errors, local prod build OK, local smoke (health/pricing/auth guards/anti-bot 403) OK.
 - Deployment: pushed to GitHub main (aa5ac26). GitHub API shows 0 deployments/check-runs → Vercel Git integration NOT connected for this repo; production still serves pre-master build. Manual deploy required: `npx vercel link --project bandhan && npx vercel --prod` or dashboard import; clean source zip at download/bandhan-deploy-aa5ac26.zip (no secrets).
+
+## 2026-11-05 — Final verification session (7e943f6)
+- tsc --noEmit: 0 errors (all TypeScript fixed).
+- next.config.ts: restored `output: 'standalone'` (was dropped; local PM2/preview needs it; harmless on Vercel).
+- Build: exit 0, 129 pages, standalone server.js produced; server started, homepage 200.
+- Smoke test script: now accepts target URL argument (default remains production).
+- Local smoke 65/89: all remaining 24 failures are local-env-only (local .env points to SQLite file while schema is postgresql → PrismaClientInitializationError cascades into Health/Gotras/Locations/Jobs/Business/Directory/Matrimony/Profiles/Membership/Privacy/Showcase; CORS expectedly prod-domain-only). Directly verified locally without DB: pricing exact (250/600/1500/2500, 900/1000/3000/9900, directory ONETIME 250, upiId 9301056006), QR anonymous → Unauthorized, favourites/revenue/admin routes → 401.
+- Lint: 17 react-hooks/set-state-in-effect advisory errors (no build impact; Next 16 does not lint-gate builds) — deferred, listed in report.
+- Pushed 7e943f6 to GitHub main; clean deploy zip regenerated at download/bandhan-deploy-7e943f6.zip (git archive; no .env/node_modules/.git).
+- Production probe: /api/v1/pricing|showcase|favourites|admin/revenue still 404 → production NOT yet redeployed; Vercel CLI logged out, no VERCEL_TOKEN. Deploy still needs user action (token / dashboard git-connect / local CLI deploy).
