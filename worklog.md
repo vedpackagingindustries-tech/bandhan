@@ -333,3 +333,11 @@ Stage Summary:
 - Migration state: production DB now has migration history baselined at 20261103070000; future `migrate deploy` clean.
 - Security note: production env DATABASE_URL/DIRECT_URL are Sensitive (vercel env pull returns [SENSITIVE]) — by design; BLOB_READ_WRITE_TOKEN not configured → backup skips blob upload (BackupRecord still written). Optional: connect Vercel Blob store for off-server backups.
 - Owner TODO: claim Super Admin via /admin bootstrap (first claim wins, then locked). Token should be revoked by user.
+
+## 2026-11-05 — HOTFIX: register/login KV crash (89/89 still PASS)
+- User reported register/login failing on all 4 modules with "@vercel/kv: Missing required environment variables KV_REST_API_URL and KV_REST_API_TOKEN".
+- Root cause (deep): @vercel/kv v3 named `kv` export is a LAZY PROXY that throws on first property access when env incomplete. Production has KV_REST_API_URL but NOT KV_REST_API_TOKEN. getKvClient() did `return kv` from an async fn → JS thenable-adoption reads `kv.then` → proxy throws OUTSIDE any try/catch → rejection escapes getKvClient → auth.ts checkRateLimit → register/login routes → 500 with the raw proxy message. Reproduced locally (node script + standalone server with partial env).
+- Fix (0c9a1e7): rate-limit.ts now uses createClient({url, token}) (real instance, no proxy), requires BOTH env vars before attempting, caches client; checkRateLimit wrapped fail-open (limiter outage can never block auth); same fail-open guard in auth.ts checkRateLimit.
+- Verified on production: register (short password) → proper validation error; register (valid) → SUCCESS (user created, OTP sent); login (bad creds) → "Invalid credentials". Smoke suite 89/89 PASS.
+- Note: probe user probe-nonexistent-99@example.com created during verification (PENDING_APPROVAL) — owner can delete from admin panel.
+- Optional hardening: connect a Vercel KV/Upstash store (KV_REST_API_TOKEN) to re-enable persistent rate limiting; until then per-instance in-memory limiter is active (fail-open).
