@@ -12,7 +12,9 @@ import urllib.request
 import urllib.error
 import ssl
 
-BASE = "https://bandhan-sahu-connect.vercel.app"
+BASE = sys.argv[1] if len(sys.argv) > 1 else "https://bandhan-sahu-connect.vercel.app"
+if not BASE.startswith("http"):
+    BASE = f"http://{BASE}"
 ctx = ssl.create_default_context()
 # Must use browser-like UA — middleware blocks Python/curl/scraping UAs
 BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"

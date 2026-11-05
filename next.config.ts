@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  output: 'standalone',
   serverExternalPackages: ['@prisma/client', '@prisma/client/default'],
   reactStrictMode: true,
   images: {
