@@ -243,8 +243,8 @@ test("Membership", "Returns plan items", lambda:
 print("\n📸 MEDIA UPLOAD API")
 test("Media", "POST without auth returns 401", lambda:
     fetch("/api/v1/media/upload", "POST", {})[0] == 401)
-test("Media", "GET without auth returns 401", lambda:
-    fetch("/api/v1/media/upload")[0] == 401)
+test("Media", "GET on upload route is rejected (405 — POST-only endpoint)", lambda:
+    fetch("/api/v1/media/upload")[0] == 405)
 
 # ═══════════════════════════════════════════════════════════
 # 13. ADMIN API
