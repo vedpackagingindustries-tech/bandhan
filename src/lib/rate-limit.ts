@@ -15,16 +15,35 @@ interface RateLimitResult {
 }
 
 /**
- * Lazily get KV client. Returns null if KV_REST_API_URL is not set
- * or if @vercel/kv is not available.
+ * Lazily get KV client. Returns null when KV is not fully configured
+ * (both KV_REST_API_URL and KV_REST_API_TOKEN required) or when the
+ * client cannot be created.
+ *
+ * IMPORTANT: we use createClient() instead of the lazy `kv` proxy.
+ * The named `kv` export is a Proxy that THROWS on first property access
+ * when env vars are missing. Returning that Proxy from an async function
+ * triggers thenable-adoption (`.then` access) OUTSIDE any try/catch,
+ * which crashed register/login with
+ * "@vercel/kv: Missing required environment variables...".
+ * createClient() returns a real VercelKV instance — no lazy-throw hazard.
  */
+let kvClient: import('@vercel/kv').VercelKV | null = null
+let kvClientTried = false
+
 async function getKvClient() {
-  if (!process.env.KV_REST_API_URL) return null
+  const url = process.env.KV_REST_API_URL
+  const token = process.env.KV_REST_API_TOKEN
+  // Both required — mirrors @vercel/kv's own check. Missing ANY → memory fallback.
+  if (!url || !token) return null
+  if (kvClient) return kvClient
+  if (kvClientTried) return null
+  kvClientTried = true
   try {
-    const { kv } = await import('@vercel/kv')
-    return kv
-  } catch {
-    // @vercel/kv not available (e.g. local dev without KV)
+    const { createClient } = await import('@vercel/kv')
+    kvClient = createClient({ url, token })
+    return kvClient
+  } catch (e) {
+    console.warn('[RATE-LIMIT] KV client unavailable, using in-memory fallback:', e instanceof Error ? e.message : e)
     return null
   }
 }
@@ -35,6 +54,20 @@ async function getKvClient() {
  * Safe: dynamic import ensures no crash when @vercel/kv is absent.
  */
 export async function checkRateLimit(
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<RateLimitResult> {
+  try {
+    return await doCheckRateLimit(key, limit, windowMs)
+  } catch (e) {
+    // FAIL-OPEN: a rate-limiter outage must NEVER block registrations or logins.
+    console.warn('[RATE-LIMIT] limiter error, failing open:', e instanceof Error ? e.message : e)
+    return { allowed: true, remaining: limit, resetAt: Date.now() + windowMs }
+  }
+}
+
+async function doCheckRateLimit(
   key: string,
   limit: number,
   windowMs: number
@@ -89,9 +122,9 @@ export async function checkRateLimit(
  * Check if KV is configured and reachable
  */
 export async function isKvAvailable(): Promise<boolean> {
-  const kv = await getKvClient()
-  if (!kv) return false
   try {
+    const kv = await getKvClient()
+    if (!kv) return false
     await kv.set('__health_check', 1, { ex: 5 })
     const val = await kv.get('__health_check')
     return val === 1

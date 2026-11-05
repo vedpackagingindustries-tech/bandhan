@@ -68,9 +68,15 @@ export async function checkRateLimit(
   maxRequests: number = 5,
   windowMs: number = 60 * 1000
 ): Promise<{ allowed: boolean; retryAfterMs?: number }> {
-  const result = await kvCheckRateLimit(`auth:${identifier}`, maxRequests, windowMs)
-  if (!result.allowed) {
-    return { allowed: false, retryAfterMs: result.resetAt - Date.now() }
+  try {
+    const result = await kvCheckRateLimit(`auth:${identifier}`, maxRequests, windowMs)
+    if (!result.allowed) {
+      return { allowed: false, retryAfterMs: result.resetAt - Date.now() }
+    }
+    return { allowed: true }
+  } catch (e) {
+    // FAIL-OPEN: a rate-limiter outage must NEVER block logins/registrations.
+    console.warn('[AUTH] rate limiter error, failing open:', e instanceof Error ? e.message : e)
+    return { allowed: true }
   }
-  return { allowed: true }
 }
