@@ -1,0 +1,8 @@
+.env*
+node_modules
+.git
+download
+upload
+*.log
+.pm2
+.next
