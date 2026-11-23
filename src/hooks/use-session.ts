@@ -35,6 +35,15 @@ export function useSession() {
   }, [])
 
   const logout = useCallback(() => {
+    // Server-side session invalidation first (best-effort) — otherwise the
+    // token stays valid in DB until expiry even after the user "logs out".
+    const current = getSession()
+    if (current?.token) {
+      fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${current.token}` },
+      }).catch(() => {})
+    }
     clearSession()
     window.dispatchEvent(new Event('bandhan-session-change'))
   }, [])

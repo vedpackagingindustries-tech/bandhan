@@ -85,12 +85,18 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Create User ───
+    // AUTO-ACTIVATE: every self-registered account starts ACTIVE so the
+    // member can log in immediately. A community platform cannot rely on an
+    // approval gate that deadlocks when no admin has claimed the bootstrap
+    // seat yet — admins can still BLOCK/DEACTIVATE any account from the
+    // admin panel. OTP verification is tracked separately via
+    // emailVerified/phoneVerified.
     const user = await db.user.create({
       data: {
         email: email || null,
         phone: phone || null,
         passwordHash,
-        status: isFirstUser ? 'ACTIVE' : 'PENDING_APPROVAL', // First user auto-approved
+        status: 'ACTIVE',
         membershipTier: isFirstUser ? 'ELITE' : 'FREE',
         registrationCategory: category || 'GENERAL',
         roleId: role.id,
@@ -110,8 +116,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // ─── Send OTP Verification ───
-    if (email) {
+    // ─── Send OTP Verification (only when a REAL delivery provider exists) ───
+    // Honest delivery: without RESEND_API_KEY (email) or MSG91_API_KEY (SMS),
+    // no OTP is dispatched — frontend is told otpDelivered=false so it never
+    // shows a fake "OTP sent" step. The OTP record with plaintext is kept in
+    // DB for manual admin relay once those keys are configured.
+    const emailDeliveryReady = !!process.env.RESEND_API_KEY
+    const smsDeliveryReady = !!process.env.MSG91_API_KEY
+    let otpDelivered = false
+    if (email && emailDeliveryReady) {
       await sendOTP({
         userId: user.id,
         identifier: email,
@@ -119,8 +132,9 @@ export async function POST(request: NextRequest) {
         method: 'EMAIL',
         ipAddress,
       })
+      otpDelivered = true
     }
-    if (phone) {
+    if (phone && smsDeliveryReady) {
       await sendOTP({
         userId: user.id,
         identifier: phone,
@@ -128,6 +142,7 @@ export async function POST(request: NextRequest) {
         method: 'SMS',
         ipAddress,
       })
+      otpDelivered = true
     }
 
     // ─── Log & Notify ───
@@ -151,15 +166,18 @@ export async function POST(request: NextRequest) {
         userId: admin.id,
         type: 'REGISTRATION',
         title: 'New User Registration',
-        message: `A new user (${email || phone}) has registered and awaits approval.`,
+        message: `A new user (${email || phone}) has registered${category ? ` under ${category}` : ''}.`,
       })
     }
 
     return success({
       userId: user.id,
       status: user.status,
-      message: 'Registration successful. Please verify your OTP.',
-      otpSentTo: email ? 'email' : 'phone',
+      otpDelivered,
+      message: otpDelivered
+        ? 'Registration successful. Please verify your OTP.'
+        : 'Registration successful. Your account is active — you can log in now.',
+      otpSentTo: otpDelivered ? (email ? 'email' : 'phone') : null,
     }, 201)
   } catch (err) {
     console.error('[REGISTER] Error:', err)

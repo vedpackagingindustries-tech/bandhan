@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import {
   ArrowLeft, X, SlidersHorizontal,
   Heart, Briefcase, Search, Building2, UserRound,
+  Eye, EyeOff,
 } from 'lucide-react'
 import { BandhanLogo } from '@/components/shared/BandhanLogo'
 import { SahuSamajFlag } from '@/components/shared/SahuSamajFlag'
@@ -40,7 +41,7 @@ const moduleMeta: Record<ModuleKey, {
   directory: { image: '/hero-directory.png', icon: Building2, color: 'text-burgundy-light', tagBg: 'bg-burgundy-light', benefitKey: 'directory', registrationCategory: 'DIRECTORY' },
 }
 
-type AuthMode = 'login' | 'register' | null
+type AuthMode = 'login' | 'register' | 'forgot' | null
 
 // Hindi error mapping for login/register (server messages stay truthful;
 // common cases are surfaced in Hindi + English)
@@ -54,6 +55,22 @@ function authErrorHi(raw: string): string {
     return 'यह ईमेल/फ़ोन पहले से पंजीकृत है। कृपया लॉग इन करें। (Already registered — please log in)'
   if (s.includes('locked') || s.includes('too many') || s.includes('rate'))
     return 'बहुत अधिक प्रयास। कुछ देर बाद पुनः प्रयास करें। (Too many attempts — try again later)'
+  if (s.includes('pending approval') || s.includes('pending'))
+    return 'खाता अभी स्वीकृति की प्रतीक्षा में है। कृपया व्यवस्थापक से संपर्क करें। (Account pending admin approval)'
+  if (s.includes('blocked'))
+    return 'खाता प्रतिबंधित है। कृपया समर्थन से संपर्क करें। (Account blocked — contact support)'
+  if (s.includes('8 characters') || s.includes('at least 8'))
+    return 'पासवर्ड कम से कम 8 अक्षरों का होना चाहिए। (Password must be at least 8 characters)'
+  if (s.includes('uppercase'))
+    return 'पासवर्ड में कम से कम एक बड़ा अक्षर (A–Z) होना चाहिए। (Password needs an uppercase letter)'
+  if (s.includes('digit') || s.includes('number'))
+    return 'पासवर्ड में कम से कम एक अंक (0–9) होना चाहिए। (Password needs a digit)'
+  if (s.includes('expired'))
+    return 'कोड समाप्त हो गया। नया कोड मांगें। (Code expired — request a new one)'
+  if (s.includes('max attempts') || s.includes('attempts exceeded'))
+    return 'अधिक गलत प्रयास। नया कोड मांगें। (Too many failed attempts — request a new code)'
+  if (s.includes('invalid otp') || s.includes('invalid verification') || s.includes('invalid authentication code'))
+    return 'कोड गलत है। पुनः जांचें। (Incorrect code — please re-check)'
   if (s.includes('verified') && s.includes('not'))
     return 'आपका खाता सत्यापित नहीं है। कृपया OTP सत्यापन पूरा करें। (Account not verified — complete OTP verification)'
   if (s.includes('network'))
@@ -70,11 +87,24 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
   const { isLoggedIn, login } = useSession()
 
   const [authMode, setAuthMode] = useState<AuthMode>(null)
+  const [authName, setAuthName] = useState('')
   const [authEmail, setAuthEmail] = useState('')
   const [authPhone, setAuthPhone] = useState('')
   const [authPassword, setAuthPassword] = useState('')
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
+  // Registration success / OTP step
+  const [authSuccess, setAuthSuccess] = useState('')
+  const [otpRequired, setOtpRequired] = useState(false)
+  const [otpUserId, setOtpUserId] = useState('')
+  const [otpIdentifier, setOtpIdentifier] = useState('')
+  const [otpCode, setOtpCode] = useState('')
+  // Forgot-password flow stages
+  const [forgotStage, setForgotStage] = useState<'IDENTIFIER' | 'RESET'>('IDENTIFIER')
+  const [forgotIdentifier, setForgotIdentifier] = useState('')
+  const [forgotOtp, setForgotOtp] = useState('')
+  const [forgotNewPassword, setForgotNewPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const [detailId, setDetailId] = useState<string | null>(null)
   const [detailData, setDetailData] = useState<Record<string, unknown> | null>(null)
@@ -82,11 +112,30 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
   const [detailError, setDetailError] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
 
+  const closeAuth = useCallback(() => {
+    setAuthMode(null)
+    setAuthError('')
+    setAuthSuccess('')
+    setAuthName('')
+    setAuthEmail('')
+    setAuthPhone('')
+    setAuthPassword('')
+    setOtpRequired(false)
+    setOtpUserId('')
+    setOtpIdentifier('')
+    setOtpCode('')
+    setForgotStage('IDENTIFIER')
+    setForgotIdentifier('')
+    setForgotOtp('')
+    setForgotNewPassword('')
+    setShowPassword(false)
+  }, [])
+
   useEffect(() => {
     if (!authMode && !showAdvanced) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setAuthMode(null)
+        closeAuth()
         setShowAdvanced(false)
       }
     }
@@ -96,10 +145,133 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
     }
-  }, [authMode, showAdvanced])
+  }, [authMode, showAdvanced, closeAuth])
+
+  // Silent-login with credentials (after registration / OTP verify)
+  const autoLogin = useCallback(async (identifierEmail: string, identifierPhone: string, pwd: string) => {
+    try {
+      const body: Record<string, string> = { password: pwd }
+      if (identifierEmail) body.email = identifierEmail
+      if (identifierPhone) body.phone = identifierPhone
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (res.ok && data.data?.token) {
+        login(data.data)
+        setAuthMode(null)
+        setAuthSuccess('')
+      } else {
+        // Registration succeeded but auto-login failed — send user to login
+        setAuthMode('login')
+        setAuthSuccess('')
+      }
+    } catch {
+      setAuthMode('login')
+      setAuthSuccess('')
+    }
+  }, [login])
 
   const handleAuth = useCallback(async () => {
-    if (!authMode) return
+    if (authLoading) return // double-click protection
+
+    // ─── FORGOT PASSWORD flow ───
+    if (authMode === 'forgot') {
+      if (forgotStage === 'IDENTIFIER') {
+        if (!forgotIdentifier) {
+          setAuthError('ईमेल या फ़ोन आवश्यक है। (Email or phone is required)')
+          return
+        }
+        setAuthLoading(true)
+        setAuthError('')
+        try {
+          const res = await fetch('/api/v1/auth/password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier: forgotIdentifier }),
+          })
+          const data = await res.json()
+          if (!res.ok) {
+            setAuthError(authErrorHi(data.error || data.message || 'Request failed'))
+            return
+          }
+          setForgotStage('RESET')
+          setAuthSuccess('यदि खाता मौजूद है तो सत्यापन कोड भेजा गया है। (If the account exists, a verification code has been sent.)')
+        } catch {
+          setAuthError('नेटवर्क त्रुटि। कृपया पुनः प्रयास करें। (Network error. Please try again.)')
+        } finally {
+          setAuthLoading(false)
+        }
+        return
+      }
+      // Stage RESET: verify OTP + set new password
+      if (!forgotOtp || !forgotNewPassword) {
+        setAuthError('कोड और नया पासवर्ड आवश्यक हैं। (Code and new password are required)')
+        return
+      }
+      if (forgotNewPassword.length < 8 || !/[A-Z]/.test(forgotNewPassword) || !/[0-9]/.test(forgotNewPassword)) {
+        setAuthError('पासवर्ड: 8+ अक्षर, एक बड़ा अक्षर (A-Z), एक अंक (0-9)। (Password: 8+ chars, one uppercase, one digit)')
+        return
+      }
+      setAuthLoading(true)
+      setAuthError('')
+      try {
+        const res = await fetch('/api/v1/auth/password', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: forgotIdentifier, otpCode: forgotOtp, newPassword: forgotNewPassword }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          setAuthError(authErrorHi(data.error || data.message || 'Request failed'))
+          return
+        }
+        setForgotStage('IDENTIFIER')
+        setForgotIdentifier('')
+        setForgotOtp('')
+        setForgotNewPassword('')
+        setAuthSuccess('')
+        setAuthMode('login')
+        setAuthError('पासवर्ड बदल गया। नए पासवर्ड से लॉग इन करें। (Password changed — log in with your new password.)')
+      } catch {
+        setAuthError('नेटवर्क त्रुटि। कृपया पुनः प्रयास करें। (Network error. Please try again.)')
+      } finally {
+        setAuthLoading(false)
+      }
+      return
+    }
+
+    // ─── OTP VERIFY step (registration continuation) ───
+    if (authMode === 'register' && otpRequired) {
+      if (!otpCode || otpCode.length < 4) {
+        setAuthError('6-अंकीय कोड दर्ज करें। (Enter the verification code)')
+        return
+      }
+      setAuthLoading(true)
+      setAuthError('')
+      try {
+        const res = await fetch('/api/v1/auth/otp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: otpIdentifier, otpCode, userId: otpUserId }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          setAuthError(authErrorHi(data.error || data.message || 'Verification failed'))
+          return
+        }
+        await autoLogin(authEmail, authPhone, authPassword)
+      } catch {
+        setAuthError('नेटवर्क त्रुटि। कृपया पुनः प्रयास करें। (Network error. Please try again.)')
+      } finally {
+        setAuthLoading(false)
+      }
+      return
+    }
+
+    // ─── LOGIN / REGISTER ───
     if (!authPassword || (!authEmail && !authPhone)) {
       setAuthError('ईमेल/फ़ोन और पासवर्ड आवश्यक हैं। (Email/phone and password are required)')
       return
@@ -123,6 +295,11 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
       const body: Record<string, string> = { password: authPassword, category: meta.registrationCategory }
       if (authEmail) body.email = authEmail
       if (authPhone) body.phone = authPhone
+      if (authMode === 'register' && authName.trim()) {
+        const nameParts = authName.trim().split(/\s+/)
+        body.firstName = nameParts[0]
+        if (nameParts.length > 1) body.lastName = nameParts.slice(1).join(' ')
+      }
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,6 +308,21 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
       const data = await res.json()
       if (!res.ok) {
         setAuthError(authErrorHi(data.error || data.message || 'Request failed'))
+        return
+      }
+      if (authMode === 'register') {
+        // Registration succeeded — NEVER close silently.
+        if (data.data?.otpDelivered) {
+          setOtpRequired(true)
+          setOtpUserId(data.data.userId || '')
+          setOtpIdentifier(authEmail || authPhone)
+          setAuthSuccess('रजिस्ट्रेशन सफल! सत्यापन कोड दर्ज करें। (Registration successful! Enter the verification code.)')
+        } else {
+          setAuthSuccess('रजिस्ट्रेशन सफल! खाता सक्रिय है — लॉग इन हो रहे हैं… (Registration successful — logging you in…)')
+          await autoLogin(authEmail, authPhone, authPassword)
+          setAuthName('')
+          setAuthPassword('')
+        }
         return
       }
       if (data.data?.token) {
@@ -145,7 +337,7 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
     } finally {
       setAuthLoading(false)
     }
-  }, [authMode, authEmail, authPhone, authPassword, meta.registrationCategory, login])
+  }, [authMode, authEmail, authPhone, authPassword, authName, authLoading, otpRequired, otpCode, otpIdentifier, otpUserId, forgotStage, forgotIdentifier, forgotOtp, forgotNewPassword, meta.registrationCategory, login, autoLogin])
 
   // Real-time password rule hint (register mode only)
   const pwdChecks = authMode === 'register' ? [
@@ -307,53 +499,118 @@ export function ModulePageView({ module, onBack }: ModulePageViewProps) {
 
       {authMode && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAuthMode(null)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeAuth} />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.25 }}
             className="relative z-10 mx-4 w-full max-w-md rounded-2xl border border-border/40 bg-white p-6 shadow-2xl sm:p-8"
           >
-            <button onClick={() => setAuthMode(null)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:bg-cream">
+            <button onClick={closeAuth} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:bg-cream">
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
             <div className="mb-6 flex items-center gap-3">
               <BandhanLogo />
               <SahuSamajFlag size="sm" />
             </div>
-            <h2 className="text-lg font-bold text-foreground font-serif">{authMode === 'login' ? mp.loginTitle : mp.registerTitle}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">{authMode === 'login' ? mp.loginDescription : mp.registerDescription}</p>
+            <h2 className="text-lg font-bold text-foreground font-serif">
+              {authMode === 'forgot' ? 'पासवर्ड रीसेट करें' : authMode === 'login' ? mp.loginTitle : otpRequired ? 'सत्यापन कोड' : mp.registerTitle}
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {authMode === 'forgot'
+                ? forgotStage === 'IDENTIFIER'
+                  ? 'अपना पंजीकृत ईमेल या फ़ोन दर्ज करें। (Enter your registered email or phone)'
+                  : `कोड ${forgotIdentifier} पर भेजा गया — कोड और नया पासवर्ड दर्ज करें।`
+                : authMode === 'login'
+                  ? mp.loginDescription
+                  : otpRequired
+                    ? `कोड ${otpIdentifier} पर भेजा गया है। (Code sent to ${otpIdentifier})`
+                    : mp.registerDescription}
+            </p>
+            {authSuccess && <div className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">{authSuccess}</div>}
             {authError && <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">{authError}</div>}
             <div className="mt-5 space-y-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-foreground">Email</label>
-                <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="email@example.com" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-foreground">Phone</label>
-                <input type="tel" value={authPhone} onChange={(e) => setAuthPhone(e.target.value)} placeholder="+91 XXXXX XXXXX" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-foreground">Password</label>
-                <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="........" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
-                {authMode === 'register' && (
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {pwdChecks.map((c) => (
-                      <span key={c.label} className={cn('rounded-full px-2 py-0.5 text-[0.6rem] font-medium', c.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500')}>
-                        {c.ok ? '✓ ' : ''}{c.label}
-                      </span>
-                    ))}
+              {authMode === 'register' && otpRequired && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">सत्यापन कोड (Verification code)</label>
+                  <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} placeholder="000000" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-center text-lg font-semibold tracking-[0.4em] text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+                </div>
+              )}
+              {authMode === 'forgot' && forgotStage === 'RESET' && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">सत्यापन कोड (Verification code)</label>
+                  <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={forgotOtp} onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))} placeholder="000000" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-center text-lg font-semibold tracking-[0.4em] text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+                </div>
+              )}
+              {authMode === 'forgot' && forgotStage === 'RESET' && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">नया पासवर्ड (New password)</label>
+                  <input type="password" value={forgotNewPassword} onChange={(e) => setForgotNewPassword(e.target.value)} placeholder="........" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+                  <p className="mt-1 text-[0.6rem] text-muted-foreground">8+ अक्षर, एक बड़ा अक्षर (A-Z), एक अंक (0-9)।</p>
+                </div>
+              )}
+              {authMode === 'forgot' && forgotStage === 'IDENTIFIER' && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">ईमेल या फ़ोन (Email or phone)</label>
+                  <input type="text" value={forgotIdentifier} onChange={(e) => setForgotIdentifier(e.target.value)} placeholder="email@example.com या +91 XXXXX XXXXX" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+                </div>
+              )}
+              {authMode !== 'forgot' && !otpRequired && (
+                <>
+                  {authMode === 'register' && (
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-foreground">नाम (Name) <span className="text-muted-foreground/70">— वैकल्पिक</span></label>
+                      <input type="text" value={authName} onChange={(e) => setAuthName(e.target.value)} placeholder="पूरा नाम" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+                    </div>
+                  )}
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">Email</label>
+                    <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="email@example.com" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
                   </div>
-                )}
-              </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">Phone</label>
+                    <input type="tel" value={authPhone} onChange={(e) => setAuthPhone(e.target.value)} placeholder="+91 XXXXX XXXXX" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">Password</label>
+                    <div className="relative">
+                      <input type={showPassword ? 'text' : 'password'} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="........" className="h-11 w-full rounded-xl border border-border/60 bg-white px-4 pr-11 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:border-burgundy/30 focus:outline-none focus:ring-2 focus:ring-burgundy/10" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={showPassword ? 'पासवर्ड छुपाएं' : 'पासवर्ड दिखाएं'}>
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {authMode === 'register' && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {pwdChecks.map((c) => (
+                          <span key={c.label} className={cn('rounded-full px-2 py-0.5 text-[0.6rem] font-medium', c.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500')}>
+                            {c.ok ? '✓ ' : ''}{c.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
             <button onClick={handleAuth} disabled={authLoading} className="btn-bandhan-primary mt-6 w-full text-sm disabled:opacity-50">
-              {authLoading ? '...' : authMode === 'login' ? mp.login : mp.register}
+              {authLoading
+                ? '...'
+                : authMode === 'forgot'
+                  ? forgotStage === 'IDENTIFIER' ? 'कोड भेजें' : 'पासवर्ड रीसेट करें'
+                  : authMode === 'login'
+                    ? mp.login
+                    : otpRequired ? 'कोड सत्यापित करें' : mp.register}
             </button>
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              {authMode === 'login'
-                ? <>{mp.registerTitle} <button onClick={() => { setAuthMode('register'); setAuthError('') }} className="font-medium text-burgundy hover:underline">{mp.register}</button></>
-                : <>{mp.loginTitle} <button onClick={() => { setAuthMode('login'); setAuthError('') }} className="font-medium text-burgundy hover:underline">{mp.login}</button></>
+              {authMode === 'forgot'
+                ? <button onClick={() => { setAuthMode('login'); setForgotStage('IDENTIFIER'); setAuthError(''); setAuthSuccess('') }} className="font-medium text-burgundy hover:underline">लॉग इन पर वापस जाएं</button>
+                : authMode === 'login'
+                  ? <>
+                    {mp.registerTitle} <button onClick={() => { setAuthMode('register'); setAuthError(''); setAuthSuccess('') }} className="font-medium text-burgundy hover:underline">{mp.register}</button>
+                    <span className="mx-2 text-border">·</span>
+                    <button onClick={() => { setAuthMode('forgot'); setForgotIdentifier(authEmail || authPhone); setAuthError(''); setAuthSuccess('') }} className="font-medium text-burgundy hover:underline">पासवर्ड भूल गए?</button>
+                  </>
+                  : <>{mp.loginTitle} <button onClick={() => { setAuthMode('login'); setOtpRequired(false); setAuthError(''); setAuthSuccess('') }} className="font-medium text-burgundy hover:underline">{mp.login}</button></>
               }
             </p>
           </motion.div>

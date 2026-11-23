@@ -23,8 +23,12 @@ export async function sendOTP(params: {
     data: { verified: true }, // Mark old ones as "consumed"
   })
 
-  // Determine if email delivery is configured
-  const emailConfigured = !!(process.env.RESEND_API_KEY || process.env.NEXT_PUBLIC_SUPABASE_URL)
+  // Determine if REAL email delivery is configured.
+  // ONLY an actual provider key counts — a Supabase URL is NOT an email provider.
+  // When this is false, otpPlain is stored so the admin panel can view and
+  // relay the OTP manually (WhatsApp/phone). Claiming delivery without a
+  // provider would make the OTP permanently unrecoverable for everyone.
+  const emailConfigured = !!process.env.RESEND_API_KEY
 
   // Store plaintext OTP ONLY when email delivery is not configured
   // This allows admin to view and share OTP via phone/WhatsApp
