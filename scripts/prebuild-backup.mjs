@@ -58,9 +58,10 @@ async function main() {
   const sizeKb = Math.round(json.length / 1024)
   console.log(`[BACKUP] Total rows: ${totalRows}, size: ${sizeKb}KB`)
 
-  // Upload to Vercel Blob when token is available (production)
+  // Upload to Vercel Blob when credentials are available (production).
+  // Supports both static token and modern OIDC-based blob connections.
   let backupUrl = null
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
     try {
       const { put } = await import('@vercel/blob')
       const filename = `backups/pre-migration-${startedAt.toISOString().replace(/[:.]/g, '-')}.json`
