@@ -386,3 +386,11 @@ Stage Summary:
 - Cleanup: all @bandhan-test.in test users deleted (2 this round; 3 earlier round) → DB back to exactly 8 original users, 5 businesses, 5 jobs, 3 directory, 28 OTPs.
 - Commits: probe route was never committed (deleted locally); no code changes this session except none — deploys from main 6ef2a31 content.
 - REMAINING OWNER ITEMS: 1) delete stale `bandhan-sahu-connect` Vercel project + add domain to `my-project` (permanent); 2) /admin bootstrap Super Admin claim; 3) optional RESEND_API_KEY/MSG91_API_KEY for real OTP delivery; 4) revoke Supabase sbp_ token + this VERCEL_TOKEN after use; 5) enable Vercel GitHub auto-deploy.
+
+## 2026-11-25 — VERCEL_TOKEN पुनः-सत्यापन: production नया code ही serve कर रहा है, 89/89 PASS (कोई redeploy ज़रूरी नहीं)
+- User ने VERCEL_TOKEN दुबारा दिया; whoami OK (vedpackagingindustries-tech, team_FwzFfoz1D0meebTy5OAxtZuj).
+- API से पुष्ट: my-project का नवीनतम production deploy `dpl_CuqP9ExLyimoie7oTuJh6Ld8Mi64` (2026-11-24 06:07 UTC, READY) और alias `bandhan-sahu-connect.vercel.app` → वही deployment (v4 alias record से deploymentId मेल)। यानी 24-Nov वाला deploy + rebind आज भी जीवित है.
+- LIVE fingerprint (browser UA + Origin): register (MATRIMONY) → 201 {userId, status:"ACTIVE", otpDelivered:false, otpSentTo:null, message:"Registration successful. Your account is active — you can log in now."}; दोहराया email → "Email already registered". Login (email+password) → 200 + 7d token + user.status ACTIVE. पुराने build के लक्षण (PENDING_APPROVAL / otpDelivered की अनुपस्थिति) अब कहीं नहीं.
+- Smoke suite: **89/89 PASS** (0 FAIL / 0 BLOCKED / 0 WARN) — report scripts/smoke-test-report.json.
+- Cleanup: आज के 2 test users (finalcheck.*@bandhan-test.in) SQL DELETE RETURNING से हटाए (cascade OTP/profile/session) → DB वापस ठीक baseline: 8 users, 8 profiles, 5 businesses, 5 jobs, 3 directory, 28 OTPs, 5 sessions, leftover_test=0.
+- निष्कर्ष: कोई नया deploy, कोई code परिवर्तन इस सत्र में ज़रूरी नहीं पड़ा — 24-Nov का काम आज की जाँच में पूरा टिका. शेष केवल OWNER TODOs (stale project delete, /admin bootstrap, OTP provider keys, दोनों tokens revoke, auto-deploy on).
